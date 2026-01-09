@@ -1,39 +1,54 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
+import Home from './pages/Home/Home';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
+import Dashboard from './pages/Dashboard/Dashboard';
+import CourseList from './pages/Courses/CourseList';
+import NotFound from './pages/NotFound/NotFound';
+
 import './App.css';
+import './styles/global.css';
 
 function App() {
-  const [forecast, setForecast] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // In development, CRA proxies "/weatherforecast" to the backend
-    fetch('/weatherforecast')
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setForecast(data);
-      })
-      .catch((err) => setError(err.message));
-  }, []);
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>E-Learning Demo</h1>
-        <p>Backend-connected weather forecast:</p>
-        {error && <p style={{ color: 'salmon' }}>Error: {error}</p>}
-        {!error && forecast.length === 0 && <p>Loading...</p>}
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {forecast.map((item, idx) => (
-            <li key={idx} style={{ margin: '8px 0' }}>
-              <strong>{item.date}</strong> — {item.summary} —
-              <span style={{ marginLeft: 6 }}>{item.temperatureC}°C</span>
-              <span style={{ marginLeft: 6 }}>({item.temperatureF}°F)</span>
-            </li>
-          ))}
-        </ul>
-      </header>
-    </div>
+    <AuthProvider>
+      <NotificationProvider>
+        <Router>
+          <div className="app">
+            <Navbar />
+            <div className="app-container">
+              <Sidebar />
+              <main className="main-content">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/courses" element={<CourseList />} />
+                  
+                  {/* Protected Routes */}
+                  <Route 
+                    path="/dashboard" 
+                    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
+                  />
+
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+            <Footer />
+          </div>
+        </Router>
+      </NotificationProvider>
+    </AuthProvider>
   );
 }
 

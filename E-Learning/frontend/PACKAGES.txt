@@ -1,0 +1,8 @@
+npm install react-router-dom axios
+npm install react-toastify date-fns
+npm install clsx jwt-decode react-icons
+npm install formik yup
+npm install react-loading-skeleton
+
+# Dev Dependencies (Optional)
+npm install --save-dev tailwindcss postcss autoprefixer

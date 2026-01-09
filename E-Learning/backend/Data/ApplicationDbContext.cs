@@ -179,6 +179,43 @@ namespace backend.Data
                 entity.Property(a => a.CreatedAt).HasDefaultValueSql("NOW()");
             });
 
+            // AssignmentSubmission Configuration
+            modelBuilder.Entity<AssignmentSubmission>(entity =>
+            {
+                entity.HasIndex(asub => asub.UserId);
+                entity.HasIndex(asub => asub.AssignmentId);
+                entity.HasIndex(asub => new { asub.UserId, asub.AssignmentId });
+                entity.HasIndex(asub => asub.Status);
+                entity.HasIndex(asub => asub.SubmittedAt);
+
+                entity.Property(asub => asub.Status).HasDefaultValue("Submitted");
+                entity.Property(asub => asub.IsGraded).HasDefaultValue(false);
+                entity.Property(asub => asub.IsLate).HasDefaultValue(false);
+                entity.Property(asub => asub.IsResubmission).HasDefaultValue(false);
+                entity.Property(asub => asub.SubmittedAt).HasDefaultValueSql("NOW()");
+                entity.Property(asub => asub.MaxScore).HasPrecision(18, 2);
+                entity.Property(asub => asub.Score).HasPrecision(18, 2);
+                entity.Property(asub => asub.LatePenalty).HasPrecision(18, 2);
+
+                // Relationship with User (Submitter)
+                entity.HasOne(asub => asub.User)
+                    .WithMany()
+                    .HasForeignKey(asub => asub.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Relationship with Assignment
+                entity.HasOne(asub => asub.Assignment)
+                    .WithMany()
+                    .HasForeignKey(asub => asub.AssignmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship with User (Grader/Teacher)
+                entity.HasOne(asub => asub.Grader)
+                    .WithMany()
+                    .HasForeignKey(asub => asub.GradedBy)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
             // Post Configuration (Community)
             modelBuilder.Entity<Post>(entity =>
             {
