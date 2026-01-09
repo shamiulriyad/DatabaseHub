@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { courseService } from '../../services/courseService';
 import Card from '../../components/common/Card';
 import Loading from '../../components/Loading';
-import './CourseList.css';
 
 const CourseList = () => {
   const [courses, setCourses] = useState([]);

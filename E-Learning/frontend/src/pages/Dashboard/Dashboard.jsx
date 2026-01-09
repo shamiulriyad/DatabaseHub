@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();

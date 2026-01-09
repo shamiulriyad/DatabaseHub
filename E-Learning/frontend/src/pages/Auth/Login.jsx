@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');

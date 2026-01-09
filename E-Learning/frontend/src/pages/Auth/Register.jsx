@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import './Register.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({

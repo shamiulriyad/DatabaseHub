@@ -1,5 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ChakraProvider } from '@chakra-ui/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/Navbar';
@@ -18,37 +20,50 @@ import NotFound from './pages/NotFound/NotFound';
 import './App.css';
 import './styles/global.css';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <Router>
-          <div className="app">
-            <Navbar />
-            <div className="app-container">
-              <Sidebar />
-              <main className="main-content">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/courses" element={<CourseList />} />
-                  
-                  {/* Protected Routes */}
-                  <Route 
-                    path="/dashboard" 
-                    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
-                  />
+    <ChakraProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <NotificationProvider>
+            <Router>
+              <div className="app">
+                <Navbar />
+                <div className="app-container">
+                  <Sidebar />
+                  <main className="main-content">
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/courses" element={<CourseList />} />
+                      
+                      {/* Protected Routes */}
+                      <Route 
+                        path="/dashboard" 
+                        element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
+                      />
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-            <Footer />
-          </div>
-        </Router>
-      </NotificationProvider>
-    </AuthProvider>
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </div>
+                <Footer />
+              </div>
+            </Router>
+          </NotificationProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ChakraProvider>
   );
 }
 
