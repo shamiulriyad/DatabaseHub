@@ -5,6 +5,13 @@ namespace backend.Services.Interfaces
 {
     public interface IAdminService
     {
+        // Teacher Approval Methods
+        Task<ServiceResult<List<UserDTO>>> GetPendingTeacherApprovals(int page = 1, int pageSize = 20);
+        Task<ServiceResult<int>> GetPendingTeacherApprovalsCount();
+        Task<ServiceResult<UserDTO>> ApproveTeacherRequest(int userId);
+        Task<ServiceResult<bool>> RejectTeacherRequest(int userId, string reason = "");
+
+        // Existing methods
         Task<ServiceResult<PlatformStatsDTO>> GetPlatformStats();
         Task<ServiceResult<List<UserDTO>>> GetAllUsers(UserFilterDTO filterDto);
         Task<ServiceResult<UserDTO>> UpdateUserStatus(int userId, UpdateUserStatusDTO dto);

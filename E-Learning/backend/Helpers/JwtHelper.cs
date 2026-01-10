@@ -37,7 +37,8 @@ namespace backend.Helpers
             // Add roles based on dynamic role system
             if (user.IsStudent)
                 claims.Add(new Claim(ClaimTypes.Role, "Student"));
-            if (user.IsTeacher)
+            // Only add Teacher role if approved (not pending approval)
+            if (user.IsTeacher && !user.TeacherPendingApproval)
                 claims.Add(new Claim(ClaimTypes.Role, "Teacher"));
             if (user.IsAdmin)
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));

@@ -54,6 +54,12 @@ namespace backend.DTOs
         [MaxLength(100)]
         public string? LastName { get; set; }
 
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        [MaxLength(50)]
+        public string? Username { get; set; }
+
         [MaxLength(500)]
         public string? Bio { get; set; }
 
@@ -188,5 +194,11 @@ namespace backend.DTOs
     {
         public string RoleName { get; set; } = null!;
         public string? Description { get; set; }
+    }
+
+    // Teacher Approval DTOs
+    public class RejectTeacherRequestDTO
+    {
+        public string? Reason { get; set; }
     }
 }

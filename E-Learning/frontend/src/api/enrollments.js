@@ -9,4 +9,3 @@ export function enroll(courseId) {
   export function myEnrollments() {
     return apiFetch("/enrollments/user", { auth: true });
   }
-  

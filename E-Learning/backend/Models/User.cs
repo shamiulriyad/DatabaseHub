@@ -37,8 +37,8 @@ namespace backend.Models
 
         // Dynamic Role System (যেকোনো সময় রোল পরিবর্তনযোগ্য)
         public bool IsStudent { get; set; } = true;
-        public bool IsTeacher { get; set; } = false;
-        public bool IsCompetitor { get; set; } = false;
+        public bool IsTeacher { get; set; } = false;        public bool TeacherPendingApproval { get; set; } = false;
+        public DateTime? TeacherRequestDate { get; set; }        public bool IsCompetitor { get; set; } = false;
         public bool IsAdmin { get; set; } = false;
 
         // Ranking System
@@ -60,6 +60,10 @@ namespace backend.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
+
+        // Password Reset
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
 
         // Navigation Properties
         public virtual ICollection<Course> CreatedCourses { get; set; } = new List<Course>();

@@ -170,6 +170,23 @@ namespace backend.Controllers
             });
         }
 
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ResetPassword(resetPasswordDto.Token, resetPasswordDto.NewPassword);
+            
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { 
+                success = true,
+                message = "Password reset successful" 
+            });
+        }
+
         [Authorize]
         [HttpPost("become-teacher")]
         public async Task<IActionResult> BecomeTeacher()

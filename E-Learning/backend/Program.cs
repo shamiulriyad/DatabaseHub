@@ -16,7 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "E-Learning Platform API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "NextUniVerse API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme",
@@ -81,6 +81,7 @@ builder.Services.AddCors(options =>
 
 // Register Helpers
 builder.Services.AddSingleton<IJwtHelper, JwtHelper>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();

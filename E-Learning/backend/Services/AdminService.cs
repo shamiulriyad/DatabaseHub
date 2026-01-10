@@ -1,6 +1,8 @@
 using backend.Data;
 using backend.DTOs;
 using backend.Services.Interfaces;
+using backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Services
 {
@@ -11,6 +13,147 @@ namespace backend.Services
         public AdminService(ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        // TEACHER APPROVAL METHODS
+
+        /// <summary>
+        /// Get all users with pending teacher approvals
+        /// </summary>
+        public async Task<ServiceResult<List<UserDTO>>> GetPendingTeacherApprovals(int page = 1, int pageSize = 20)
+        {
+            try
+            {
+                var pendingTeachers = await _context.Users
+                    .Where(u => u.TeacherPendingApproval)
+                    .OrderByDescending(u => u.TeacherRequestDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var userDTOs = pendingTeachers.Select(MapUserToDTO).ToList();
+                return ServiceResult<List<UserDTO>>.SuccessResult(
+                    userDTOs,
+                    $"Found {userDTOs.Count} pending teacher approvals"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<UserDTO>>.FailureResult($"Failed to get pending teacher approvals: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get count of pending teacher approvals
+        /// </summary>
+        public async Task<ServiceResult<int>> GetPendingTeacherApprovalsCount()
+        {
+            try
+            {
+                var count = await _context.Users
+                    .Where(u => u.TeacherPendingApproval)
+                    .CountAsync();
+
+                return ServiceResult<int>.SuccessResult(count, "Pending count retrieved");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<int>.FailureResult($"Failed to get pending count: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Approve a user's teacher request
+        /// </summary>
+        public async Task<ServiceResult<UserDTO>> ApproveTeacherRequest(int userId)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                
+                if (user == null)
+                    return ServiceResult<UserDTO>.FailureResult("User not found");
+
+                if (!user.TeacherPendingApproval)
+                    return ServiceResult<UserDTO>.FailureResult("This user does not have a pending teacher approval request");
+
+                // Approve the request
+                user.IsTeacher = true;
+                user.TeacherPendingApproval = false;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return ServiceResult<UserDTO>.SuccessResult(
+                    MapUserToDTO(user),
+                    "Teacher request approved successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<UserDTO>.FailureResult($"Failed to approve teacher request: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Reject a user's teacher request
+        /// </summary>
+        public async Task<ServiceResult<bool>> RejectTeacherRequest(int userId, string reason = "")
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                
+                if (user == null)
+                    return ServiceResult<bool>.FailureResult("User not found");
+
+                if (!user.TeacherPendingApproval)
+                    return ServiceResult<bool>.FailureResult("This user does not have a pending teacher approval request");
+
+                // Reset the pending approval flag
+                user.TeacherPendingApproval = false;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(
+                    true,
+                    "Teacher request rejected successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Failed to reject teacher request: {ex.Message}");
+            }
+        }
+
+        private UserDTO MapUserToDTO(User user)
+        {
+            return new UserDTO
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Bio = user.Bio,
+                PhoneNumber = user.PhoneNumber,
+                DateOfBirth = user.DateOfBirth,
+                IsStudent = user.IsStudent,
+                IsTeacher = user.IsTeacher,
+                IsCompetitor = user.IsCompetitor,
+                IsAdmin = user.IsAdmin,
+                TotalPoints = user.TotalPoints,
+                CurrentRank = user.CurrentRank,
+                TotalCoursesEnrolled = user.TotalCoursesEnrolled,
+                TotalCoursesCompleted = user.TotalCoursesCompleted,
+                AverageGrade = user.AverageGrade,
+                CreatedAt = user.CreatedAt,
+                LastLogin = user.LastLogin
+            };
         }
 
         public Task<ServiceResult<PlatformStatsDTO>> GetPlatformStats()
