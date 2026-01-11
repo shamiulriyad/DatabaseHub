@@ -1,6 +1,5 @@
 import React from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { Link as RouterLink } from 'react-router-dom';
 
 import {
   Box,
@@ -15,67 +14,73 @@ import {
   HStack,
   Icon,
   useColorModeValue,
-  Image,
-  Flex,
+  Grid,
   Badge,
+  Divider,
+  List,
+  ListItem,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaUsers, FaClock, FaCertificate, FaArrowRight, FaPlay } from 'react-icons/fa';
+import { 
+  FaCheckCircle, 
+  FaUsers, 
+  FaClock, 
+  FaCertificate, 
+  FaArrowRight, 
+  FaRocket,
+  FaTrophy,
+  FaGraduationCap,
+  FaChartLine,
+  FaUserCheck,
+  FaLock,
+} from 'react-icons/fa';
 
 const LandingPage = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const bgColor = useColorModeValue('gray.50', 'gray.800');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
   const textColor = useColorModeValue('gray.700', 'gray.300');
-
-  // Redirect authenticated users to home
-  React.useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const features = [
     {
-      icon: FaUsers,
-      title: 'Learn from Experts',
-      description: 'Access courses taught by industry professionals and university instructors',
+      icon: FaGraduationCap,
+      title: 'Expert Instructors',
+      description: 'Learn from industry professionals and university faculty with real-world experience',
       color: 'purple',
     },
     {
       icon: FaClock,
-      title: 'Learn at Your Pace',
-      description: 'Study whenever and wherever you want. No deadlines, full flexibility',
+      title: 'Learn Your Way',
+      description: 'Study at your own pace, on any device. No deadlines, pure flexibility',
       color: 'blue',
     },
     {
-      icon: FaCertificate,
-      title: 'Earn Certificates',
-      description: 'Receive recognized certificates that boost your professional profile',
+      icon: FaTrophy,
+      title: 'Earn Credentials',
+      description: 'Get recognized certificates and achievements to boost your career',
       color: 'green',
     },
   ];
 
   const benefits = [
-    'Access 1,200+ courses from top universities',
-    'Learn from 500+ expert instructors worldwide',
-    'Get personalized learning recommendations',
-    'Join a supportive community of 10,000+ learners',
-    'Earn verifiable certificates',
-    'Participate in competitions and earn badges',
+    { icon: FaUsers, text: '10,000+ active learners and growing' },
+    { icon: FaCertificate, text: '1,200+ courses from top universities' },
+    { icon: FaCheckCircle, text: '500+ expert instructors worldwide' },
+    { icon: FaCertificate, text: 'Recognized digital certificates' },
+    { icon: FaChartLine, text: 'Track your progress & growth' },
+    { icon: FaRocket, text: 'Join a supportive learning community' },
   ];
 
   return (
     <Box minH="100vh">
-      {/* Hero Section */}
+      {/* ===== HERO SECTION ===== */}
       <Box
         bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
         color="white"
-        py={{ base: 24, md: 32 }}
+        py={{ base: 20, md: 32 }}
         position="relative"
         overflow="hidden"
       >
-        {/* Background Pattern */}
+        {/* Animated Background */}
         <Box
           position="absolute"
           top="0"
@@ -87,315 +92,272 @@ const LandingPage = () => {
         />
 
         <Container maxW="7xl" position="relative" zIndex={1}>
-          <VStack spacing={8} textAlign="center">
-            <Badge
-              colorScheme="purple"
-              bg="whiteAlpha.300"
-              color="white"
-              px={4}
-              py={2}
-              fontSize="md"
-              borderRadius="full"
-            >
-              🚀 Welcome to NextUniVerse
-            </Badge>
-            
-            <Heading
-              size="3xl"
-              fontWeight="black"
-              lineHeight="1.1"
-              maxW="3xl"
-            >
-              Transform Your Future Through Education
-            </Heading>
-            
-            <Text fontSize="xl" maxW="2xl" lineHeight="tall" opacity={0.95}>
-              Access world-class education from top universities and instructors. 
-              Learn new skills, earn certificates, and unlock amazing career opportunities.
-            </Text>
+          <Grid templateColumns={{ base: '1fr', lg: '1.2fr 1fr' }} gap={12} alignItems="center">
+            <VStack spacing={8} align={{ base: 'center', lg: 'flex-start' }} textAlign={{ base: 'center', lg: 'left' }}>
+              <Badge
+                colorScheme="cyan"
+                bg="whiteAlpha.25"
+                color="white"
+                px={4}
+                py={2}
+                fontSize="sm"
+                borderRadius="full"
+                fontWeight="bold"
+              >
+                ✨ Welcome to NextUniVerse
+              </Badge>
+              
+              <Box>
+                <Heading
+                  as="h1"
+                  size="4xl"
+                  fontWeight="black"
+                  lineHeight="1.1"
+                  mb={4}
+                >
+                  Transform Your Future
+                </Heading>
+                <Heading
+                  as="h2"
+                  size="xl"
+                  fontWeight="300"
+                  lineHeight="1.5"
+                  opacity={0.95}
+                >
+                  Through World-Class Education
+                </Heading>
+              </Box>
+              
+              <Text fontSize="lg" maxW="lg" lineHeight="tall" opacity={0.9}>
+                Access thousands of university-backed courses, learn from industry experts, and unlock your potential. Join thousands of successful learners today.
+              </Text>
 
-            <HStack spacing={4} pt={4} flexWrap="wrap" justify="center">
+              <HStack spacing={4} pt={4}>
+                <Button
+                  size="lg"
+                  bg="white"
+                  color="purple.600"
+                  _hover={{ bg: 'gray.100', transform: 'translateY(-2px)', shadow: 'xl' }}
+                  transition="all 0.3s"
+                  as={RouterLink}
+                  to="/register"
+                  fontWeight="bold"
+                  shadow="lg"
+                  leftIcon={<FaRocket />}
+                >
+                  Start Learning Free
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  borderColor="white"
+                  borderWidth="2px"
+                  color="white"
+                  _hover={{ bg: 'whiteAlpha.2' }}
+                  transition="all 0.3s"
+                  as={RouterLink}
+                  to="/courses"
+                  rightIcon={<FaArrowRight />}
+                  fontWeight="bold"
+                >
+                  Explore Now
+                </Button>
+              </HStack>
+
+              {/* Quick Stats */}
+              <HStack spacing={8} pt={8} divider={<Divider orientation="vertical" opacity={0.3} h="12" />}>
+                <VStack spacing={1}>
+                  <Text fontSize="2xl" fontWeight="black">10K+</Text>
+                  <Text fontSize="xs" opacity={0.8}>Learners</Text>
+                </VStack>
+                <VStack spacing={1}>
+                  <Text fontSize="2xl" fontWeight="black">1.2K+</Text>
+                  <Text fontSize="xs" opacity={0.8}>Courses</Text>
+                </VStack>
+                <VStack spacing={1}>
+                  <Text fontSize="2xl" fontWeight="black">500+</Text>
+                  <Text fontSize="xs" opacity={0.8}>Instructors</Text>
+                </VStack>
+              </HStack>
+            </VStack>
+
+            {/* Hero Illustration */}
+            <Box display={{ base: 'none', lg: 'flex' }} justifyContent="center" alignItems="center" minH="400px">
+              <Box position="relative">
+                <Icon 
+                  as={FaGraduationCap} 
+                  boxSize="200px" 
+                  opacity={0.2}
+                  filter="drop-shadow(0 20px 40px rgba(0,0,0,0.3))"
+                />
+              </Box>
+            </Box>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ===== FEATURES SECTION ===== */}
+      <Container maxW="7xl" py={20}>
+        <VStack spacing={12} align="center">
+          <VStack spacing={4} textAlign="center">
+            <Badge colorScheme="purple" variant="subtle" px={3} py={1} borderRadius="full">
+              Why Choose Us
+            </Badge>
+            <Heading size="2xl" fontWeight="black">
+              Everything You Need to Succeed
+            </Heading>
+            <Text fontSize="lg" color={textColor} maxW="2xl">
+              Comprehensive learning platform with premium features designed for your success
+            </Text>
+          </VStack>
+
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full">
+            {features.map((feature, idx) => (
+              <Card 
+                key={idx} 
+                bg={cardBg} 
+                borderWidth="1px"
+                borderColor={borderColor}
+                shadow="md"
+                _hover={{ shadow: 'xl', transform: 'translateY(-4px)', borderColor: `${feature.color}.500` }} 
+                transition="all 0.3s"
+                overflow="hidden"
+              >
+                <Box h="1px" bgGradient={`linear(to-r, ${feature.color}.400, transparent)`} />
+                <CardBody>
+                  <VStack spacing={4} align="flex-start">
+                    <Box
+                      w="16"
+                      h="16"
+                      bg={`${feature.color}.100`}
+                      color={`${feature.color}.600`}
+                      borderRadius="xl"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      _dark={{ bg: `${feature.color}.900`, color: `${feature.color}.300` }}
+                    >
+                      <Icon as={feature.icon} boxSize={8} />
+                    </Box>
+                    <VStack spacing={2} align="flex-start">
+                      <Heading size="md">{feature.title}</Heading>
+                      <Text color={textColor} fontSize="sm" lineHeight="tall">
+                        {feature.description}
+                      </Text>
+                    </VStack>
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
+          </SimpleGrid>
+        </VStack>
+      </Container>
+
+      {/* ===== BENEFITS SECTION ===== */}
+      <Box bg={bgColor} py={20}>
+        <Container maxW="7xl">
+          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={12} alignItems="center">
+            {/* Benefits List */}
+            <VStack spacing={6} align="flex-start">
+              <VStack spacing={3} align="flex-start">
+                <Heading size="lg" fontWeight="black">
+                  Join a Global Community
+                </Heading>
+                <Text color={textColor} fontSize="lg">
+                  Get access to premium learning resources and connect with learners worldwide
+                </Text>
+              </VStack>
+
+              <List spacing={4}>
+                {benefits.map((benefit, idx) => (
+                  <ListItem key={idx} display="flex" alignItems="center" gap={4}>
+                    <Icon as={benefit.icon} color="purple.500" boxSize={5} flexShrink={0} />
+                    <Text fontWeight="500">{benefit.text}</Text>
+                  </ListItem>
+                ))}
+              </List>
+
               <Button
+                mt={4}
                 size="lg"
-                bg="white"
-                color="purple.600"
-                _hover={{ bg: 'gray.100', transform: 'translateY(-2px)' }}
-                transition="all 0.2s"
+                bgGradient="linear(135deg, purple.600, blue.600)"
+                color="white"
+                _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+                as={RouterLink}
+                to="/courses"
+                rightIcon={<FaArrowRight />}
+              >
+                Browse Courses
+              </Button>
+            </VStack>
+
+            {/* Stats Cards */}
+            <SimpleGrid columns={2} spacing={6}>
+              <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md">
+                <CardBody p={6} textAlign="center">
+                  <Icon as={FaTrophy} fontSize="3xl" color="yellow.500" mb={3} />
+                  <Text fontSize="sm" color={textColor} mb={2}>Achievement Rate</Text>
+                  <Heading size="lg">92%</Heading>
+                </CardBody>
+              </Card>
+
+              <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md">
+                <CardBody p={6} textAlign="center">
+                  <Icon as={FaUserCheck} fontSize="3xl" color="green.500" mb={3} />
+                  <Text fontSize="sm" color={textColor} mb={2}>Job Success</Text>
+                  <Heading size="lg">87%</Heading>
+                </CardBody>
+              </Card>
+
+              <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md">
+                <CardBody p={6} textAlign="center">
+                  <Icon as={FaChartLine} fontSize="3xl" color="blue.500" mb={3} />
+                  <Text fontSize="sm" color={textColor} mb={2}>Avg. Salary Growth</Text>
+                  <Heading size="lg">+45%</Heading>
+                </CardBody>
+              </Card>
+
+              <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md">
+                <CardBody p={6} textAlign="center">
+                  <Icon as={FaLock} fontSize="3xl" color="purple.500" mb={3} />
+                  <Text fontSize="sm" color={textColor} mb={2}>Data Privacy</Text>
+                  <Heading size="lg">100%</Heading>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ===== CTA SECTION ===== */}
+      <Box py={20}>
+        <Container maxW="md">
+          <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="xl">
+            <CardBody p={12} textAlign="center">
+              <Icon as={FaRocket} fontSize="4xl" color="purple.500" mb={4} />
+              <Heading size="lg" mb={3}>Ready to Transform?</Heading>
+              <Text color={textColor} mb={6}>
+                Start your learning journey today and unlock your potential. Join thousands of successful learners.
+              </Text>
+              <Button
+                w="full"
+                size="lg"
+                bgGradient="linear(135deg, purple.600, blue.600)"
+                color="white"
+                _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
                 as={RouterLink}
                 to="/register"
                 fontWeight="bold"
               >
                 Get Started Free
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                borderColor="white"
-                color="white"
-                _hover={{ bg: 'whiteAlpha.200' }}
-                as={RouterLink}
-                to="/"
-                rightIcon={<Icon as={FaArrowRight} />}
-              >
-                Explore Courses
-              </Button>
-            </HStack>
-
-            {/* Stats */}
-            <SimpleGrid columns={{ base: 3, md: 3 }} spacing={4} pt={8} maxW="lg">
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold">10K+</Text>
-                <Text fontSize="sm">Active Learners</Text>
-              </VStack>
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold">1.2K+</Text>
-                <Text fontSize="sm">Quality Courses</Text>
-              </VStack>
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold">500+</Text>
-                <Text fontSize="sm">Expert Instructors</Text>
-              </VStack>
-            </SimpleGrid>
-          </VStack>
-        </Container>
-      </Box>
-
-      {/* Key Features */}
-      <Container maxW="7xl" py={16}>
-        <Heading textAlign="center" size="xl" mb={4}>
-          Why Choose NextUniVerse?
-        </Heading>
-        <Text textAlign="center" color={textColor} maxW="2xl" mx="auto" mb={12}>
-          Everything you need to succeed in your learning journey
-        </Text>
-
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
-          {features.map((feature, idx) => (
-            <Card key={idx} bg={cardBg} shadow="md" _hover={{ shadow: 'lg' }} transition="all 0.3s">
-              <CardBody>
-                <VStack spacing={4} align="start">
-                  <Flex
-                    w={16}
-                    h={16}
-                    bg={`${feature.color}.100`}
-                    color={`${feature.color}.600`}
-                    borderRadius="lg"
-                    align="center"
-                    justify="center"
-                  >
-                    <Icon as={feature.icon} boxSize={8} />
-                  </Flex>
-                  <Heading size="md">{feature.title}</Heading>
-                  <Text color={textColor} fontSize="sm" lineHeight="tall">
-                    {feature.description}
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-          ))}
-        </SimpleGrid>
-      </Container>
-
-      {/* Benefits Section */}
-      <Box bg={bgColor} py={16}>
-        <Container maxW="7xl">
-          <SimpleGrid columns={{ base: 1, md: 2 }} gap={12} alignItems="center">
-            <VStack spacing={6} align="start">
-              <Heading size="xl">
-                Everything You Need to Succeed
-              </Heading>
-              <Text color={textColor} fontSize="md" lineHeight="tall">
-                NextUniVerse provides comprehensive tools and resources to support your learning journey from start to finish.
+              <Text fontSize="sm" color="gray.500" mt={4}>
+                No credit card required
               </Text>
-              <VStack spacing={3} align="start">
-                {benefits.map((benefit, idx) => (
-                  <HStack key={idx} spacing={3}>
-                    <Icon as={FaCheckCircle} color="green.500" boxSize={5} />
-                    <Text color={textColor}>{benefit}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            </VStack>
-
-            <Box
-              bg={`linear(135deg, purple.400, blue.400)`}
-              borderRadius="xl"
-              h={400}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              shadow="lg"
-              position="relative"
-            >
-              <VStack spacing={4}>
-                <Icon as={FaPlay} boxSize={16} color="white" opacity={0.9} />
-                <Text color="white" fontSize="lg" fontWeight="bold">
-                  Watch Our Story
-                </Text>
-              </VStack>
-            </Box>
-          </SimpleGrid>
-        </Container>
-      </Box>
-
-      {/* Success Stories */}
-      <Container maxW="7xl" py={16}>
-        <Heading textAlign="center" size="xl" mb={4}>
-          Success Stories
-        </Heading>
-        <Text textAlign="center" color={textColor} maxW="2xl" mx="auto" mb={12}>
-          See how NextUniVerse learners are transforming their careers
-        </Text>
-
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
-          {[
-            {
-              name: 'Sarah Johnson',
-              role: 'Software Developer',
-              story: 'Completed 5 courses and got promoted within 6 months. NextUniVerse helped me master new technologies.',
-              image: 'https://i.pravatar.cc/150?img=1',
-            },
-            {
-              name: 'Michael Chen',
-              role: 'Data Scientist',
-              story: 'Transitioned careers from finance to data science using courses on NextUniVerse. Best decision ever!',
-              image: 'https://i.pravatar.cc/150?img=2',
-            },
-            {
-              name: 'Emily Rodriguez',
-              role: 'Product Manager',
-              story: 'The flexible learning schedule allowed me to upskill while working. Now I\'m managing a team!',
-              image: 'https://i.pravatar.cc/150?img=3',
-            },
-          ].map((story, idx) => (
-            <Card key={idx} bg={cardBg} shadow="md">
-              <CardBody>
-                <VStack spacing={4}>
-                  <Image
-                    src={story.image}
-                    alt={story.name}
-                    borderRadius="full"
-                    boxSize={16}
-                  />
-                  <VStack spacing={2} textAlign="center">
-                    <Heading size="sm">{story.name}</Heading>
-                    <Text fontSize="sm" color="purple.500" fontWeight="600">
-                      {story.role}
-                    </Text>
-                    <Text fontSize="sm" color={textColor} lineHeight="tall">
-                      "{story.story}"
-                    </Text>
-                  </VStack>
-                  <HStack spacing={1}>
-                    {[...Array(5)].map((_, i) => (
-                      <Icon key={i} as={FaCheckCircle} color="yellow.400" boxSize={4} />
-                    ))}
-                  </HStack>
-                </VStack>
-              </CardBody>
-            </Card>
-          ))}
-        </SimpleGrid>
-      </Container>
-
-      {/* How It Works */}
-      <Box bg={bgColor} py={16}>
-        <Container maxW="7xl">
-          <Heading textAlign="center" size="xl" mb={12}>
-            How to Get Started
-          </Heading>
-
-          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
-            {[
-              {
-                number: '1',
-                title: 'Sign Up',
-                description: 'Create a free NextUniVerse account in just 2 minutes',
-              },
-              {
-                number: '2',
-                title: 'Choose Courses',
-                description: 'Browse and select from 1,200+ courses across all subjects',
-              },
-              {
-                number: '3',
-                title: 'Start Learning',
-                description: 'Learn at your own pace with lifetime access to courses',
-              },
-              {
-                number: '4',
-                title: 'Earn Certificate',
-                description: 'Complete courses and earn recognized certificates',
-              },
-            ].map((step, idx) => (
-              <Card key={idx} bg={cardBg}>
-                <CardBody>
-                  <VStack spacing={4} align="start">
-                    <Box
-                      w={12}
-                      h={12}
-                      bg="purple.600"
-                      color="white"
-                      borderRadius="lg"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      fontWeight="bold"
-                      fontSize="lg"
-                    >
-                      {step.number}
-                    </Box>
-                    <Heading size="md">{step.title}</Heading>
-                    <Text color={textColor} fontSize="sm">
-                      {step.description}
-                    </Text>
-                  </VStack>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
-        </Container>
-      </Box>
-
-      {/* Final CTA */}
-      <Box
-        bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
-        color="white"
-        py={16}
-      >
-        <Container maxW="7xl">
-          <VStack spacing={8} textAlign="center">
-            <Heading size="2xl" fontWeight="black">
-              Ready to Transform Your Future?
-            </Heading>
-            <Text fontSize="lg" maxW="2xl">
-              Join thousands of learners on NextUniVerse and start your journey to success today.
-            </Text>
-            <HStack spacing={4}>
-              <Button
-                size="lg"
-                bg="white"
-                color="purple.600"
-                _hover={{ bg: 'gray.100' }}
-                as={RouterLink}
-                to="/register"
-                fontWeight="bold"
-              >
-                Sign Up for Free
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                borderColor="white"
-                color="white"
-                _hover={{ bg: 'whiteAlpha.200' }}
-                as={RouterLink}
-                to="/"
-              >
-                View Courses
-              </Button>
-            </HStack>
-          </VStack>
+            </CardBody>
+          </Card>
         </Container>
       </Box>
     </Box>

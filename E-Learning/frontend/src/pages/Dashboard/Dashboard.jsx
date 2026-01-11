@@ -1,53 +1,19 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import StudentDashboard from './StudentDashboard';
+import AdminDashboard from './AdminDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
 
-  return (
-    <div className="dashboard-container">
-      <h1>Welcome, {user?.firstName}!</h1>
-      <p>Role: {user?.role}</p>
-
-      {user?.role === 'Student' && (
-        <div className="dashboard-grid">
-          <div className="dashboard-card">
-            <h3>Enrolled Courses</h3>
-            <p className="stat">0</p>
-          </div>
-          <div className="dashboard-card">
-            <h3>In Progress</h3>
-            <p className="stat">0</p>
-          </div>
-          <div className="dashboard-card">
-            <h3>Completed</h3>
-            <p className="stat">0</p>
-          </div>
-          <div className="dashboard-card">
-            <h3>Total Points</h3>
-            <p className="stat">{user.totalPoints || 0}</p>
-          </div>
-        </div>
-      )}
-
-      {user?.role === 'Teacher' && (
-        <div className="dashboard-grid">
-          <div className="dashboard-card">
-            <h3>My Courses</h3>
-            <p className="stat">0</p>
-          </div>
-          <div className="dashboard-card">
-            <h3>Total Students</h3>
-            <p className="stat">0</p>
-          </div>
-          <div className="dashboard-card">
-            <h3>Pending Assignments</h3>
-            <p className="stat">0</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  // Show appropriate dashboard based on role without redirecting
+  // This preserves browser history and allows back button to work
+  if (user?.isAdmin) {
+    return <AdminDashboard />;
+  } else {
+    // Both pure students and teacher+student users see StudentDashboard here
+    return <StudentDashboard />;
+  }
 };
 
 export default Dashboard;

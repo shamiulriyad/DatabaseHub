@@ -56,6 +56,9 @@ namespace backend.Data
         public DbSet<Ranking> Rankings => Set<Ranking>();
         public DbSet<Leaderboard> Leaderboards => Set<Leaderboard>();
 
+        // Teacher Application System
+        public DbSet<TeacherApplication> TeacherApplications => Set<TeacherApplication>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

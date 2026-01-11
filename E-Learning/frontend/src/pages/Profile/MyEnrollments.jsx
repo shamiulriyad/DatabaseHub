@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
   Container,
@@ -18,26 +19,25 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { FaArrowLeft, FaBook, FaPlay, FaClock, FaStar } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../../services/api';
 
 const MyEnrollments = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
+    console.log('MyEnrollments mounted. User:', user);
     fetchEnrollments();
-  }, []);
+  }, [user]);
 
   const fetchEnrollments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5145/api/enrollments/user', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get('/enrollments/user');
 
       if (response.data.success) {
         setEnrollments(response.data.data || []);

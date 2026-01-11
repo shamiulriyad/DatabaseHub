@@ -156,8 +156,114 @@ namespace backend.Services
             };
         }
 
-        public Task<ServiceResult<PlatformStatsDTO>> GetPlatformStats()
-            => Task.FromResult(ServiceResult<PlatformStatsDTO>.FailureResult("Not implemented"));
+        public async Task<ServiceResult<PlatformStatsDTO>> GetPlatformStats()
+        {
+            try
+            {
+                // Get total users count
+                var totalUsers = await _context.Users.CountAsync();
+                
+                // Get teachers count (approved teachers)
+                var totalTeachers = await _context.Users.Where(u => u.IsTeacher).CountAsync();
+                
+                // Get students count
+                var totalStudents = await _context.Users.Where(u => u.IsStudent).CountAsync();
+                
+                // Get pending teachers count
+                var pendingTeachers = await _context.Users.Where(u => u.TeacherPendingApproval).CountAsync();
+                
+                // Get total courses count
+                var totalCourses = await _context.Courses.CountAsync();
+                
+                // Get active courses (Status = 'Approved' or 'Published')
+                var activeCourses = await _context.Courses
+                    .Where(c => c.Status == "Approved" || c.Status == "Published")
+                    .CountAsync();
+                
+                // Get total enrollments count
+                var totalEnrollments = await _context.Enrollments.CountAsync();
+                
+                // Get completed enrollments (Status = 'Completed')
+                var completedEnrollments = await _context.Enrollments
+                    .Where(e => e.Status == "Completed")
+                    .CountAsync();
+                
+                // Calculate course completion rate
+                var courseCompletionRate = totalEnrollments > 0 
+                    ? (double)completedEnrollments / totalEnrollments * 100 
+                    : 0;
+
+                // Get total revenue (sum of all payments with status Completed)
+                var totalRevenue = await _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .SumAsync(p => p.Amount);
+
+                // Get active users (logged in last 30 days)
+                var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+                var activeUsers = await _context.Users
+                    .Where(u => u.LastLogin != null && u.LastLogin > thirtyDaysAgo)
+                    .CountAsync();
+
+                // Get new users this month
+                var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var newUsersThisMonth = await _context.Users
+                    .Where(u => u.CreatedAt >= firstDayOfMonth)
+                    .CountAsync();
+
+                var stats = new PlatformStatsDTO
+                {
+                    TotalUsers = totalUsers,
+                    TotalTeachers = totalTeachers,
+                    TotalStudents = totalStudents,
+                    TotalCourses = totalCourses,
+                    PendingTeachers = pendingTeachers,
+                    ActiveCourses = activeCourses,
+                    TotalRevenue = totalRevenue,
+                    ActiveUsers = activeUsers,
+                    NewUsersThisMonth = newUsersThisMonth,
+                    CourseCompletionRate = courseCompletionRate
+                };
+
+                return ServiceResult<PlatformStatsDTO>.SuccessResult(stats, "Platform stats retrieved successfully");
+            }
+            catch (Exception ex)
+            {
+                // Fallback to zeroed stats to prevent admin dashboard from breaking
+                var fallbackStats = new PlatformStatsDTO
+                {
+                    TotalUsers = 0,
+                    TotalTeachers = 0,
+                    TotalStudents = 0,
+                    TotalCourses = 0,
+                    PendingTeachers = 0,
+                    ActiveCourses = 0,
+                    TotalRevenue = 0,
+                    ActiveUsers = 0,
+                    NewUsersThisMonth = 0,
+                    CourseCompletionRate = 0,
+                    // Legacy fields
+                    TotalUniversities = 0,
+                    TotalDepartments = 0,
+                    TotalEnrollments = 0,
+                    TotalPosts = 0,
+                    TotalComments = 0,
+                    TotalClans = 0,
+                    TotalCompetitions = 0,
+                    ActiveUsersToday = 0,
+                    NewUsersToday = 0,
+                    NewCoursesToday = 0,
+                    PendingCourses = 0,
+                    PendingWithdrawals = 0,
+                    TodayRevenue = 0,
+                    PlatformBalance = 0
+                };
+
+                return ServiceResult<PlatformStatsDTO>.SuccessResult(
+                    fallbackStats,
+                    $"Platform stats fallback due to error: {ex.Message}"
+                );
+            }
+        }
 
         public Task<ServiceResult<List<UserDTO>>> GetAllUsers(UserFilterDTO filterDto)
             => Task.FromResult(ServiceResult<List<UserDTO>>.FailureResult("Not implemented"));

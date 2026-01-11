@@ -23,8 +23,18 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Clear auth data
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      
+      // Dispatch a custom event instead of hard redirect
+      window.dispatchEvent(new Event('auth-logout'));
+      
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        // Use replace to avoid history issues
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(error);
   }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import TeacherApplicationModal from '../../components/TeacherApplicationModal';
 import {
   Box,
   Container,
@@ -18,6 +19,8 @@ import {
   Icon,
   Spinner,
   useToast,
+  Divider,
+  Progress,
 } from '@chakra-ui/react';
 import {
   FaEdit,
@@ -29,6 +32,8 @@ import {
   FaUser,
   FaCalendar,
   FaStar,
+  FaGraduationCap,
+  FaChartLine,
 } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -42,6 +47,8 @@ const UserProfile = () => {
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const headerBg = useColorModeValue('linear(135deg, purple.600, blue.600)', 'linear(135deg, purple.700, blue.700)');
 
   useEffect(() => {
     fetchProfileData();
@@ -66,6 +73,7 @@ const UserProfile = () => {
           totalPoints: 1250,
           currentRank: 'Gold',
           streakDays: 7,
+          completionRate: 40,
         });
       }
     } catch (error) {
@@ -83,6 +91,7 @@ const UserProfile = () => {
           totalPoints: localUser.totalPoints || 0,
           currentRank: localUser.currentRank || 'Unranked',
           streakDays: 0,
+          completionRate: 0,
         });
       } else {
         toast({
@@ -109,165 +118,252 @@ const UserProfile = () => {
   const displayProfile = profile || authUser || JSON.parse(localStorage.getItem('user') || '{}');
 
   return (
-    <Box minH="100vh" bg={bgColor} py={8}>
+    <Box minH="100vh" bg={bgColor} py={12}>
       <Container maxW="6xl">
-        {/* Profile Header */}
-        <Card bg={cardBg} shadow="lg" mb={6}>
-          <CardBody p={8}>
-            <HStack spacing={6} align="flex-start">
+        {/* Hero Header with Profile */}
+        <Box bgGradient={headerBg} borderRadius="2xl" p={{ base: 6, md: 8 }} mb={8} color="white" shadow="2xl">
+          <Grid templateColumns={{ base: '1fr', md: 'auto 1fr' }} gap={{ base: 6, md: 8 }} alignItems="center">
+            {/* Avatar */}
+            <Box display="flex" justifyContent={{ base: 'center', md: 'flex-start' }}>
               <Avatar
                 size="2xl"
                 name={`${displayProfile.firstName || ''} ${displayProfile.lastName || ''}`}
                 src={displayProfile.avatar}
-                bg="purple.500"
+                bg="whiteAlpha.300"
                 color="white"
+                borderWidth={4}
+                borderColor="white"
               />
-              <VStack align="flex-start" spacing={3} flex={1}>
-                <HStack w="full" justify="space-between">
-                  <VStack align="flex-start" spacing={1}>
-                    <Heading size="lg">
-                      {displayProfile.firstName} {displayProfile.lastName}
-                    </Heading>
-                    <HStack spacing={2}>
-                      <Icon as={FaEnvelope} color="gray.500" />
-                      <Text color="gray.600">{displayProfile.email}</Text>
-                    </HStack>
-                    {displayProfile.username && (
-                      <HStack spacing={2}>
-                        <Icon as={FaUser} color="gray.500" />
-                        <Text color="gray.600">@{displayProfile.username}</Text>
-                      </HStack>
-                    )}
-                  </VStack>
-                  <Button
-                    leftIcon={<FaEdit />}
-                    colorScheme="purple"
-                    onClick={() => navigate('/profile/edit')}
-                  >
-                    Edit Profile
-                  </Button>
-                </HStack>
+            </Box>
 
-                <HStack spacing={4} mt={2}>
-                  {displayProfile.isStudent && (
-                    <Badge colorScheme="blue" px={3} py={1}>Student</Badge>
-                  )}
-                  {displayProfile.isTeacher && (
-                    <Badge colorScheme="green" px={3} py={1}>Teacher</Badge>
-                  )}
-                  {displayProfile.isAdmin && (
-                    <Badge colorScheme="red" px={3} py={1}>Admin</Badge>
-                  )}
-                  {displayProfile.isCompetitor && (
-                    <Badge colorScheme="orange" px={3} py={1}>Competitor</Badge>
-                  )}
+            {/* Profile Info */}
+            <VStack align={{ base: 'center', md: 'flex-start' }} spacing={3} w="full">
+              <VStack align={{ base: 'center', md: 'flex-start' }} spacing={1} w="full">
+                <Heading as="h1" size="2xl" fontWeight="black">
+                  {displayProfile.firstName} {displayProfile.lastName}
+                </Heading>
+                <HStack spacing={2} fontSize="sm" opacity={0.9}>
+                  <Icon as={FaUser} />
+                  <Text>@{displayProfile.username}</Text>
                 </HStack>
+              </VStack>
 
-                <HStack spacing={2} color="gray.500" fontSize="sm">
+              <HStack spacing={3} wrap="wrap">
+                {displayProfile.isStudent && (
+                  <Badge colorScheme="cyan" px={3} py={1} borderRadius="full">Student</Badge>
+                )}
+                {displayProfile.isTeacher && (
+                  <Badge colorScheme="green" px={3} py={1} borderRadius="full">Teacher</Badge>
+                )}
+                {displayProfile.isAdmin && (
+                  <Badge colorScheme="red" px={3} py={1} borderRadius="full">Admin</Badge>
+                )}
+                {displayProfile.isCompetitor && (
+                  <Badge colorScheme="orange" px={3} py={1} borderRadius="full">Competitor</Badge>
+                )}
+              </HStack>
+
+              <HStack spacing={6} pt={2}>
+                <HStack spacing={2} fontSize="sm" opacity={0.9}>
+                  <Icon as={FaEnvelope} />
+                  <Text>{displayProfile.email}</Text>
+                </HStack>
+                <HStack spacing={2} fontSize="sm" opacity={0.9}>
                   <Icon as={FaCalendar} />
                   <Text>
                     Joined {new Date(displayProfile.createdAt || Date.now()).toLocaleDateString('en-US', {
-                      month: 'long',
+                      month: 'short',
                       year: 'numeric'
                     })}
                   </Text>
                 </HStack>
+              </HStack>
+
+              {/* Action Buttons */}
+              <HStack spacing={3} pt={2}>
+                <Button
+                  size="sm"
+                  bg="white"
+                  color="purple.600"
+                  leftIcon={<FaEdit />}
+                  onClick={() => navigate('/profile/edit')}
+                  _hover={{ bg: 'gray.100' }}
+                  fontWeight="600"
+                >
+                  Edit Profile
+                </Button>
+                {!displayProfile.isTeacher && !displayProfile.isAdmin && (
+                  <TeacherApplicationModal userId={displayProfile.id} />
+                )}
+              </HStack>
+            </VStack>
+          </Grid>
+        </Box>
+
+        {/* Statistics Grid */}
+        <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={6} mb={8}>
+          {/* Enrolled Courses */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} overflow="hidden" _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }} transition="all 0.3s">
+            <Box bgGradient="linear(135deg, blue.400, blue.600)" h="3px" />
+            <CardBody p={6}>
+              <HStack justify="space-between" mb={3}>
+                <Icon as={FaBook} fontSize="2xl" color="blue.500" />
+                <Text fontSize="xs" color="gray.500" fontWeight="600">ENROLLED</Text>
+              </HStack>
+              <Heading size="lg" mb={1}>{stats?.enrolledCourses || 0}</Heading>
+              <Text fontSize="sm" color="gray.600">Active courses</Text>
+            </CardBody>
+          </Card>
+
+          {/* Completed Courses */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} overflow="hidden" _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }} transition="all 0.3s">
+            <Box bgGradient="linear(135deg, green.400, green.600)" h="3px" />
+            <CardBody p={6}>
+              <HStack justify="space-between" mb={3}>
+                <Icon as={FaTrophy} fontSize="2xl" color="green.500" />
+                <Text fontSize="xs" color="gray.500" fontWeight="600">COMPLETED</Text>
+              </HStack>
+              <Heading size="lg" mb={1}>{stats?.completedCourses || 0}</Heading>
+              <Text fontSize="sm" color="gray.600">Finished courses</Text>
+            </CardBody>
+          </Card>
+
+          {/* Certificates */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} overflow="hidden" _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }} transition="all 0.3s">
+            <Box bgGradient="linear(135deg, purple.400, purple.600)" h="3px" />
+            <CardBody p={6}>
+              <HStack justify="space-between" mb={3}>
+                <Icon as={FaCertificate} fontSize="2xl" color="purple.500" />
+                <Text fontSize="xs" color="gray.500" fontWeight="600">CERTIFICATES</Text>
+              </HStack>
+              <Heading size="lg" mb={1}>{stats?.certificates || 0}</Heading>
+              <Text fontSize="sm" color="gray.600">Earned credentials</Text>
+            </CardBody>
+          </Card>
+
+          {/* Points & Streak */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} overflow="hidden" _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }} transition="all 0.3s">
+            <Box bgGradient="linear(135deg, orange.400, red.500)" h="3px" />
+            <CardBody p={6}>
+              <HStack justify="space-between" mb={3}>
+                <Icon as={FaFire} fontSize="2xl" color="orange.500" />
+                <Text fontSize="xs" color="gray.500" fontWeight="600">STREAK</Text>
+              </HStack>
+              <Heading size="lg" mb={1}>{stats?.streakDays || 0} days</Heading>
+              <Text fontSize="sm" color="gray.600">Keep it up!</Text>
+            </CardBody>
+          </Card>
+        </Grid>
+
+        {/* Progress & Rank Section */}
+        <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6} mb={8}>
+          {/* Completion Progress */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor}>
+            <CardBody p={6}>
+              <HStack justify="space-between" mb={4}>
+                <Heading size="md">Learning Progress</Heading>
+                <Icon as={FaChartLine} color="purple.500" />
+              </HStack>
+              <VStack spacing={6} align="stretch">
+                <VStack spacing={2} align="stretch">
+                  <HStack justify="space-between">
+                    <Text fontWeight="600">Course Completion</Text>
+                    <Text fontSize="sm" color="purple.600" fontWeight="bold">{stats?.completionRate || 0}%</Text>
+                  </HStack>
+                  <Progress value={stats?.completionRate || 0} colorScheme="purple" borderRadius="full" h="8px" />
+                </VStack>
+                <Divider />
+                <HStack justify="space-between">
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" color="gray.600">Total Points Earned</Text>
+                    <Heading size="md" color="yellow.500">{displayProfile.totalPoints || 0}</Heading>
+                  </VStack>
+                  <Icon as={FaStar} fontSize="3xl" color="yellow.500" />
+                </HStack>
               </VStack>
-            </HStack>
-          </CardBody>
-        </Card>
-
-        {/* Statistics */}
-        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)', lg: 'repeat(6, 1fr)' }} gap={4} mb={6}>
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaBook} fontSize="3xl" color="blue.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{stats?.enrolledCourses || 0}</Text>
-              <Text fontSize="sm" color="gray.600">Enrolled</Text>
             </CardBody>
           </Card>
 
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaTrophy} fontSize="3xl" color="green.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{stats?.completedCourses || 0}</Text>
-              <Text fontSize="sm" color="gray.600">Completed</Text>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaCertificate} fontSize="3xl" color="purple.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{stats?.certificates || 0}</Text>
-              <Text fontSize="sm" color="gray.600">Certificates</Text>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaStar} fontSize="3xl" color="yellow.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{displayProfile.totalPoints || 0}</Text>
-              <Text fontSize="sm" color="gray.600">Points</Text>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaTrophy} fontSize="3xl" color="orange.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{displayProfile.currentRank || 'Unranked'}</Text>
-              <Text fontSize="sm" color="gray.600">Rank</Text>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="md">
-            <CardBody textAlign="center">
-              <Icon as={FaFire} fontSize="3xl" color="red.500" mb={2} />
-              <Text fontSize="2xl" fontWeight="bold">{stats?.streakDays || 0}</Text>
-              <Text fontSize="sm" color="gray.600">Day Streak</Text>
+          {/* Current Rank */}
+          <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor}>
+            <CardBody p={6}>
+              <VStack spacing={6} justify="center" h="full">
+                <Icon as={FaTrophy} fontSize="4xl" color="orange.500" />
+                <VStack spacing={1}>
+                  <Text fontSize="sm" color="gray.600" fontWeight="600">CURRENT RANK</Text>
+                  <Heading size="lg" color="orange.500">{displayProfile.currentRank || 'Unranked'}</Heading>
+                </VStack>
+                <Text fontSize="xs" color="gray.500" textAlign="center">
+                  Earn more points to level up your rank
+                </Text>
+              </VStack>
             </CardBody>
           </Card>
         </Grid>
 
         {/* Quick Actions */}
-        <Card bg={cardBg} shadow="lg">
+        <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor}>
           <CardBody p={6}>
-            <Heading size="md" mb={4}>Quick Actions</Heading>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={4}>
+            <Heading size="md" mb={6}>Quick Actions</Heading>
+            <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={4}>
               <Button
+                flexDir="column"
+                h="auto"
+                py={6}
                 variant="outline"
                 colorScheme="purple"
-                leftIcon={<FaBook />}
                 onClick={() => navigate('/profile/enrollments')}
-                w="full"
+                _hover={{ bg: 'purple.50', borderColor: 'purple.600' }}
+                transition="all 0.2s"
               >
-                My Courses
+                <Icon as={FaBook} fontSize="2xl" mb={2} />
+                <Text fontWeight="600">My Courses</Text>
+                <Text fontSize="xs" color="gray.500" mt={1}>View & continue</Text>
               </Button>
+
               <Button
+                flexDir="column"
+                h="auto"
+                py={6}
                 variant="outline"
                 colorScheme="green"
-                leftIcon={<FaCertificate />}
                 onClick={() => navigate('/profile/certificates')}
-                w="full"
+                _hover={{ bg: 'green.50', borderColor: 'green.600' }}
+                transition="all 0.2s"
               >
-                Certificates
+                <Icon as={FaCertificate} fontSize="2xl" mb={2} />
+                <Text fontWeight="600">Certificates</Text>
+                <Text fontSize="xs" color="gray.500" mt={1}>View earned</Text>
               </Button>
+
               <Button
+                flexDir="column"
+                h="auto"
+                py={6}
                 variant="outline"
                 colorScheme="blue"
-                leftIcon={<FaEdit />}
                 onClick={() => navigate('/profile/assignments')}
-                w="full"
+                _hover={{ bg: 'blue.50', borderColor: 'blue.600' }}
+                transition="all 0.2s"
               >
-                Assignments
+                <Icon as={FaGraduationCap} fontSize="2xl" mb={2} />
+                <Text fontWeight="600">Assignments</Text>
+                <Text fontSize="xs" color="gray.500" mt={1}>Submit & review</Text>
               </Button>
+
               <Button
-                variant="outline"
-                colorScheme="orange"
-                leftIcon={<FaTrophy />}
+                flexDir="column"
+                h="auto"
+                py={6}
+                bg="linear(135deg, purple.600, blue.600)"
+                color="white"
                 onClick={() => navigate('/dashboard')}
-                w="full"
+                _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                transition="all 0.2s"
               >
-                Dashboard
+                <Icon as={FaChartLine} fontSize="2xl" mb={2} />
+                <Text fontWeight="600">Dashboard</Text>
+                <Text fontSize="xs" opacity={0.9} mt={1}>View analytics</Text>
               </Button>
             </Grid>
           </CardBody>

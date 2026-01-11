@@ -102,7 +102,7 @@ const Register = () => {
         duration: 3,
         isClosable: true,
       });
-      navigate('/login');
+      navigate('/login', { replace: false });
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
       setError(errorMessage);

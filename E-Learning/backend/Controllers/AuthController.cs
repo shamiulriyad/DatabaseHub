@@ -47,7 +47,8 @@ namespace backend.Controllers
                     lastName = result.Data.User.LastName,
                     isStudent = result.Data.User.IsStudent,
                     isTeacher = result.Data.User.IsTeacher,
-                    isCompetitor = result.Data.User.IsCompetitor
+                    isCompetitor = result.Data.User.IsCompetitor,
+                    isAdmin = result.Data.User.IsAdmin
                 }
             });
         }
@@ -80,6 +81,7 @@ namespace backend.Controllers
                     isStudent = result.Data.User.IsStudent,
                     isTeacher = result.Data.User.IsTeacher,
                     isCompetitor = result.Data.User.IsCompetitor,
+                    isAdmin = result.Data.User.IsAdmin,
                     totalPoints = result.Data.User.TotalPoints,
                     currentRank = result.Data.User.CurrentRank
                 }

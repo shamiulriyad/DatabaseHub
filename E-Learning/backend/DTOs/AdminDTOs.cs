@@ -9,9 +9,17 @@ namespace backend.DTOs
         public int TotalUsers { get; set; }
         public int TotalStudents { get; set; }
         public int TotalTeachers { get; set; }
+        public int TotalCourses { get; set; }
+        public int PendingTeachers { get; set; }
+        public int ActiveCourses { get; set; }
+        public decimal TotalRevenue { get; set; }
+        public int ActiveUsers { get; set; }
+        public int NewUsersThisMonth { get; set; }
+        public double CourseCompletionRate { get; set; }
+        
+        // Legacy fields (optional)
         public int TotalUniversities { get; set; }
         public int TotalDepartments { get; set; }
-        public int TotalCourses { get; set; }
         public int TotalEnrollments { get; set; }
         public int TotalPosts { get; set; }
         public int TotalComments { get; set; }
@@ -22,7 +30,6 @@ namespace backend.DTOs
         public int NewCoursesToday { get; set; }
         public int PendingCourses { get; set; }
         public int PendingWithdrawals { get; set; }
-        public decimal TotalRevenue { get; set; }
         public decimal TodayRevenue { get; set; }
         public decimal PlatformBalance { get; set; }
     }

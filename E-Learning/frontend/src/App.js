@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -35,6 +36,11 @@ import ManageCourses from './pages/Teacher/ManageCourses';
 import StudentSubmissions from './pages/Teacher/StudentSubmissions';
 import TeacherReviews from './pages/Teacher/TeacherReviews';
 
+// Admin Pages
+import AdminPanel from './pages/Admin/AdminPanel';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import ManageTeachers from './pages/Admin/ManageTeachers';
+
 import NotFound from './pages/NotFound/NotFound';
 
 import './App.css';
@@ -49,6 +55,78 @@ const queryClient = new QueryClient({
   },
 });
 
+// Home route wrapper - redirects authenticated users to dashboard
+function HomeRoute() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  React.useEffect(() => {
+    if (user) {
+      // Use replace: true for auth redirects (these should replace the history entry)
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
+  return <LandingPage />;
+}
+
+// Component that conditionally renders sidebar based on route
+function AppLayout() {
+  const location = useLocation();
+  
+  // Routes where sidebar should NOT be shown (public pages)
+  const publicRoutes = ['/', '/home', '/about', '/login', '/register', '/forgot-password', '/reset-password', '/courses'];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+
+  return (
+    <div className="app">
+      <Navbar />
+      <div className="app-container">
+        {!isPublicRoute && <Sidebar />}
+        <main className="main-content">
+          <Routes>
+            {/* ===== PUBLIC ROUTES ===== */}
+            <Route path="/" element={<HomeRoute />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/courses" element={<CourseList />} />
+            
+            {/* ===== PROTECTED ROUTES - User Dashboard & Profile ===== */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+            <Route path="/profile/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+            <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent={true}><MyEnrollments /></ProtectedRoute>} />
+            <Route path="/profile/certificates" element={<ProtectedRoute requiredStudent={true}><Certificates /></ProtectedRoute>} />
+            <Route path="/profile/assignments" element={<ProtectedRoute requiredStudent={true}><MyAssignments /></ProtectedRoute>} />
+
+            {/* ===== PROTECTED ROUTES - Teacher Dashboard ===== */}
+            <Route path="/teacher" element={<ProtectedRoute requiredTeacher={true}><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/teacher/create-course" element={<ProtectedRoute requiredTeacher={true}><CreateCourse /></ProtectedRoute>} />
+            <Route path="/teacher/manage-courses" element={<ProtectedRoute requiredTeacher={true}><ManageCourses /></ProtectedRoute>} />
+            <Route path="/teacher/course/:courseId/submissions" element={<ProtectedRoute requiredTeacher={true}><StudentSubmissions /></ProtectedRoute>} />
+            <Route path="/teacher/submissions" element={<ProtectedRoute requiredTeacher={true}><StudentSubmissions /></ProtectedRoute>} />
+            <Route path="/teacher/reviews" element={<ProtectedRoute requiredTeacher={true}><TeacherReviews /></ProtectedRoute>} />
+
+            {/* ===== PROTECTED ROUTES - Admin Dashboard ===== */}
+            <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin={true}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin={true}><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin={true}><ManageTeachers /></ProtectedRoute>} />
+
+            {/* 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
 function App() {
   return (
     <ChakraProvider>
@@ -56,83 +134,7 @@ function App() {
         <AuthProvider>
           <NotificationProvider>
             <Router>
-              <div className="app">
-                <Navbar />
-                <div className="app-container">
-                  <Sidebar />
-                  <main className="main-content">
-                    <Routes>
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/home" element={<Home />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/forgot-password" element={<ForgotPassword />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/courses" element={<CourseList />} />
-                      
-                      {/* Protected Routes */}
-                      <Route 
-                        path="/dashboard" 
-                        element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile" 
-                        element={<ProtectedRoute><UserProfile /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile/edit" 
-                        element={<ProtectedRoute><EditProfile /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile/change-password" 
-                        element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile/enrollments" 
-                        element={<ProtectedRoute><MyEnrollments /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile/certificates" 
-                        element={<ProtectedRoute><Certificates /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/profile/assignments" 
-                        element={<ProtectedRoute><MyAssignments /></ProtectedRoute>} 
-                      />
-
-                      {/* Teacher Routes */}
-                      <Route 
-                        path="/teacher" 
-                        element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/teacher/create-course" 
-                        element={<ProtectedRoute><CreateCourse /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/teacher/manage-courses" 
-                        element={<ProtectedRoute><ManageCourses /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/teacher/course/:courseId/submissions" 
-                        element={<ProtectedRoute><StudentSubmissions /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/teacher/submissions" 
-                        element={<ProtectedRoute><StudentSubmissions /></ProtectedRoute>} 
-                      />
-                      <Route 
-                        path="/teacher/reviews" 
-                        element={<ProtectedRoute><TeacherReviews /></ProtectedRoute>} 
-                      />
-
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                </div>
-                <Footer />
-              </div>
+              <AppLayout />
             </Router>
           </NotificationProvider>
         </AuthProvider>

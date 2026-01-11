@@ -95,7 +95,13 @@ const Navbar = () => {
           <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
             {user ? (
               <>
-                <NavLink to="/dashboard">Dashboard</NavLink>
+                {user.isAdmin ? (
+                  <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>
+                ) : user.isTeacher ? (
+                  <NavLink to="/teacher">Teacher Dashboard</NavLink>
+                ) : (
+                  <NavLink to="/dashboard">Dashboard</NavLink>
+                )}
                 <Menu>
                   <MenuButton
                     as={Button}
@@ -103,7 +109,7 @@ const Navbar = () => {
                     size="sm"
                     leftIcon={<Icon as={FaUserCircle} boxSize={5} />}
                   >
-                    {user.name || 'Profile'}
+                    {user.firstName || user.username || 'Profile'}
                   </MenuButton>
                   <MenuList>
                     <MenuItem as={RouterLink} to="/profile">
@@ -112,16 +118,22 @@ const Navbar = () => {
                     <MenuItem as={RouterLink} to="/profile/edit">
                       Edit Profile
                     </MenuItem>
-                    {user.isTeacher && (
+                    {user.isTeacher && !user.isAdmin && (
                       <MenuItem as={RouterLink} to="/teacher">
                         Teacher Dashboard
                       </MenuItem>
                     )}
-                    {user.role === 'Admin' && (
+                    {user.isAdmin && (
                       <>
                         <MenuDivider />
-                        <MenuItem as={RouterLink} to="/admin">
-                          Admin Panel
+                        <MenuItem as={RouterLink} to="/admin/dashboard">
+                          Admin Dashboard
+                        </MenuItem>
+                        <MenuItem as={RouterLink} to="/admin/teachers">
+                          Pending Teachers
+                        </MenuItem>
+                        <MenuItem as={RouterLink} to="/admin/manage-teachers">
+                          All Applications
                         </MenuItem>
                       </>
                     )}

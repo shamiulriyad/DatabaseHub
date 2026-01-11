@@ -68,7 +68,7 @@ const Login = () => {
         duration: 3,
         isClosable: true,
       });
-      navigate('/home');
+      navigate('/home', { replace: false });
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';
       

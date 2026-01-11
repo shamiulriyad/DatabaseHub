@@ -75,7 +75,7 @@ const ResetPassword = () => {
         duration: 5,
         isClosable: true,
       });
-      navigate('/login');
+      navigate('/login', { replace: false });
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to reset password';
       setError(errorMessage);

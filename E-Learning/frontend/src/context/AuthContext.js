@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { authService } from '../services/authService';
+import api from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -7,14 +8,74 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = authService.getUser();
-    if (storedUser) {
-      setUser(storedUser);
+  const initializeAuth = useCallback(() => {
+    try {
+      const storedUser = authService.getUser();
+      const token = authService.getToken();
+      
+      console.log('AuthContext: Initializing...', { 
+        hasToken: !!token, 
+        storedUser: storedUser ? {
+          id: storedUser.id,
+          username: storedUser.username,
+          email: storedUser.email,
+          isStudent: storedUser.isStudent,
+          isTeacher: storedUser.isTeacher,
+          isAdmin: storedUser.isAdmin
+        } : null
+      });
+      
+      // Only set user if both token and user exist
+      if (storedUser && token) {
+        // Verify token is still valid by calling profile endpoint
+        api.get('/auth/profile')
+          .then(response => {
+            console.log('AuthContext: Token verified successfully');
+            setUser(storedUser);
+          })
+          .catch(error => {
+            console.log('AuthContext: Token invalid or expired', error.response?.status);
+            // Token is invalid, clear auth
+            authService.logout();
+            setUser(null);
+          });
+      } else {
+        console.log('AuthContext: Missing token or user');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      setUser(null);
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    // Check if user is logged in on mount
+    initializeAuth();
+
+    // Listen for auth-logout event from API interceptor
+    const handleAuthLogout = () => {
+      setUser(null);
+      setLoading(false);
+    };
+
+    window.addEventListener('auth-logout', handleAuthLogout);
+
+    // Listen for storage changes (logout from another tab)
+    const handleStorageChange = (e) => {
+      if (e.key === 'user' || e.key === 'token') {
+        initializeAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('auth-logout', handleAuthLogout);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [initializeAuth]);
 
   const login = async (email, password) => {
     const response = await authService.login(email, password);
