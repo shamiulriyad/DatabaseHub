@@ -97,9 +97,25 @@ const AdminDashboard = () => {
       console.log('Stats response data:', statsRes.data);
 
       if (statsRes.data && statsRes.data.success && statsRes.data.stats) {
-        console.log('Setting stats with data:', statsRes.data.stats);
-        setStats(statsRes.data.stats);
-        console.log('Stats updated successfully:', statsRes.data.stats);
+        const apiStats = statsRes.data.stats || {};
+
+        // Normalize PascalCase -> camelCase so UI bindings work
+        const mappedStats = {
+          totalUsers: apiStats.totalUsers ?? apiStats.TotalUsers ?? 0,
+          totalTeachers: apiStats.totalTeachers ?? apiStats.TotalTeachers ?? 0,
+          totalStudents: apiStats.totalStudents ?? apiStats.TotalStudents ?? 0,
+          totalCourses: apiStats.totalCourses ?? apiStats.TotalCourses ?? 0,
+          pendingTeachers: apiStats.pendingTeachers ?? apiStats.PendingTeachers ?? 0,
+          activeCourses: apiStats.activeCourses ?? apiStats.ActiveCourses ?? 0,
+          totalRevenue: apiStats.totalRevenue ?? apiStats.TotalRevenue ?? 0,
+          activeUsers: apiStats.activeUsers ?? apiStats.ActiveUsers ?? 0,
+          newUsersThisMonth: apiStats.newUsersThisMonth ?? apiStats.NewUsersThisMonth ?? 0,
+          courseCompletionRate: apiStats.courseCompletionRate ?? apiStats.CourseCompletionRate ?? 0
+        };
+
+        console.log('Setting stats with data:', mappedStats);
+        setStats(mappedStats);
+        console.log('Stats updated successfully:', mappedStats);
       } else {
         console.error('Invalid stats response structure:', statsRes.data);
         toast({
