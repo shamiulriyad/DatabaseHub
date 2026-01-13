@@ -27,6 +27,7 @@ import {
   FaFileInvoiceDollar,
   FaChalkboardTeacher,
   FaStar,
+  FaShieldAlt,
 } from 'react-icons/fa';
 
 const Sidebar = () => {
@@ -178,6 +179,13 @@ const Sidebar = () => {
             <SidebarLink to="/profile/enrollments" icon={FaBook} label="My Courses" />
             <SidebarLink to="/profile/assignments" icon={FaClipboardList} label="Assignments" />
             <SidebarLink to="/quizzes" icon={FaQuestionCircle} label="Quizzes" />
+            <Divider my={2} />
+            <Box px={4} py={2}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
+                Community
+              </Text>
+            </Box>
+            <SidebarLink to="/clans" icon={FaShieldAlt} label="Clans" />
             <Divider my={2} />
             <SidebarLink to="/profile" icon={FaUser} label="My Profile" />
           </>

@@ -62,6 +62,9 @@ namespace backend.Models
         [MaxLength(20)]
         public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled
 
+        // Season Context
+        public int Season { get; set; } = 1; // Season number for tracking season-specific leaderboards and points
+
         // Stats
         public int ParticipantCount { get; set; } = 0;
         public int ViewCount { get; set; } = 0;

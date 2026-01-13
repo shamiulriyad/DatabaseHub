@@ -21,6 +21,12 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import CourseList from './pages/Courses/CourseList';
 
+// Clan Pages
+import ClanList from './pages/Clans/ClanList';
+import ClanDetail from './pages/Clans/ClanDetail';
+import ClanCreate from './pages/Clans/ClanCreate';
+import ClanMembers from './pages/Clans/ClanMembers';
+
 //user Profile Pages
 import UserProfile from './pages/Profile/UserProfile';
 import EditProfile from './pages/Profile/EditProfile';
@@ -94,6 +100,12 @@ function AppLayout() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/courses" element={<CourseList />} />
+
+            {/* ===== CLAN ROUTES ===== */}
+            <Route path="/clans" element={<ClanList />} />
+            <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
+            <Route path="/clans/:clanId" element={<ClanDetail />} />
+            <Route path="/clans/:clanId/members" element={<ClanMembers />} />
             
             {/* ===== PROTECTED ROUTES - User Dashboard & Profile ===== */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

@@ -135,21 +135,23 @@ namespace backend.Controllers
 
         [Authorize]
         [HttpPost("{clanId}/join")]
-        public async Task<IActionResult> JoinClan(int clanId)
+        public async Task<IActionResult> JoinClan(int clanId, [FromBody] JoinRequestDTO? request = null)
         {
             var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
             
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            var result = await _clanService.JoinClan(clanId, userId);
+            var result = await _clanService.JoinClan(clanId, userId, request);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
 
             return Ok(new {
                 success = true,
-                message = "Request to join clan sent successfully",
+                message = result.Data?.Status == "Pending" 
+                    ? "Join request sent. Awaiting clan leader approval." 
+                    : "Successfully joined clan!",
                 membership = result.Data
             });
         }
@@ -224,10 +226,19 @@ namespace backend.Controllers
         }
 
         [HttpGet("{clanId}/competitions")]
-        public async Task<IActionResult> GetClanCompetitions(int clanId)
+        public async Task<IActionResult> GetClanCompetitions(int clanId, [FromQuery] int? season = null)
         {
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Clan competitions not supported." });
+            var result = await _clanService.GetClanCompetitionsBySeason(clanId, season);
+            
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                competitions = result.Data,
+                season = season,
+                total = result.Data?.Count ?? 0
+            });
         }
 
         [HttpGet("{clanId}/posts")]
@@ -355,16 +366,49 @@ namespace backend.Controllers
 
         [HttpGet("search")]
         public async Task<IActionResult> SearchClans(
-            [FromQuery] string query,
+            [FromQuery] string? query,
             [FromQuery] string? clanType = null,
             [FromQuery] int? universityId = null,
+            [FromQuery] int? departmentId = null,
+            [FromQuery] int? minRanking = null,
+            [FromQuery] int? maxRanking = null,
+            [FromQuery] int? minMemberCount = null,
+            [FromQuery] int? maxMemberCount = null,
+            [FromQuery] bool? isPublic = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? sortOrder = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            if (string.IsNullOrWhiteSpace(query))
-                return BadRequest(new { success = false, message = "Search query is required" });
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Clan search not supported." });
+            var filter = new ClanSearchFilterDTO
+            {
+                Query = query,
+                ClanType = clanType,
+                UniversityId = universityId,
+                DepartmentId = departmentId,
+                MinRanking = minRanking,
+                MaxRanking = maxRanking,
+                MinMemberCount = minMemberCount,
+                MaxMemberCount = maxMemberCount,
+                IsPublic = isPublic,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await _clanService.SearchClans(filter);
+            
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                clans = result.Data,
+                page = page,
+                pageSize = pageSize,
+                total = result.Data?.Count ?? 0
+            });
         }
     }
 }

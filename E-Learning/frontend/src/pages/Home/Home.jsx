@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -45,17 +45,25 @@ import {
 } from 'react-icons/fa';
 
 const fetchPopularCourses = async () => {
-  const { data } = await axios.get('/api/courses/popular');
-  return Array.isArray(data?.courses) ? data.courses : [];
+  try {
+    const { data } = await api.get('/courses/popular');
+    return Array.isArray(data?.courses) ? data.courses : [];
+  } catch {
+    return [];
+  }
 };
 
 const fetchTrendingCourses = async () => {
-  const { data } = await axios.get('/api/courses/trending');
-  return Array.isArray(data?.courses) ? data.courses : [];
+  try {
+    const { data } = await api.get('/courses/trending');
+    return Array.isArray(data?.courses) ? data.courses : [];
+  } catch {
+    return [];
+  }
 };
 
 const fetchUniversities = async () => {
-  const { data } = await axios.get('/api/universities', { params: { page: 1, pageSize: 12 } });
+  const { data } = await api.get('/universities', { params: { page: 1, pageSize: 12 } });
   const d = data?.data;
   if (!d) return [];
   // Handle both paged {items: []} and direct [] responses

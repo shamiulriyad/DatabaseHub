@@ -219,4 +219,40 @@ namespace backend.DTOs
         public int CompetitionWins { get; set; }
         public decimal AverageMemberPoints { get; set; }
     }
+
+    // Clan Search Filters
+    public class ClanSearchFilterDTO
+    {
+        public string? Query { get; set; } // Search by name, description, tag
+        public string? ClanType { get; set; } // Academic, Competitive, Social, StudyGroup
+        public int? UniversityId { get; set; } // Filter by university
+        public int? DepartmentId { get; set; } // Filter by department
+        public int? MinRanking { get; set; } // Minimum rank
+        public int? MaxRanking { get; set; } // Maximum rank
+        public int? MinMemberCount { get; set; } // Minimum members
+        public int? MaxMemberCount { get; set; } // Maximum members
+        public bool? IsPublic { get; set; } // Public/Private clans
+        public string? SortBy { get; set; } // rank, members, points, recent
+        public string? SortOrder { get; set; } // asc, desc
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
+
+    // Clan Join Request/Response
+    public class JoinRequestDTO
+    {
+        public int ClanId { get; set; }
+        public string? Message { get; set; } // Optional message for join request
+    }
+
+    public class JoinResponseDTO
+    {
+        public int Id { get; set; }
+        public int ClanId { get; set; }
+        public int UserId { get; set; }
+        public string Status { get; set; } // Pending, Approved, Rejected
+        public DateTime RequestedAt { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public int? ApprovedByUserId { get; set; }
+    }
 }
