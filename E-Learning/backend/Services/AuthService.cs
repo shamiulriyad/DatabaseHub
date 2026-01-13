@@ -149,6 +149,26 @@ namespace backend.Services
                 if (user == null)
                     return ServiceResult<UserDTO>.FailureResult("User not found");
 
+                // Get user's current clan membership
+                var clanMembership = await _context.ClanMembers
+                    .Include(cm => cm.Clan)
+                    .FirstOrDefaultAsync(cm => cm.UserId == userId);
+
+                UserClanDTO? currentClan = null;
+                if (clanMembership != null)
+                {
+                    currentClan = new UserClanDTO
+                    {
+                        ClanId = clanMembership.ClanId,
+                        ClanName = clanMembership.Clan.Name,
+                        ClanTag = clanMembership.Clan.Tag,
+                        ClanLogoUrl = clanMembership.Clan.LogoUrl,
+                        Role = clanMembership.Role,
+                        ContributionPoints = clanMembership.ContributionPoints,
+                        JoinedAt = clanMembership.JoinedAt
+                    };
+                }
+
                 var userDto = new UserDTO
                 {
                     Id = user.Id,
@@ -162,7 +182,8 @@ namespace backend.Services
                     IsCompetitor = user.IsCompetitor,
                     TotalPoints = user.TotalPoints,
                     CurrentRank = user.CurrentRank,
-                    CreatedAt = user.CreatedAt
+                    CreatedAt = user.CreatedAt,
+                    CurrentClan = currentClan
                 };
 
                 return ServiceResult<UserDTO>.SuccessResult(userDto);

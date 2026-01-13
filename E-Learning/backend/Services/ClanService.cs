@@ -2,6 +2,7 @@ using backend.Data;
 using backend.DTOs;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace backend.Services
 {
@@ -31,6 +32,7 @@ namespace backend.Services
                     UniversityId = dto.UniversityId,
                     DepartmentId = dto.DepartmentId,
                     CourseId = dto.CourseId,
+                    FocusSubjects = dto.FocusSubjects != null ? JsonSerializer.Serialize(dto.FocusSubjects) : null,
                     IsPublic = dto.IsPublic,
                     RequireApproval = dto.RequireApproval,
                     MaxMembers = dto.MaxMembers,
@@ -42,7 +44,25 @@ namespace backend.Services
                 _context.Clans.Add(clan);
                 await _context.SaveChangesAsync();
 
-                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan));
+               
+                var leaderMember = new Models.ClanMember
+                {
+                    ClanId = clan.Id,
+                    UserId = userId,
+                    Role = "Leader",
+                    JoinedAt = DateTime.UtcNow,
+                    ContributionPoints = 0,
+                    WeeklyPoints = 0,
+                    MonthlyPoints = 0,
+                    LastActive = DateTime.UtcNow
+                };
+
+                _context.ClanMembers.Add(leaderMember);
+                await _context.SaveChangesAsync();
+
+                // Reload with leader navigation for mapping
+                await _context.Entry(clan).Reference(c => c.Leader).LoadAsync();
+                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan, leaderMember));
             }
             catch (Exception ex)
             {
@@ -50,15 +70,34 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<ClanDTO>> GetClanById(int clanId)
+        public async Task<ServiceResult<ClanDTO>> GetClanById(int clanId, int? currentUserId = null)
         {
             try
             {
-                var clan = await _context.Clans.FindAsync(clanId);
+                var clan = await _context.Clans
+                    .Include(c => c.Leader)
+                    .Include(c => c.University)
+                    .Include(c => c.Department)
+                    .FirstOrDefaultAsync(c => c.Id == clanId);
+
                 if (clan == null)
                     return ServiceResult<ClanDTO>.FailureResult("Clan not found");
 
-                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan));
+                ClanMember? membership = null;
+                bool hasPendingRequest = false;
+                if (currentUserId.HasValue)
+                {
+                    membership = await _context.ClanMembers
+                        .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == currentUserId.Value);
+
+                    if (membership == null)
+                    {
+                        hasPendingRequest = await _context.ClanJoinRequests
+                            .AnyAsync(r => r.ClanId == clanId && r.UserId == currentUserId.Value && r.Status == "Pending");
+                    }
+                }
+
+                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan, membership, hasPendingRequest));
             }
             catch (Exception ex)
             {
@@ -66,17 +105,27 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<List<ClanDTO>>> GetAllClans(int page, int pageSize)
+        public async Task<ServiceResult<List<ClanDTO>>> GetAllClans(int page, int pageSize, int? currentUserId = null)
         {
             try
             {
                 var clans = await _context.Clans
+                    .Include(c => c.Leader)
+                    .Include(c => c.University)
+                    .Include(c => c.Department)
                     .OrderByDescending(c => c.TotalPoints)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                var clanDTOs = clans.Select(c => MapToClanDTO(c)).ToList();
+                var clanIds = clans.Select(c => c.Id).ToList();
+                var memberships = currentUserId.HasValue
+                    ? await _context.ClanMembers
+                        .Where(m => m.UserId == currentUserId.Value && clanIds.Contains(m.ClanId))
+                        .ToListAsync()
+                    : new List<Models.ClanMember>();
+
+                var clanDTOs = clans.Select(c => MapToClanDTO(c, memberships.FirstOrDefault(m => m.ClanId == c.Id))).ToList();
                 return ServiceResult<List<ClanDTO>>.SuccessResult(clanDTOs);
             }
             catch (Exception ex)
@@ -95,11 +144,15 @@ namespace backend.Services
         /// - Clan type
         /// - Public/Private
         /// </summary>
-        public async Task<ServiceResult<List<ClanDTO>>> SearchClans(ClanSearchFilterDTO filter)
+        public async Task<ServiceResult<List<ClanDTO>>> SearchClans(ClanSearchFilterDTO filter, int? currentUserId = null)
         {
             try
             {
-                var query = _context.Clans.AsQueryable();
+                var query = _context.Clans
+                    .Include(c => c.Leader)
+                    .Include(c => c.University)
+                    .Include(c => c.Department)
+                    .AsQueryable();
 
                 // Text search (query parameter)
                 if (!string.IsNullOrWhiteSpace(filter.Query))
@@ -166,7 +219,14 @@ namespace backend.Services
                     .Take(filter.PageSize)
                     .ToListAsync();
 
-                var clanDTOs = clans.Select(c => MapToClanDTO(c)).ToList();
+                var clanIds = clans.Select(c => c.Id).ToList();
+                var memberships = currentUserId.HasValue
+                    ? await _context.ClanMembers
+                        .Where(m => m.UserId == currentUserId.Value && clanIds.Contains(m.ClanId))
+                        .ToListAsync()
+                    : new List<Models.ClanMember>();
+
+                var clanDTOs = clans.Select(c => MapToClanDTO(c, memberships.FirstOrDefault(m => m.ClanId == c.Id))).ToList();
                 return ServiceResult<List<ClanDTO>>.SuccessResult(clanDTOs);
             }
             catch (Exception ex)
@@ -175,15 +235,18 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<ClanDTO>> UpdateClan(int clanId, UpdateClanDTO dto)
+        public async Task<ServiceResult<ClanDTO>> UpdateClan(int clanId, UpdateClanDTO dto, int actorUserId)
         {
             try
             {
-                var clan = await _context.Clans.FindAsync(clanId);
+                var clan = await _context.Clans.Include(c => c.Leader).FirstOrDefaultAsync(c => c.Id == clanId);
                 if (clan == null)
                     return ServiceResult<ClanDTO>.FailureResult("Clan not found");
 
-                // Update fields if provided
+                var actorMembership = await _context.ClanMembers.FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
+                if (actorUserId != clan.LeaderId && (actorMembership == null || actorMembership.Role != "CoLeader"))
+                    return ServiceResult<ClanDTO>.FailureResult("Only clan leader or co-leader can update clan");
+
                 if (!string.IsNullOrWhiteSpace(dto.Name))
                     clan.Name = dto.Name;
                 if (!string.IsNullOrWhiteSpace(dto.Description))
@@ -204,11 +267,13 @@ namespace backend.Services
                     clan.MaxMembers = dto.MaxMembers.Value;
                 if (!string.IsNullOrWhiteSpace(dto.JoinCriteria))
                     clan.JoinCriteria = dto.JoinCriteria;
+                if (dto.FocusSubjects != null)
+                    clan.FocusSubjects = JsonSerializer.Serialize(dto.FocusSubjects);
 
                 clan.LastActivity = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan));
+                return ServiceResult<ClanDTO>.SuccessResult(MapToClanDTO(clan, actorMembership));
             }
             catch (Exception ex)
             {
@@ -216,13 +281,16 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<bool>> DeleteClan(int clanId)
+        public async Task<ServiceResult<bool>> DeleteClan(int clanId, int actorUserId)
         {
             try
             {
                 var clan = await _context.Clans.FindAsync(clanId);
                 if (clan == null)
                     return ServiceResult<bool>.FailureResult("Clan not found");
+
+                if (clan.LeaderId != actorUserId)
+                    return ServiceResult<bool>.FailureResult("Only clan leader can delete clan");
 
                 // Delete clan members first
                 var members = await _context.ClanMembers.Where(m => m.ClanId == clanId).ToListAsync();
@@ -240,7 +308,7 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<List<ClanMemberDTO>>> GetClanMembers(int clanId)
+        public async Task<ServiceResult<List<ClanMemberDTO>>> GetClanMembers(int clanId, int? currentUserId = null)
         {
             try
             {
@@ -249,6 +317,7 @@ namespace backend.Services
                     return ServiceResult<List<ClanMemberDTO>>.FailureResult("Clan not found");
 
                 var members = await _context.ClanMembers
+                    .Include(m => m.User)
                     .Where(m => m.ClanId == clanId)
                     .OrderBy(m => m.Role == "Leader" ? 0 : (m.Role == "CoLeader" ? 1 : 2))
                     .ThenByDescending(m => m.ContributionPoints)
@@ -267,7 +336,8 @@ namespace backend.Services
                     JoinedAt = m.JoinedAt,
                     LastActive = m.LastActive,
                     TotalPosts = m.TotalPosts,
-                    TotalComments = m.TotalComments
+                    TotalComments = m.TotalComments,
+                    IsCurrentUser = currentUserId.HasValue && currentUserId.Value == m.UserId
                 }).ToList();
 
                 return ServiceResult<List<ClanMemberDTO>>.SuccessResult(memberDTOs);
@@ -302,26 +372,47 @@ namespace backend.Services
                 if (clan.MemberCount >= clan.MaxMembers)
                     return ServiceResult<JoinResponseDTO>.FailureResult($"Clan is at maximum capacity ({clan.MaxMembers} members)");
 
+                // Check for existing pending request
+                var pendingRequest = await _context.ClanJoinRequests
+                    .FirstOrDefaultAsync(r => r.ClanId == clanId && r.UserId == userId && r.Status == "Pending");
+
+                if (pendingRequest != null)
+                {
+                    return ServiceResult<JoinResponseDTO>.FailureResult("You already have a pending join request for this clan");
+                }
+
+                // Private clans (!IsPublic) OR clans with RequireApproval should need approval
+                bool needsApproval = !clan.IsPublic || clan.RequireApproval;
+
                 // Create join response
                 var joinResponse = new JoinResponseDTO
                 {
                     ClanId = clanId,
                     UserId = userId,
                     RequestedAt = DateTime.UtcNow,
-                    Status = clan.RequireApproval ? "Pending" : "Approved"
+                    Status = needsApproval ? "Pending" : "Approved"
                 };
 
-                if (clan.RequireApproval)
+                if (needsApproval)
                 {
-                    // Create pending join request (to be approved by clan leader/admin)
-                    // For now, we return pending status
-                    // In full implementation, this would save to a JoinRequest table
-                    joinResponse.Id = 0; // Placeholder
+                    var newRequest = new Models.ClanJoinRequest
+                    {
+                        ClanId = clanId,
+                        UserId = userId,
+                        Message = request?.Message,
+                        Status = "Pending",
+                        RequestedAt = DateTime.UtcNow
+                    };
+
+                    _context.ClanJoinRequests.Add(newRequest);
+                    await _context.SaveChangesAsync();
+
+                    joinResponse.Id = newRequest.Id;
                     return ServiceResult<JoinResponseDTO>.SuccessResult(joinResponse);
                 }
                 else
                 {
-                    // Automatically add member to clan
+                    // Automatically add member to clan (only for public clans without approval requirement)
                     var newMember = new Models.ClanMember
                     {
                         UserId = userId,
@@ -390,16 +481,34 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<List<InvitationDTO>>> GetClanInvitations(int clanId)
+        public async Task<ServiceResult<List<ClanDTO>>> GetMyClans(int userId)
         {
             try
             {
-                var clan = await _context.Clans.FindAsync(clanId);
-                if (clan == null)
-                    return ServiceResult<List<InvitationDTO>>.FailureResult("Clan not found");
+                var memberships = await _context.ClanMembers
+                    .Include(m => m.Clan)
+                        .ThenInclude(c => c.Leader)
+                    .Include(m => m.Clan)
+                        .ThenInclude(c => c.University)
+                    .Include(m => m.Clan)
+                        .ThenInclude(c => c.Department)
+                    .Where(m => m.UserId == userId)
+                    .ToListAsync();
 
-                // Note: This assumes you have an Invitation table in the database
-                // If not, implement with a separate InvitationRequest model
+                var clans = memberships.Select(m => MapToClanDTO(m.Clan, m)).ToList();
+                return ServiceResult<List<ClanDTO>>.SuccessResult(clans);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanDTO>>.FailureResult($"Get my clans failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<InvitationDTO>>> GetClanInvitations(int userId)
+        {
+            try
+            {
+                // Note: Invitation table is not yet implemented; return empty set for the user
                 return ServiceResult<List<InvitationDTO>>.SuccessResult(new List<InvitationDTO>());
             }
             catch (Exception ex)
@@ -408,7 +517,67 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<bool>> InviteUser(int clanId, int userId, int invitedUserId)
+        public async Task<ServiceResult<bool>> UpdateMemberRole(int clanId, int memberId, string role, int actorUserId)
+        {
+            try
+            {
+                var clan = await _context.Clans.FindAsync(clanId);
+                if (clan == null)
+                    return ServiceResult<bool>.FailureResult("Clan not found");
+
+                var actor = await _context.ClanMembers.FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
+                if (actor == null || (actor.Role != "Leader" && actor.Role != "CoLeader"))
+                    return ServiceResult<bool>.FailureResult("Only leader or co-leader can update roles");
+
+                var member = await _context.ClanMembers.FirstOrDefaultAsync(m => m.Id == memberId && m.ClanId == clanId);
+                if (member == null)
+                    return ServiceResult<bool>.FailureResult("Member not found");
+
+                if (member.Role == "Leader")
+                    return ServiceResult<bool>.FailureResult("Leader role cannot be changed");
+
+                member.Role = role;
+                await _context.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Update member role failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> RemoveMember(int clanId, int memberId, int actorUserId)
+        {
+            try
+            {
+                var clan = await _context.Clans.FindAsync(clanId);
+                if (clan == null)
+                    return ServiceResult<bool>.FailureResult("Clan not found");
+
+                var actor = await _context.ClanMembers.FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
+                if (actor == null || (actor.Role != "Leader" && actor.Role != "CoLeader"))
+                    return ServiceResult<bool>.FailureResult("Only leader or co-leader can remove members");
+
+                var member = await _context.ClanMembers.FirstOrDefaultAsync(m => m.Id == memberId && m.ClanId == clanId);
+                if (member == null)
+                    return ServiceResult<bool>.FailureResult("Member not found");
+
+                if (member.Role == "Leader")
+                    return ServiceResult<bool>.FailureResult("Cannot remove clan leader");
+
+                _context.ClanMembers.Remove(member);
+                clan.MemberCount = Math.Max(0, clan.MemberCount - 1);
+                await _context.SaveChangesAsync();
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Remove member failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> InviteUser(int clanId, int actorUserId, int invitedUserId)
         {
             try
             {
@@ -418,7 +587,7 @@ namespace backend.Services
 
                 // Check if inviter is a leader or admin
                 var inviter = await _context.ClanMembers
-                    .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == userId);
+                    .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
 
                 if (inviter == null || (inviter.Role != "Leader" && inviter.Role != "CoLeader"))
                     return ServiceResult<bool>.FailureResult("Only leaders can invite users");
@@ -430,7 +599,20 @@ namespace backend.Services
                 if (existingMember != null)
                     return ServiceResult<bool>.FailureResult("User is already a member of this clan");
 
-                // Create invitation (implement with proper Invitation table later)
+                // For now, directly add member (acts as immediate acceptance)
+                var newMember = new Models.ClanMember
+                {
+                    ClanId = clanId,
+                    UserId = invitedUserId,
+                    Role = "Member",
+                    JoinedAt = DateTime.UtcNow,
+                    LastActive = DateTime.UtcNow
+                };
+
+                _context.ClanMembers.Add(newMember);
+                clan.MemberCount++;
+                await _context.SaveChangesAsync();
+
                 return ServiceResult<bool>.SuccessResult(true);
             }
             catch (Exception ex)
@@ -573,6 +755,237 @@ namespace backend.Services
             return await GetClanCompetitionsBySeason(clanId, null);
         }
 
+        public async Task<ServiceResult<List<ClanActivityDTO>>> GetClanActivities(int clanId, int page, int pageSize)
+        {
+            try
+            {
+                var clan = await _context.Clans.FindAsync(clanId);
+                if (clan == null)
+                    return ServiceResult<List<ClanActivityDTO>>.FailureResult("Clan not found");
+
+                // Use posts as simple activity feed for now
+                var activities = await _context.Posts
+                    .Where(p => p.ClanId == clanId)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(p => new ClanActivityDTO
+                    {
+                        Id = p.Id,
+                        ActivityType = "PostCreated",
+                        Description = p.Title,
+                        UserId = p.UserId,
+                        UserName = p.User != null ? $"{p.User.FirstName} {p.User.LastName}" : "Unknown",
+                        PostId = p.Id,
+                        PostTitle = p.Title,
+                        PointsEarned = 0,
+                        CreatedAt = p.CreatedAt
+                    })
+                    .ToListAsync();
+
+                return ServiceResult<List<ClanActivityDTO>>.SuccessResult(activities);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanActivityDTO>>.FailureResult($"Get activities failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<PostDTO>>> GetClanPosts(int clanId, int page, int pageSize)
+        {
+            try
+            {
+                var clan = await _context.Clans.FindAsync(clanId);
+                if (clan == null)
+                    return ServiceResult<List<PostDTO>>.FailureResult("Clan not found");
+
+                var posts = await _context.Posts
+                    .Include(p => p.User)
+                    .Include(p => p.Clan)
+                    .Where(p => p.ClanId == clanId)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var postDtos = posts.Select(MapToPostDTO).ToList();
+                return ServiceResult<List<PostDTO>>.SuccessResult(postDtos);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<PostDTO>>.FailureResult($"Get clan posts failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<ClanLeaderboardDTO>>> GetClanLeaderboard(string? timeframe, int? universityId, int? departmentId, int page, int pageSize)
+        {
+            try
+            {
+                var query = _context.Clans
+                    .Include(c => c.Leader)
+                    .Include(c => c.University)
+                    .Include(c => c.Department)
+                    .AsQueryable();
+
+                if (universityId.HasValue)
+                    query = query.Where(c => c.UniversityId == universityId.Value);
+                if (departmentId.HasValue)
+                    query = query.Where(c => c.DepartmentId == departmentId.Value);
+
+                query = timeframe?.ToLower() switch
+                {
+                    "weekly" => query.OrderByDescending(c => c.WeeklyPoints),
+                    "monthly" => query.OrderByDescending(c => c.MonthlyPoints),
+                    _ => query.OrderByDescending(c => c.TotalPoints)
+                };
+
+                var clans = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var leaderboard = clans.Select((c, index) => new ClanLeaderboardDTO
+                {
+                    Rank = (page - 1) * pageSize + index + 1,
+                    Clan = MapToClanDTO(c),
+                    TotalPoints = c.TotalPoints,
+                    WeeklyPoints = c.WeeklyPoints,
+                    MonthlyPoints = c.MonthlyPoints,
+                    MemberCount = c.MemberCount,
+                    CompetitionWins = c.CompetitionWins,
+                    AverageMemberPoints = c.MemberCount > 0 ? (decimal)c.TotalPoints / c.MemberCount : 0
+                }).ToList();
+
+                return ServiceResult<List<ClanLeaderboardDTO>>.SuccessResult(leaderboard);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanLeaderboardDTO>>.FailureResult($"Get leaderboard failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<ClanDTO>>> GetTopClans(int count)
+        {
+            try
+            {
+                var clans = await _context.Clans
+                    .Include(c => c.Leader)
+                    .Include(c => c.University)
+                    .Include(c => c.Department)
+                    .OrderByDescending(c => c.TotalPoints)
+                    .Take(count)
+                    .ToListAsync();
+
+                var result = clans.Select(c => MapToClanDTO(c)).ToList();
+                return ServiceResult<List<ClanDTO>>.SuccessResult(result);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanDTO>>.FailureResult($"Get top clans failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<ClanJoinRequestDTO>>> GetPendingJoinRequests(int clanId, int actorUserId)
+        {
+            try
+            {
+                var actor = await _context.ClanMembers.FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
+                if (actor == null || (actor.Role != "Leader" && actor.Role != "CoLeader"))
+                    return ServiceResult<List<ClanJoinRequestDTO>>.FailureResult("Only leaders can view pending join requests");
+
+                var pending = await _context.ClanJoinRequests
+                    .Include(r => r.User)
+                    .Where(r => r.ClanId == clanId && r.Status == "Pending")
+                    .OrderBy(r => r.RequestedAt)
+                    .ToListAsync();
+
+                var dto = pending.Select(r => new ClanJoinRequestDTO
+                {
+                    Id = r.Id,
+                    ClanId = r.ClanId,
+                    UserId = r.UserId,
+                    UserName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Unknown",
+                    ProfileImageUrl = r.User?.ProfileImageUrl,
+                    Status = r.Status,
+                    Message = r.Message,
+                    RequestedAt = r.RequestedAt,
+                    ReviewedAt = r.ReviewedAt,
+                    ReviewedByUserId = r.ReviewedByUserId
+                }).ToList();
+
+                return ServiceResult<List<ClanJoinRequestDTO>>.SuccessResult(dto);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanJoinRequestDTO>>.FailureResult($"Get pending requests failed: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> DecideJoinRequest(int clanId, int requestId, int actorUserId, bool approve)
+        {
+            try
+            {
+                var clan = await _context.Clans.FindAsync(clanId);
+                if (clan == null)
+                    return ServiceResult<bool>.FailureResult("Clan not found");
+
+                var actor = await _context.ClanMembers.FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == actorUserId);
+                if (actor == null || (actor.Role != "Leader" && actor.Role != "CoLeader"))
+                    return ServiceResult<bool>.FailureResult("Only leaders can take action on join requests");
+
+                var request = await _context.ClanJoinRequests
+                    .FirstOrDefaultAsync(r => r.Id == requestId && r.ClanId == clanId);
+
+                if (request == null)
+                    return ServiceResult<bool>.FailureResult("Join request not found");
+
+                if (request.Status != "Pending")
+                    return ServiceResult<bool>.FailureResult("Join request has already been processed");
+
+                if (approve)
+                {
+                    // Ensure clan capacity
+                    if (clan.MemberCount >= clan.MaxMembers)
+                        return ServiceResult<bool>.FailureResult("Clan is at maximum capacity");
+
+                    // Avoid duplicates
+                    var existingMember = await _context.ClanMembers
+                        .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == request.UserId);
+
+                    if (existingMember == null)
+                    {
+                        var newMember = new Models.ClanMember
+                        {
+                            ClanId = clanId,
+                            UserId = request.UserId,
+                            Role = "Member",
+                            JoinedAt = DateTime.UtcNow,
+                            LastActive = DateTime.UtcNow
+                        };
+
+                        _context.ClanMembers.Add(newMember);
+                        clan.MemberCount++;
+                    }
+
+                    request.Status = "Approved";
+                }
+                else
+                {
+                    request.Status = "Rejected";
+                }
+
+                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedByUserId = actorUserId;
+
+                await _context.SaveChangesAsync();
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Failed to process join request: {ex.Message}");
+            }
+        }
+
         // Helper methods
         private IQueryable<Models.Clan> ApplySorting(IQueryable<Models.Clan> query, string? sortBy, string? sortOrder)
         {
@@ -600,9 +1013,26 @@ namespace backend.Services
             };
         }
 
-        private ClanDTO MapToClanDTO(Models.Clan clan)
+        private ClanDTO MapToClanDTO(Models.Clan clan, Models.ClanMember? currentMembership = null, bool hasPendingJoinRequest = false)
         {
-            // Placeholder mapping - implement based on your actual needs
+            var focusSubjects = new List<string>();
+            if (!string.IsNullOrWhiteSpace(clan.FocusSubjects))
+            {
+                try
+                {
+                    focusSubjects = JsonSerializer.Deserialize<List<string>>(clan.FocusSubjects) ?? new List<string>();
+                }
+                catch
+                {
+                    // fallback to comma split
+                    focusSubjects = clan.FocusSubjects.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                }
+            }
+
+            var leaderName = clan.Leader != null
+                ? $"{clan.Leader.FirstName} {clan.Leader.LastName}"
+                : "Unknown";
+
             return new ClanDTO
             {
                 Id = clan.Id,
@@ -610,16 +1040,76 @@ namespace backend.Services
                 Tag = clan.Tag,
                 Description = clan.Description,
                 LeaderId = clan.LeaderId,
+                LeaderName = leaderName,
+                ProfileImageUrl = clan.Leader?.ProfileImageUrl,
+                LogoUrl = clan.LogoUrl,
+                BannerUrl = clan.BannerUrl,
+                Motto = clan.Motto,
                 ClanType = clan.ClanType,
                 UniversityId = clan.UniversityId,
+                UniversityName = clan.University?.Name,
                 DepartmentId = clan.DepartmentId,
+                DepartmentName = clan.Department?.Name,
                 CourseId = clan.CourseId,
+                FocusSubjects = focusSubjects,
+                IsPublic = clan.IsPublic,
+                RequireApproval = clan.RequireApproval,
+                MaxMembers = clan.MaxMembers,
+                JoinCriteria = clan.JoinCriteria,
                 MemberCount = clan.MemberCount,
                 TotalPoints = clan.TotalPoints,
                 WeeklyPoints = clan.WeeklyPoints,
                 MonthlyPoints = clan.MonthlyPoints,
                 Rank = clan.Rank,
-                CreatedAt = clan.CreatedAt
+                TotalCompetitions = clan.TotalCompetitions,
+                CompetitionWins = clan.CompetitionWins,
+                TotalPosts = clan.TotalPosts,
+                IsMember = currentMembership != null,
+                MemberRole = currentMembership?.Role,
+                HasPendingJoinRequest = hasPendingJoinRequest,
+                CreatedAt = clan.CreatedAt,
+                LastActivity = clan.LastActivity
+            };
+        }
+
+        private PostDTO MapToPostDTO(Models.Post post)
+        {
+            return new PostDTO
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Content = post.Content,
+                UserId = post.UserId,
+                UserName = post.User != null ? $"{post.User.FirstName} {post.User.LastName}" : "Unknown",
+                ProfileImageUrl = post.User?.ProfileImageUrl,
+                UniversityId = post.UniversityId,
+                DepartmentId = post.DepartmentId,
+                CourseId = post.CourseId,
+                ClanId = post.ClanId,
+                ClanName = post.Clan?.Name,
+                PostType = post.PostType,
+                IsExamRelated = post.IsExamRelated,
+                ExamTags = string.IsNullOrWhiteSpace(post.ExamTags) ? new List<string>() : post.ExamTags.Split(',').ToList(),
+                Subject = post.Subject,
+                MediaUrl = post.MediaUrl,
+                MediaType = post.MediaType,
+                UpvoteCount = post.UpvoteCount,
+                DownvoteCount = post.DownvoteCount,
+                CommentCount = post.CommentCount,
+                ViewCount = post.ViewCount,
+                ShareCount = post.ShareCount,
+                IsPinned = post.IsPinned,
+                IsClosed = post.IsClosed,
+                IsReported = post.IsReported,
+                BestAnswerId = post.BestAnswerId,
+                HasTeacherAnswer = post.HasTeacherAnswer,
+                TeacherAnswerId = post.TeacherAnswerId,
+                HasUpvoted = false,
+                HasDownvoted = false,
+                Tags = new List<string>(),
+                CreatedAt = post.CreatedAt,
+                UpdatedAt = post.UpdatedAt,
+                LastActivity = post.LastActivity
             };
         }
 
@@ -641,6 +1131,17 @@ namespace backend.Services
                 ParticipantCount = competition.ParticipantCount,
                 CreatedAt = competition.CreatedAt
             };
+        }
+
+        // ===== HELPER METHODS =====
+
+        /// <summary>
+        /// Get user's clan membership to check role-based permissions
+        /// </summary>
+        public async Task<Models.ClanMember?> GetUserClanMembership(int clanId, int userId)
+        {
+            return await _context.ClanMembers
+                .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == userId);
         }
     }
 }

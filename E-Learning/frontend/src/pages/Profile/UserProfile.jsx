@@ -34,6 +34,8 @@ import {
   FaStar,
   FaGraduationCap,
   FaChartLine,
+  FaUsers,
+  FaShieldAlt,
 } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -300,6 +302,158 @@ const UserProfile = () => {
             </CardBody>
           </Card>
         </Grid>
+
+        {/* My Clan Section */}
+        <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} mb={8}>
+          <CardBody p={6}>
+            <HStack justify="space-between" mb={6}>
+              <Heading size="md">My Clan</Heading>
+              <Icon as={FaUsers} color="purple.500" fontSize="xl" />
+            </HStack>
+
+            {displayProfile.currentClan ? (
+              <Grid templateColumns={{ base: '1fr', md: '2fr 1fr' }} gap={6}>
+                {/* Clan Info */}
+                <VStack align="stretch" spacing={4}>
+                  <HStack spacing={4}>
+                    {displayProfile.currentClan.clanLogoUrl ? (
+                      <Avatar
+                        size="lg"
+                        src={displayProfile.currentClan.clanLogoUrl}
+                        name={displayProfile.currentClan.clanName}
+                      />
+                    ) : (
+                      <Box
+                        w="60px"
+                        h="60px"
+                        bg="purple.100"
+                        borderRadius="lg"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text fontWeight="black" fontSize="2xl" color="purple.600">
+                          {displayProfile.currentClan.clanTag}
+                        </Text>
+                      </Box>
+                    )}
+                    <VStack align="start" spacing={1}>
+                      <Heading size="md">{displayProfile.currentClan.clanName}</Heading>
+                      <HStack spacing={2}>
+                        <Badge colorScheme="purple" fontSize="xs" px={2} py={1}>
+                          {displayProfile.currentClan.clanTag}
+                        </Badge>
+                        <Badge
+                          colorScheme={
+                            displayProfile.currentClan.role === 'Leader'
+                              ? 'red'
+                              : displayProfile.currentClan.role === 'CoLeader'
+                              ? 'orange'
+                              : displayProfile.currentClan.role === 'Elder'
+                              ? 'blue'
+                              : 'green'
+                          }
+                          fontSize="xs"
+                          px={2}
+                          py={1}
+                          leftIcon={<Icon as={FaShieldAlt} />}
+                        >
+                          {displayProfile.currentClan.role}
+                        </Badge>
+                      </HStack>
+                    </VStack>
+                  </HStack>
+
+                  <Divider />
+
+                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" color="gray.500" fontWeight="600">
+                        CONTRIBUTION POINTS
+                      </Text>
+                      <HStack spacing={2}>
+                        <Icon as={FaTrophy} color="yellow.500" />
+                        <Text fontWeight="bold" fontSize="lg">
+                          {displayProfile.currentClan.contributionPoints || 0}
+                        </Text>
+                      </HStack>
+                    </VStack>
+
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" color="gray.500" fontWeight="600">
+                        MEMBER SINCE
+                      </Text>
+                      <HStack spacing={2}>
+                        <Icon as={FaCalendar} color="purple.500" />
+                        <Text fontWeight="bold" fontSize="sm">
+                          {new Date(displayProfile.currentClan.joinedAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                      </HStack>
+                    </VStack>
+                  </Grid>
+                </VStack>
+
+                {/* Clan Actions */}
+                <VStack spacing={3} justify="center">
+                  <Button
+                    w="full"
+                    colorScheme="purple"
+                    leftIcon={<FaUsers />}
+                    onClick={() => navigate(`/clans/${displayProfile.currentClan.clanId}`)}
+                  >
+                    View Clan
+                  </Button>
+                  <Button
+                    w="full"
+                    variant="outline"
+                    colorScheme="purple"
+                    leftIcon={<FaTrophy />}
+                    onClick={() => navigate('/competitions')}
+                  >
+                    Competitions
+                  </Button>
+                  <Text fontSize="xs" color="gray.500" textAlign="center" pt={2}>
+                    Compete with your clan and earn points together!
+                  </Text>
+                </VStack>
+              </Grid>
+            ) : (
+              <VStack spacing={4} py={8}>
+                <Box
+                  w="80px"
+                  h="80px"
+                  bg="purple.50"
+                  borderRadius="full"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Icon as={FaUsers} fontSize="3xl" color="purple.400" />
+                </Box>
+                <VStack spacing={2}>
+                  <Heading size="md" color="gray.700">
+                    You're not in a clan yet
+                  </Heading>
+                  <Text fontSize="sm" color="gray.500" textAlign="center" maxW="md">
+                    Join a clan to compete with others, earn points together, and climb the leaderboard!
+                  </Text>
+                </VStack>
+                <Button
+                  size="lg"
+                  colorScheme="purple"
+                  leftIcon={<FaUsers />}
+                  onClick={() => navigate('/clans')}
+                  mt={2}
+                >
+                  Browse Clans
+                </Button>
+              </VStack>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Quick Actions */}
         <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor}>

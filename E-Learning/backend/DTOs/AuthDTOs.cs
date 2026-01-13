@@ -115,6 +115,18 @@ namespace backend.DTOs
         public string ConfirmPassword { get; set; } = null!;
     }
 
+    // User Clan Info
+    public class UserClanDTO
+    {
+        public int ClanId { get; set; }
+        public string ClanName { get; set; } = null!;
+        public string ClanTag { get; set; } = null!;
+        public string? ClanLogoUrl { get; set; }
+        public string Role { get; set; } = "Member"; // Leader, CoLeader, Elder, Member
+        public int ContributionPoints { get; set; }
+        public DateTime JoinedAt { get; set; }
+    }
+
     // User Response
     public class UserDTO
     {
@@ -139,6 +151,9 @@ namespace backend.DTOs
         public decimal AverageGrade { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
+        
+        // Clan Info
+        public UserClanDTO? CurrentClan { get; set; }
     }
 
     // Auth Response

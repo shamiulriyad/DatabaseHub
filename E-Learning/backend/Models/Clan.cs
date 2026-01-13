@@ -65,6 +65,15 @@ namespace backend.Models
         [ForeignKey("LeaderId")]
         public virtual User Leader { get; set; } = null!;
 
+        [ForeignKey("UniversityId")]
+        public virtual University? University { get; set; }
+
+        [ForeignKey("DepartmentId")]
+        public virtual Department? Department { get; set; }
+
+        [ForeignKey("CourseId")]
+        public virtual Course? Course { get; set; }
+
         public virtual ICollection<ClanMember> Members { get; set; } = new List<ClanMember>();
         public virtual ICollection<Competition> Competitions { get; set; } = new List<Competition>();
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();

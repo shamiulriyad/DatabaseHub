@@ -78,6 +78,7 @@ namespace backend.DTOs
         public bool IsPublic { get; set; }
         public bool RequireApproval { get; set; }
         public int MaxMembers { get; set; }
+        public string? JoinCriteria { get; set; }
         public int MemberCount { get; set; }
         public int TotalPoints { get; set; }
         public int WeeklyPoints { get; set; }
@@ -254,5 +255,25 @@ namespace backend.DTOs
         public DateTime RequestedAt { get; set; }
         public DateTime? ApprovedAt { get; set; }
         public int? ApprovedByUserId { get; set; }
+    }
+
+    public class ClanJoinRequestDTO
+    {
+        public int Id { get; set; }
+        public int ClanId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public string Status { get; set; }
+        public string? Message { get; set; }
+        public DateTime RequestedAt { get; set; }
+        public DateTime? ReviewedAt { get; set; }
+        public int? ReviewedByUserId { get; set; }
+    }
+
+    public class JoinRequestDecisionDTO
+    {
+        [Required]
+        public string Action { get; set; } = "approve"; // approve | reject
     }
 }

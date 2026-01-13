@@ -17,12 +17,34 @@ namespace backend.Controllers
             _clanService = clanService;
         }
 
+        /// <summary>
+        /// Helper method to check if user has leadership permission in clan (Leader/CoLeader/Elder)
+        /// </summary>
+        private async Task<(bool hasPermission, string? errorMessage)> CheckClanLeadershipPermissionAsync(int clanId, int userId, bool requireLeaderOnly = false)
+        {
+            var userMembership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (userMembership == null)
+                return (false, "User is not a member of this clan");
+
+            if (requireLeaderOnly && userMembership.Role != "Leader")
+                return (false, "Only clan leader can perform this action");
+
+            if (!requireLeaderOnly && !new[] { "Leader", "CoLeader", "Elder" }.Contains(userMembership.Role))
+                return (false, "Only leadership can manage this clan");
+
+            return (true, null);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAllClans(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var result = await _clanService.GetAllClans(page, pageSize);
+            var currentUserId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst("userId")?.Value ?? "0")
+                : (int?)null;
+
+            var result = await _clanService.GetAllClans(page, pageSize, currentUserId);
             return Ok(new {
                 success = result.Success,
                 clans = result.Data,
@@ -35,7 +57,11 @@ namespace backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetClan(int id)
         {
-            var result = await _clanService.GetClanById(id);
+            var currentUserId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst("userId")?.Value ?? "0")
+                : (int?)null;
+
+            var result = await _clanService.GetClanById(id, currentUserId);
             
             if (!result.Success)
                 return NotFound(new { success = false, message = result.Message });
@@ -82,7 +108,12 @@ namespace backend.Controllers
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            var result = await _clanService.UpdateClan(id, clanDto);
+            // Check leadership permission
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(id, userId);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _clanService.UpdateClan(id, clanDto, userId);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
@@ -103,7 +134,12 @@ namespace backend.Controllers
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            var result = await _clanService.DeleteClan(id);
+            // Only clan leader can delete
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(id, userId, requireLeaderOnly: true);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _clanService.DeleteClan(id, userId);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
@@ -122,7 +158,11 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var result = await _clanService.GetClanMembers(clanId);
+            var currentUserId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst("userId")?.Value ?? "0")
+                : (int?)null;
+
+            var result = await _clanService.GetClanMembers(clanId, currentUserId);
             
             if (!result.Success)
                 return NotFound(new { success = false, message = result.Message });
@@ -177,14 +217,60 @@ namespace backend.Controllers
         }
 
         [Authorize]
+        [HttpGet("{clanId}/join-requests/pending")]
+        public async Task<IActionResult> GetPendingJoinRequests(int clanId)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null || (membership.Role != "Leader" && membership.Role != "CoLeader"))
+                return Forbid();
+
+            var result = await _clanService.GetPendingJoinRequests(clanId, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, requests = result.Data });
+        }
+
+        [Authorize]
+        [HttpPost("{clanId}/join-requests/{requestId}/decision")]
+        public async Task<IActionResult> DecideJoinRequest(int clanId, int requestId, [FromBody] JoinRequestDecisionDTO decision)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null || (membership.Role != "Leader" && membership.Role != "CoLeader"))
+                return Forbid();
+
+            var action = decision.Action?.ToLower();
+            if (action != "approve" && action != "reject")
+                return BadRequest(new { success = false, message = "Action must be 'approve' or 'reject'" });
+
+            var approve = action == "approve";
+            var result = await _clanService.DecideJoinRequest(clanId, requestId, userId, approve);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = approve ? "Join request approved" : "Join request rejected" });
+        }
+
+        [Authorize]
         [HttpGet("my-clans")]
         public async Task<IActionResult> GetMyClans()
         {
             var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
-            // Not implemented in current service; return empty list
-            return Ok(new { success = true, clans = new List<ClanDTO>() });
+            var result = await _clanService.GetMyClans(userId);
+            return Ok(new { success = true, clans = result.Data });
         }
 
         [Authorize]
@@ -198,8 +284,17 @@ namespace backend.Controllers
             
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Member role update not supported." });
+
+            // Check leadership permission
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, userId);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _clanService.UpdateMemberRole(clanId, memberId, roleDto.Role, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Member role updated successfully" });
         }
 
         [Authorize]
@@ -210,8 +305,17 @@ namespace backend.Controllers
             
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Remove member not supported." });
+
+            // Check leadership permission
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, userId);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _clanService.RemoveMember(clanId, memberId, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Member removed successfully" });
         }
 
         // CLAN ACTIVITIES
@@ -221,8 +325,12 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Clan activities not supported." });
+            var result = await _clanService.GetClanActivities(clanId, page, pageSize);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, activities = result.Data, page, pageSize });
         }
 
         [HttpGet("{clanId}/competitions")]
@@ -246,8 +354,12 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Clan posts not supported." });
+            var result = await _clanService.GetClanPosts(clanId, page, pageSize);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, posts = result.Data, page, pageSize, total = result.Data?.Count ?? 0 });
         }
 
         // CLAN STATS & RANKING
@@ -274,15 +386,23 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Clan leaderboard not supported." });
+            var result = await _clanService.GetClanLeaderboard(timeframe, universityId, departmentId, page, pageSize);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, leaderboard = result.Data, page, pageSize, total = result.Data?.Count ?? 0 });
         }
 
         [HttpGet("top-clans")]
         public async Task<IActionResult> GetTopClans()
         {
-            // Not implemented in current service
-            return StatusCode(501, new { success = false, message = "Top clans not supported." });
+            var result = await _clanService.GetTopClans(10);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, clans = result.Data });
         }
 
         // CLAN INVITATIONS
@@ -296,7 +416,11 @@ namespace backend.Controllers
             if (inviterId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            // Interface method InviteUser(clanId, userId, invitedUserId)
+           
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, inviterId);
+            if (!hasPermission)
+                return Forbid();
+
             var result = await _clanService.InviteUser(clanId, inviterId, userId);
             
             if (!result.Success)
@@ -304,7 +428,7 @@ namespace backend.Controllers
 
             return Ok(new {
                 success = true,
-                message = "User invited to clan",
+                message = "User invited to clan successfully",
                 invitation = result.Data
             });
         }
@@ -317,8 +441,8 @@ namespace backend.Controllers
             
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
-            // Not implemented in current service; return empty list
-            return Ok(new { success = true, invitations = new List<InvitationDTO>() });
+            var result = await _clanService.GetClanInvitations(userId);
+            return Ok(new { success = true, invitations = result.Data });
         }
 
         [Authorize]

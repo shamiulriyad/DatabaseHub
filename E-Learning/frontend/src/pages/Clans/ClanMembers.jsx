@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import {
   Box,
@@ -29,6 +29,7 @@ import {
   MenuList,
   MenuItem,
   IconButton,
+  useToast,
 } from '@chakra-ui/react';
 import {
   FaUsers,
@@ -48,7 +49,7 @@ const fetchClanMembers = async (clanId) => {
   return data?.members || [];
 };
 
-const MemberCard = ({ member, isLeader }) => {
+const MemberCard = ({ member, canManageMembers, onRoleChange, onRemove }) => {
   const cardBg = useColorModeValue('white', 'gray.700');
   const border = useColorModeValue('gray.200', 'gray.600');
 
@@ -117,7 +118,7 @@ const MemberCard = ({ member, isLeader }) => {
             </VStack>
           </HStack>
 
-          {isLeader && !member.isCurrentUser && (
+          {canManageMembers && !member.isCurrentUser && member.role !== 'Leader' && (
             <Menu>
               <MenuButton
                 as={IconButton}
@@ -126,9 +127,15 @@ const MemberCard = ({ member, isLeader }) => {
                 size="sm"
               />
               <MenuList>
-                <MenuItem>Promote to Elder</MenuItem>
-                <MenuItem>Promote to Co-Leader</MenuItem>
-                <MenuItem color="red.500">Remove Member</MenuItem>
+                <MenuItem onClick={() => onRoleChange(member, 'Elder')}>
+                  Promote to Elder
+                </MenuItem>
+                <MenuItem onClick={() => onRoleChange(member, 'CoLeader')}>
+                  Promote to Co-Leader
+                </MenuItem>
+                <MenuItem color="red.500" onClick={() => onRemove(member)}>
+                  Remove Member
+                </MenuItem>
               </MenuList>
             </Menu>
           )}
@@ -178,6 +185,8 @@ const MemberCard = ({ member, isLeader }) => {
 const ClanMembers = () => {
   const { clanId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const toast = useToast();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -189,6 +198,43 @@ const ClanMembers = () => {
   const { data: members, isLoading } = useQuery({
     queryKey: ['clanMembers', clanId],
     queryFn: () => fetchClanMembers(clanId),
+  });
+
+  const invalidateMembers = React.useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['clanMembers', clanId] });
+  }, [clanId, queryClient]);
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ memberId, role }) =>
+      api.put(`/clans/${clanId}/members/${memberId}/role`, { role }),
+    onSuccess: () => {
+      toast({ title: 'Member role updated', status: 'success', duration: 2500 });
+      invalidateMembers();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update role',
+        description: error.response?.data?.message || 'Something went wrong',
+        status: 'error',
+        duration: 4000,
+      });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (memberId) => api.delete(`/clans/${clanId}/members/${memberId}`),
+    onSuccess: () => {
+      toast({ title: 'Member removed', status: 'success', duration: 2500 });
+      invalidateMembers();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to remove member',
+        description: error.response?.data?.message || 'Something went wrong',
+        status: 'error',
+        duration: 4000,
+      });
+    },
   });
 
   // Filter members based on search and role
@@ -206,10 +252,20 @@ const ClanMembers = () => {
     return acc;
   }, {});
 
-  // Check if current user is leader
-  const isLeader = members?.some(
-    (m) => m.isCurrentUser && m.role === 'Leader'
+  // Check if current user can manage (leader or co-leader)
+  const canManageMembers = members?.some(
+    (m) => m.isCurrentUser && (m.role === 'Leader' || m.role === 'CoLeader')
   );
+
+  const handleRoleChange = (member, role) => {
+    if (member.role === 'Leader') return; // safeguard
+    updateRoleMutation.mutate({ memberId: member.id, role });
+  };
+
+  const handleRemoveMember = (member) => {
+    if (member.role === 'Leader') return; // leader cannot be removed here
+    removeMemberMutation.mutate(member.id);
+  };
 
   return (
     <Box bg={bgColor} minH="100vh" py={10}>
@@ -316,7 +372,9 @@ const ClanMembers = () => {
               <MemberCard
                 key={member.id}
                 member={member}
-                isLeader={isLeader}
+                canManageMembers={canManageMembers}
+                onRoleChange={handleRoleChange}
+                onRemove={handleRemoveMember}
               />
             ))}
           </SimpleGrid>

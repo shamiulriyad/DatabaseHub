@@ -40,6 +40,7 @@ namespace backend.Data
         // Clan System
         public DbSet<Clan> Clans => Set<Clan>();
         public DbSet<ClanMember> ClanMembers => Set<ClanMember>();
+        public DbSet<ClanJoinRequest> ClanJoinRequests => Set<ClanJoinRequest>();
 
         // Competition System
         public DbSet<Competition> Competitions => Set<Competition>();
@@ -217,6 +218,24 @@ namespace backend.Data
                     .WithMany()
                     .HasForeignKey(asub => asub.GradedBy)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Clan Join Requests
+            modelBuilder.Entity<ClanJoinRequest>(entity =>
+            {
+                entity.HasIndex(r => new { r.ClanId, r.UserId, r.Status });
+                entity.Property(r => r.Status).HasMaxLength(20).HasDefaultValue("Pending");
+                entity.Property(r => r.RequestedAt).HasDefaultValueSql("NOW()");
+
+                entity.HasOne(r => r.Clan)
+                    .WithMany()
+                    .HasForeignKey(r => r.ClanId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                    .WithMany()
+                    .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Post Configuration (Community)

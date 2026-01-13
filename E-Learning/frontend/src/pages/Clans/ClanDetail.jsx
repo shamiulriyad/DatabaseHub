@@ -1,6 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 import {
   Box,
@@ -67,6 +69,11 @@ const fetchClanStats = async (clanId) => {
 const fetchClanCompetitions = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}/competitions`);
   return data?.competitions || [];
+};
+
+const fetchPendingJoinRequests = async (clanId) => {
+  const { data } = await api.get(`/clans/${clanId}/join-requests/pending`);
+  return data?.requests || [];
 };
 
 const StatCard = ({ icon, label, value, color }) => {
@@ -193,9 +200,14 @@ const ClanDetail = () => {
   const { clanId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('white', 'gray.700');
+  const memberCardBg = useColorModeValue('gray.50', 'gray.700');
+  const [joinStatus, setJoinStatus] = React.useState('idle');
+  const [userRole, setUserRole] = React.useState(null); // 'Leader', 'CoLeader', 'Elder', 'Member'
 
   const { data: clan, isLoading: clanLoading } = useQuery({
     queryKey: ['clan', clanId],
@@ -220,22 +232,129 @@ const ClanDetail = () => {
     enabled: !!clanId,
   });
 
-  const handleJoinClan = async () => {
-    try {
-      await api.post(`/clans/${clanId}/join`);
-      toast({
-        title: 'Join request sent',
-        status: 'success',
-        duration: 3000,
-      });
-    } catch (error) {
+  // Determine user's role in clan
+  React.useEffect(() => {
+    if (clan?.isMember && members && user) {
+      const userMember = members.find(m => m.userId === user.id);
+      if (userMember) {
+        setUserRole(userMember.role);
+        setJoinStatus('member');
+      }
+    } else if (clan?.hasPendingJoinRequest) {
+      setJoinStatus('pending');
+    } else {
+      setJoinStatus('idle');
+      setUserRole(null);
+    }
+  }, [clan, members, user]);
+
+  const invalidateClanData = React.useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['clan', clanId] });
+    queryClient.invalidateQueries({ queryKey: ['clanMembers', clanId] });
+    queryClient.invalidateQueries({ queryKey: ['clanStats', clanId] });
+    queryClient.invalidateQueries({ queryKey: ['clanCompetitions', clanId] });
+    queryClient.invalidateQueries({ queryKey: ['clanPendingJoinRequests', clanId] });
+  }, [clanId, queryClient]);
+
+  const joinMutation = useMutation({
+    mutationFn: () => api.post(`/clans/${clanId}/join`),
+    onSuccess: ({ data }) => {
+      const status = data?.membership?.status;
+      if (status === 'Pending') {
+        setJoinStatus('pending');
+        toast({
+          title: 'Join request sent',
+          description: 'Waiting for clan leader approval',
+          status: 'info',
+          duration: 4000,
+        });
+      } else {
+        setJoinStatus('member');
+        toast({
+          title: 'Joined clan',
+          status: 'success',
+          duration: 3000,
+        });
+      }
+      invalidateClanData();
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to join clan',
         description: error.response?.data?.message || 'Something went wrong',
         status: 'error',
+        duration: 4000,
+      });
+    },
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: () => api.post(`/clans/${clanId}/leave`),
+    onSuccess: () => {
+      setJoinStatus('idle');
+      toast({
+        title: 'Left clan',
+        status: 'success',
         duration: 3000,
       });
-    }
+      invalidateClanData();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to leave clan',
+        description: error.response?.data?.message || 'Something went wrong',
+        status: 'error',
+        duration: 4000,
+      });
+    },
+  });
+
+  // Derived states
+  const isMember = joinStatus === 'member';
+  const isLeader = userRole === 'Leader';
+  const isLeaderOrCoLeader = userRole === 'Leader' || userRole === 'CoLeader';
+  const hasLeadership = ['Leader', 'CoLeader', 'Elder'].includes(userRole);
+  const atCapacity = clan && clan.memberCount >= clan.maxMembers;
+  const needsApproval = clan && (!clan.isPublic || clan.requireApproval);
+  const joinButtonLabel =
+    joinStatus === 'pending'
+      ? 'Join Request Pending'
+      : needsApproval
+      ? 'Request to Join'
+      : 'Join Clan';
+
+  const {
+    data: pendingRequests = [],
+    isLoading: pendingRequestsLoading,
+  } = useQuery({
+    queryKey: ['clanPendingJoinRequests', clanId],
+    queryFn: () => fetchPendingJoinRequests(clanId),
+    enabled: !!clanId && isLeaderOrCoLeader,
+  });
+
+  const decideJoinRequestMutation = useMutation({
+    mutationFn: ({ requestId, action }) =>
+      api.post(`/clans/${clanId}/join-requests/${requestId}/decision`, { action }),
+    onSuccess: (_, variables) => {
+      invalidateClanData();
+      toast({
+        title: variables.action === 'approve' ? 'Request approved' : 'Request rejected',
+        status: 'success',
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to process request',
+        description: error.response?.data?.message || 'Something went wrong',
+        status: 'error',
+        duration: 4000,
+      });
+    },
+  });
+
+  const handleJoinRequestDecision = (requestId, action) => {
+    decideJoinRequestMutation.mutate({ requestId, action });
   };
 
   if (clanLoading) {
@@ -372,6 +491,9 @@ const ClanDetail = () => {
                     <Badge colorScheme={clan.isPublic ? 'green' : 'orange'}>
                       {clan.isPublic ? 'Public' : 'Private'}
                     </Badge>
+                    {clan.requireApproval && (
+                      <Badge colorScheme="orange">Requires Approval</Badge>
+                    )}
                     {clan.universityName && (
                       <Badge variant="outline">{clan.universityName}</Badge>
                     )}
@@ -380,22 +502,27 @@ const ClanDetail = () => {
               </GridItem>
 
               <GridItem>
-                <VStack spacing={3}>
-                  {clan.isMember ? (
+                <VStack spacing={3} w="full">
+                  {isMember ? (
                     <>
-                      <Button
-                        colorScheme="purple"
-                        leftIcon={<FaCog />}
-                        w="full"
-                      >
-                        Manage
-                      </Button>
+                      {isLeaderOrCoLeader && (
+                        <Button
+                          colorScheme="purple"
+                          leftIcon={<FaCog />}
+                          w="full"
+                          onClick={() => navigate(`/clans/${clanId}/members`)}
+                        >
+                          Manage
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         colorScheme="red"
                         leftIcon={<FaSignOutAlt />}
                         w="full"
                         size="sm"
+                        onClick={() => leaveMutation.mutate()}
+                        isLoading={leaveMutation.isLoading}
                       >
                         Leave
                       </Button>
@@ -405,9 +532,11 @@ const ClanDetail = () => {
                       colorScheme="purple"
                       leftIcon={<FaUserPlus />}
                       w="full"
-                      onClick={handleJoinClan}
+                      onClick={() => joinMutation.mutate()}
+                      isLoading={joinMutation.isLoading}
+                      isDisabled={joinStatus === 'pending' || atCapacity}
                     >
-                      Join Clan
+                      {atCapacity ? 'Clan is Full' : joinButtonLabel}
                     </Button>
                   )}
                 </VStack>
@@ -457,6 +586,8 @@ const ClanDetail = () => {
             <Tab>Members ({members?.length || 0})</Tab>
             <Tab>Competitions ({competitions?.length || 0})</Tab>
             <Tab>Statistics</Tab>
+            {hasLeadership && <Tab icon={<FaCog />}>Management</Tab>}
+            {isLeader && <Tab icon={<FaCog />}>Settings</Tab>}
           </TabList>
 
           <TabPanels>
@@ -684,6 +815,301 @@ const ClanDetail = () => {
                 </Card>
               </SimpleGrid>
             </TabPanel>
+
+            {/* Management Tab (Leaders & CoLeaders) */}
+            {hasLeadership && (
+              <TabPanel>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  {isLeaderOrCoLeader && (
+                    <Card bg={cardBg}>
+                      <CardBody>
+                        <HStack justify="space-between" mb={4} align="center">
+                          <Heading size="sm">Pending Join Requests</Heading>
+                          <Badge colorScheme="yellow">
+                            {pendingRequests?.length || 0}
+                          </Badge>
+                        </HStack>
+
+                        {pendingRequestsLoading ? (
+                          <Stack spacing={3}>
+                            {[...Array(3)].map((_, i) => (
+                              <Skeleton key={i} height="64px" borderRadius="md" />
+                            ))}
+                          </Stack>
+                        ) : pendingRequests && pendingRequests.length > 0 ? (
+                          <Stack spacing={3}>
+                            {pendingRequests.map((req) => {
+                              const isProcessing =
+                                decideJoinRequestMutation.isLoading &&
+                                decideJoinRequestMutation.variables?.requestId === req.id;
+
+                              return (
+                                <HStack
+                                  key={req.id}
+                                  align="flex-start"
+                                  p={3}
+                                  borderRadius="lg"
+                                  bg={memberCardBg}
+                                  spacing={3}
+                                >
+                                  <Avatar
+                                    size="sm"
+                                    name={req.userName}
+                                    src={req.profileImageUrl}
+                                  />
+                                  <VStack align="start" spacing={1} flex={1}>
+                                    <Text fontSize="sm" fontWeight="bold">
+                                      {req.userName}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.600">
+                                      Requested {new Date(req.requestedAt).toLocaleString()}
+                                    </Text>
+                                    {req.message && (
+                                      <Text fontSize="xs" color="gray.700" noOfLines={2}>
+                                        "{req.message}"
+                                      </Text>
+                                    )}
+                                  </VStack>
+                                  <VStack spacing={2}>
+                                    <Button
+                                      size="xs"
+                                      colorScheme="green"
+                                      isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'approve'}
+                                      onClick={() => handleJoinRequestDecision(req.id, 'approve')}
+                                    >
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      colorScheme="red"
+                                      variant="outline"
+                                      isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'reject'}
+                                      onClick={() => handleJoinRequestDecision(req.id, 'reject')}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </VStack>
+                                </HStack>
+                              );
+                            })}
+                          </Stack>
+                        ) : (
+                          <Text color="gray.500">No pending requests</Text>
+                        )}
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  {/* Member Management */}
+                  <Card bg={cardBg}>
+                    <CardBody>
+                      <HStack justify="space-between" mb={4}>
+                        <Heading size="sm">Member Management</Heading>
+                        <Icon as={FaUsers} color="purple.500" />
+                      </HStack>
+                      <Stack spacing={3}>
+                        {members
+                          ?.filter((m) => m.role !== 'Leader')
+                          .slice(0, 5)
+                          .map((member) => (
+                            <HStack
+                              key={member.id}
+                              p={3}
+                              borderRadius="lg"
+                              bg={memberCardBg}
+                              justify="space-between"
+                            >
+                              <HStack spacing={2} flex={1}>
+                                <Avatar
+                                  size="sm"
+                                  name={member.userName}
+                                  src={member.profileImage}
+                                />
+                                <VStack align="start" spacing={0}>
+                                  <Text fontSize="sm" fontWeight="bold">
+                                    {member.userName}
+                                  </Text>
+                                  <Badge colorScheme="blue" fontSize="xs">
+                                    {member.role}
+                                  </Badge>
+                                </VStack>
+                              </HStack>
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                colorScheme="red"
+                                onClick={() => alert('Remove feature coming soon')}
+                              >
+                                Remove
+                              </Button>
+                            </HStack>
+                          ))}
+                      </Stack>
+                    </CardBody>
+                  </Card>
+
+                  {/* Recruitment */}
+                  <Card bg={cardBg}>
+                    <CardBody>
+                      <HStack justify="space-between" mb={4}>
+                        <Heading size="sm">Recruitment</Heading>
+                        <Icon as={FaUserPlus} color="green.500" />
+                      </HStack>
+                      <VStack spacing={4}>
+                        <Box>
+                          <Text fontSize="sm" color="gray.600" mb={2}>
+                            Clan Capacity
+                          </Text>
+                          <HStack justify="space-between" mb={2}>
+                            <Text fontSize="xs">
+                              {clan.memberCount}/{clan.maxMembers}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">
+                              {Math.round(
+                                (clan.memberCount / clan.maxMembers) * 100
+                              )}
+                              %
+                            </Text>
+                          </HStack>
+                          <Progress
+                            value={(clan.memberCount / clan.maxMembers) * 100}
+                            colorScheme="green"
+                            size="sm"
+                            borderRadius="full"
+                          />
+                        </Box>
+                        <Button
+                          w="full"
+                          colorScheme="green"
+                          size="sm"
+                          onClick={() =>
+                            alert('Invite feature coming soon')
+                          }
+                        >
+                          Invite Members
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
+                  {/* Competition Control */}
+                  <Card bg={cardBg}>
+                    <CardBody>
+                      <HStack justify="space-between" mb={4}>
+                        <Heading size="sm">Competition Control</Heading>
+                        <Icon as={FaTrophy} color="orange.500" />
+                      </HStack>
+                      <VStack spacing={3}>
+                        <Text fontSize="sm" color="gray.600">
+                          Manage clan competitions and teams
+                        </Text>
+                        <Button
+                          w="full"
+                          colorScheme="orange"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/clans/${clanId}/competitions`)
+                          }
+                        >
+                          Manage Competitions
+                        </Button>
+                        <Text fontSize="xs" color="gray.500">
+                          Active: {competitions?.length || 0}
+                        </Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
+                  {/* Quick Stats */}
+                  <Card bg={cardBg}>
+                    <CardBody>
+                      <Heading size="sm" mb={4}>
+                        Management Stats
+                      </Heading>
+                      <Stack spacing={3}>
+                        <HStack justify="space-between">
+                          <Text fontSize="sm">Pending Requests</Text>
+                          <Badge colorScheme="yellow">{pendingRequests?.length || 0}</Badge>
+                        </HStack>
+                        <HStack justify="space-between">
+                          <Text fontSize="sm">Pending Invites</Text>
+                          <Badge colorScheme="blue">0</Badge>
+                        </HStack>
+                        <HStack justify="space-between">
+                          <Text fontSize="sm">Leadership</Text>
+                          <Badge colorScheme="purple">{userRole}</Badge>
+                        </HStack>
+                      </Stack>
+                    </CardBody>
+                  </Card>
+                </SimpleGrid>
+              </TabPanel>
+            )}
+
+            {/* Settings Tab (Leader Only) */}
+            {isLeader && (
+              <TabPanel>
+                <Card bg={cardBg}>
+                  <CardBody>
+                    <VStack align="start" spacing={6}>
+                      <Box w="full">
+                        <Heading size="sm" mb={4}>
+                          Clan Settings
+                        </Heading>
+                        <Stack spacing={3}>
+                          <Button
+                            w="full"
+                            variant="outline"
+                            colorScheme="purple"
+                            onClick={() =>
+                              navigate(`/clans/${clanId}/edit`)
+                            }
+                          >
+                            Edit Clan Info
+                          </Button>
+                          <Button
+                            w="full"
+                            variant="outline"
+                            colorScheme="blue"
+                            onClick={() =>
+                              alert('Privacy settings coming soon')
+                            }
+                          >
+                            Privacy Settings
+                          </Button>
+                          <Button
+                            w="full"
+                            variant="outline"
+                            colorScheme="orange"
+                            onClick={() =>
+                              alert('Role management coming soon')
+                            }
+                          >
+                            Role Management
+                          </Button>
+                        </Stack>
+                      </Box>
+                      <Divider />
+                      <Box w="full">
+                        <Text fontSize="sm" fontWeight="bold" color="red.500" mb={3}>
+                          Danger Zone
+                        </Text>
+                        <Button
+                          w="full"
+                          colorScheme="red"
+                          variant="outline"
+                          onClick={() =>
+                            alert('Delete clan feature coming soon')
+                          }
+                        >
+                          Delete Clan
+                        </Button>
+                      </Box>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </TabPanel>
+            )}
           </TabPanels>
         </Tabs>
       </Container>
