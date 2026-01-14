@@ -59,10 +59,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // Check if user is logged in on mount
+    
     initializeAuth();
 
-    // Listen for auth-logout event from API interceptor
+   
     const handleAuthLogout = () => {
       setUser(null);
       setLoading(false);

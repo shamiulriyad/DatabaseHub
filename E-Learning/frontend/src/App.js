@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './context/NotificationContext';
-import Navbar from './components/Navbar';
+import PublicNavbar from './components/PublicNavbar';
+import PrivateNavbar from './components/PrivateNavbar';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -62,38 +63,16 @@ const queryClient = new QueryClient({
   },
 });
 
-// Home route wrapper - redirects authenticated users to dashboard
-function HomeRoute() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  
-  React.useEffect(() => {
-    if (user) {
-      // Use replace: true for auth redirects (these should replace the history entry)
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
-
-  return <LandingPage />;
-}
-
-// Component that conditionally renders sidebar based on route
-function AppLayout() {
-  const location = useLocation();
-  
-  // Routes where sidebar should NOT be shown (public pages)
-  const publicRoutes = ['/', '/home', '/about', '/login', '/register', '/forgot-password', '/reset-password', '/courses'];
-  const isPublicRoute = publicRoutes.includes(location.pathname);
-
+// Public Layout - Landing, Auth pages (no sidebar, no authenticated nav)
+function PublicLayout() {
   return (
     <div className="app">
-      <Navbar />
+      <PublicNavbar />
       <div className="app-container">
-        {!isPublicRoute && <Sidebar />}
         <main className="main-content">
           <Routes>
             {/* ===== PUBLIC ROUTES ===== */}
-            <Route path="/" element={<HomeRoute />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/home" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
@@ -101,17 +80,36 @@ function AppLayout() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/courses" element={<CourseList />} />
-
-            {/* ===== CLAN ROUTES ===== */}
             <Route path="/clans" element={<ClanList />} />
-            <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
             <Route path="/clans/:clanId" element={<ClanDetail />} />
             <Route path="/clans/:clanId/members" element={<ClanMembers />} />
-            
+            <Route path="/profile/:userId" element={<PublicUserProfile />} />
+          </Routes>
+        </main>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// Private Layout - Dashboard, protected pages (with sidebar and authenticated nav)
+function PrivateLayout() {
+  const location = useLocation();
+  
+  // Routes where sidebar should NOT be shown (some private pages)
+  const noSidebarRoutes = [];
+  const showSidebar = !noSidebarRoutes.includes(location.pathname);
+
+  return (
+    <div className="app">
+      <PrivateNavbar />
+      <div className="app-container">
+        {showSidebar && <Sidebar />}
+        <main className="main-content">
+          <Routes>
             {/* ===== PROTECTED ROUTES - User Dashboard & Profile ===== */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-            <Route path="/profile/:userId" element={<PublicUserProfile />} />
             <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/profile/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
             <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent={true}><MyEnrollments /></ProtectedRoute>} />
@@ -130,15 +128,24 @@ function AppLayout() {
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin={true}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin={true}><AdminPanel /></ProtectedRoute>} />
             <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin={true}><ManageTeachers /></ProtectedRoute>} />
-
-            {/* 404 Not Found */}
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>
       <Footer />
     </div>
   );
+}
+
+// Main router that decides which layout to use
+function AppRouter() {
+  const { user } = useAuth();
+  const location = useLocation();
+  
+  // Public routes that use PublicLayout
+  const publicRoutes = ['/', '/home', '/about', '/login', '/register', '/forgot-password', '/reset-password', '/courses', '/clans'];
+  const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
+
+  return isPublicRoute ? <PublicLayout /> : <PrivateLayout />;
 }
 
 function App() {
@@ -148,7 +155,7 @@ function App() {
         <AuthProvider>
           <NotificationProvider>
             <Router>
-              <AppLayout />
+              <AppRouter />
             </Router>
           </NotificationProvider>
         </AuthProvider>

@@ -1,4 +1,6 @@
 @import './styles/animations.css';
+@import './styles/buttons.css';
+@import './styles/global.css';
 
 body {
   margin: 0;

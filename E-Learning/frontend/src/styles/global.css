@@ -26,57 +26,9 @@ body {
   color: var(--dark-color);
 }
 
-/* Button Styles */
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: var(--transition);
-  display: inline-block;
-  text-decoration: none;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: var(--white);
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-  box-shadow: var(--box-shadow);
-}
-
-.btn-secondary {
-  background-color: var(--secondary-color);
-  color: var(--white);
-}
-
-.btn-success {
-  background-color: var(--success-color);
-  color: var(--white);
-}
-
-.btn-danger {
-  background-color: var(--danger-color);
-  color: var(--white);
-}
-
-.btn-lg {
-  padding: 15px 30px;
-  font-size: 1.2rem;
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 0.9rem;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Button Styles - Moved to styles/buttons.css */
+/* All button styles are now managed in the dedicated buttons.css file */
+/* for better organization and maintainability */
 
 /* Card Styles */
 .card {

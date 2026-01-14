@@ -32,6 +32,12 @@ import {
   FaChartLine,
   FaUserCheck,
   FaLock,
+  FaUserFriends,
+  FaMedal,
+  FaFire,
+  FaUniversity,
+  FaChalkboardTeacher,
+  FaShieldAlt,
 } from 'react-icons/fa';
 
 const LandingPage = () => {
@@ -253,6 +259,101 @@ const LandingPage = () => {
         </VStack>
       </Container>
 
+      {/* ===== COMMUNITY / CLAN SECTION ===== */}
+      <Box py={20} bgGradient="linear(135deg, purple.50, blue.50)" _dark={{ bgGradient: "linear(135deg, purple.900, blue.900)" }}>
+        <Container maxW="7xl">
+          <VStack spacing={12} align="center">
+            <VStack spacing={4} textAlign="center">
+              <Badge colorScheme="purple" variant="solid" px={3} py={1} borderRadius="full" fontSize="sm">
+                Community-Driven Learning
+              </Badge>
+              <Heading size="2xl" fontWeight="black">
+                Learn Together, Grow Together
+              </Heading>
+              <Text fontSize="lg" color={textColor} maxW="2xl">
+                Join learning clans, compete with peers, and achieve your goals as a team
+              </Text>
+            </VStack>
+
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} w="full">
+              <Card 
+                bg={cardBg} 
+                borderWidth="1px" 
+                borderColor={borderColor}
+                shadow="lg"
+                _hover={{ shadow: '2xl', transform: 'translateY(-4px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody textAlign="center" py={8}>
+                  <Icon as={FaUserFriends} fontSize="4xl" color="purple.500" mb={4} />
+                  <Heading size="md" mb={2}>Create & Join Clans</Heading>
+                  <Text fontSize="sm" color={textColor}>Form study groups and learning communities</Text>
+                </CardBody>
+              </Card>
+
+              <Card 
+                bg={cardBg} 
+                borderWidth="1px" 
+                borderColor={borderColor}
+                shadow="lg"
+                _hover={{ shadow: '2xl', transform: 'translateY(-4px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody textAlign="center" py={8}>
+                  <Icon as={FaTrophy} fontSize="4xl" color="yellow.500" mb={4} />
+                  <Heading size="md" mb={2}>Competitions</Heading>
+                  <Text fontSize="sm" color={textColor}>Challenge yourself with clan-based contests</Text>
+                </CardBody>
+              </Card>
+
+              <Card 
+                bg={cardBg} 
+                borderWidth="1px" 
+                borderColor={borderColor}
+                shadow="lg"
+                _hover={{ shadow: '2xl', transform: 'translateY(-4px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody textAlign="center" py={8}>
+                  <Icon as={FaMedal} fontSize="4xl" color="orange.500" mb={4} />
+                  <Heading size="md" mb={2}>Leaderboards</Heading>
+                  <Text fontSize="sm" color={textColor}>Track progress and climb the rankings</Text>
+                </CardBody>
+              </Card>
+
+              <Card 
+                bg={cardBg} 
+                borderWidth="1px" 
+                borderColor={borderColor}
+                shadow="lg"
+                _hover={{ shadow: '2xl', transform: 'translateY(-4px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody textAlign="center" py={8}>
+                  <Icon as={FaFire} fontSize="4xl" color="red.500" mb={4} />
+                  <Heading size="md" mb={2}>Rewards & Badges</Heading>
+                  <Text fontSize="sm" color={textColor}>Earn achievements for your accomplishments</Text>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+
+            <Button
+              size="lg"
+              bgGradient="linear(135deg, purple.600, blue.600)"
+              color="white"
+              _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
+              transition="all 0.3s"
+              as={RouterLink}
+              to="/clans"
+              rightIcon={<FaArrowRight />}
+              fontWeight="bold"
+            >
+              Explore Clans
+            </Button>
+          </VStack>
+        </Container>
+      </Box>
+
       {/* ===== BENEFITS SECTION ===== */}
       <Box bg={bgColor} py={20}>
         <Container maxW="7xl">
@@ -330,6 +431,225 @@ const LandingPage = () => {
         </Container>
       </Box>
 
+      {/* ===== UNIVERSITY & INSTITUTION SECTION ===== */}
+      <Container maxW="7xl" py={20}>
+        <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={12} alignItems="center">
+          {/* Text Content */}
+          <VStack spacing={6} align="flex-start">
+            <VStack spacing={3} align="flex-start">
+              <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="full">
+                Built for Universities & Institutions
+              </Badge>
+              <Heading size="xl" fontWeight="black">
+                Enterprise-Grade Learning Management
+              </Heading>
+              <Text color={textColor} fontSize="lg">
+                Empower your institution with comprehensive tools for students, faculty, and administrators
+              </Text>
+            </VStack>
+
+            <List spacing={3}>
+              <ListItem display="flex" alignItems="center" gap={3}>
+                <Icon as={FaUniversity} color="blue.500" boxSize={5} flexShrink={0} />
+                <Text fontWeight="500">University-based learning groups</Text>
+              </ListItem>
+              <ListItem display="flex" alignItems="center" gap={3}>
+                <Icon as={FaChalkboardTeacher} color="blue.500" boxSize={5} flexShrink={0} />
+                <Text fontWeight="500">Department-wise course management</Text>
+              </ListItem>
+              <ListItem display="flex" alignItems="center" gap={3}>
+                <Icon as={FaChartLine} color="blue.500" boxSize={5} flexShrink={0} />
+                <Text fontWeight="500">Student performance analytics</Text>
+              </ListItem>
+              <ListItem display="flex" alignItems="center" gap={3}>
+                <Icon as={FaShieldAlt} color="blue.500" boxSize={5} flexShrink={0} />
+                <Text fontWeight="500">Secure and role-based access</Text>
+              </ListItem>
+              <ListItem display="flex" alignItems="center" gap={3}>
+                <Icon as={FaUserCheck} color="blue.500" boxSize={5} flexShrink={0} />
+                <Text fontWeight="500">Faculty and teacher control panels</Text>
+              </ListItem>
+            </List>
+
+            <Button
+              mt={4}
+              size="lg"
+              colorScheme="blue"
+              _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+              transition="all 0.3s"
+              rightIcon={<FaArrowRight />}
+              fontWeight="bold"
+            >
+              For Universities
+            </Button>
+          </VStack>
+
+          {/* University Grid / Visual */}
+          <SimpleGrid columns={2} spacing={6}>
+            <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md" textAlign="center">
+              <CardBody py={8}>
+                <Icon as={FaUniversity} fontSize="5xl" color="blue.500" mb={3} />
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>Multi-University Support</Text>
+              </CardBody>
+            </Card>
+
+            <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md" textAlign="center">
+              <CardBody py={8}>
+                <Icon as={FaUsers} fontSize="5xl" color="purple.500" mb={3} />
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>10,000+ Students</Text>
+              </CardBody>
+            </Card>
+
+            <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md" textAlign="center">
+              <CardBody py={8}>
+                <Icon as={FaChalkboardTeacher} fontSize="5xl" color="green.500" mb={3} />
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>500+ Faculty</Text>
+              </CardBody>
+            </Card>
+
+            <Card bg={cardBg} borderWidth="1px" borderColor={borderColor} shadow="md" textAlign="center">
+              <CardBody py={8}>
+                <Icon as={FaShieldAlt} fontSize="5xl" color="red.500" mb={3} />
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>Enterprise Security</Text>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+        </Grid>
+      </Container>
+
+      {/* ===== TRUSTED BY COLLEGES & UNIVERSITIES SECTION ===== */}
+      <Box bg={useColorModeValue('white', 'gray.800')} py={20}>
+        <Container maxW="7xl">
+          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={16} alignItems="center">
+            {/* Left Side - University Logos Grid */}
+            <SimpleGrid columns={{ base: 2, md: 3 }} spacing={8} opacity={0.6} filter="grayscale(100%)">
+              {/* University Logo Placeholders */}
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University A</Text>
+                </VStack>
+              </Box>
+
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University B</Text>
+                </VStack>
+              </Box>
+
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University C</Text>
+                </VStack>
+              </Box>
+
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University D</Text>
+                </VStack>
+              </Box>
+
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University E</Text>
+                </VStack>
+              </Box>
+
+              <Box 
+                bg={useColorModeValue('gray.100', 'gray.700')} 
+                borderRadius="lg" 
+                p={8} 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                h="120px"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={FaUniversity} fontSize="3xl" color="gray.600" />
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600">University F</Text>
+                </VStack>
+              </Box>
+            </SimpleGrid>
+
+            {/* Right Side - Text Content */}
+            <VStack spacing={6} align="flex-start">
+              <Heading size="xl" fontWeight="black" lineHeight="1.3">
+                Join colleges and universities worldwide that choose EduLearn
+              </Heading>
+              <Text color={textColor} fontSize="lg">
+                Powering learning, collaboration, and competition at scale.
+              </Text>
+              <Button
+                size="lg"
+                colorScheme="blue"
+                _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+                fontWeight="bold"
+                px={8}
+              >
+                For Universities
+              </Button>
+            </VStack>
+          </Grid>
+        </Container>
+      </Box>
+
       {/* ===== CTA SECTION ===== */}
       <Box py={20}>
         <Container maxW="md">
@@ -337,22 +657,43 @@ const LandingPage = () => {
             <CardBody p={12} textAlign="center">
               <Icon as={FaRocket} fontSize="4xl" color="purple.500" mb={4} />
               <Heading size="lg" mb={3}>Ready to Transform?</Heading>
-              <Text color={textColor} mb={6}>
-                Start your learning journey today and unlock your potential. Join thousands of successful learners.
+              <Text color={textColor} mb={2}>
+                Start your learning journey today and unlock your potential.
               </Text>
-              <Button
-                w="full"
-                size="lg"
-                bgGradient="linear(135deg, purple.600, blue.600)"
-                color="white"
-                _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
-                transition="all 0.3s"
-                as={RouterLink}
-                to="/register"
-                fontWeight="bold"
-              >
-                Get Started Free
-              </Button>
+              <Text fontSize="md" fontWeight="semibold" color="purple.600" _dark={{ color: "purple.300" }} mb={6}>
+                Join learners, clans, and universities worldwide
+              </Text>
+              <VStack spacing={3} w="full">
+                <Button
+                  w="full"
+                  size="lg"
+                  bgGradient="linear(135deg, purple.600, blue.600)"
+                  color="white"
+                  _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                  transition="all 0.3s"
+                  as={RouterLink}
+                  to="/register"
+                  fontWeight="bold"
+                >
+                  Get Started Free
+                </Button>
+                <Button
+                  w="full"
+                  size="lg"
+                  variant="outline"
+                  colorScheme="purple"
+                  borderWidth="2px"
+                  _hover={{ bg: 'purple.50', transform: 'translateY(-2px)' }}
+                  _dark={{ _hover: { bg: 'purple.900' } }}
+                  transition="all 0.3s"
+                  as={RouterLink}
+                  to="/clans"
+                  fontWeight="bold"
+                  rightIcon={<FaUserFriends />}
+                >
+                  Join a Clan
+                </Button>
+              </VStack>
               <Text fontSize="sm" color="gray.500" mt={4}>
                 No credit card required
               </Text>
