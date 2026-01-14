@@ -29,6 +29,7 @@ import ClanMembers from './pages/Clans/ClanMembers';
 
 //user Profile Pages
 import UserProfile from './pages/Profile/UserProfile';
+import PublicUserProfile from './pages/Profile/PublicUserProfile';
 import EditProfile from './pages/Profile/EditProfile';
 import ChangePassword from './pages/Profile/ChangePassword';
 import MyEnrollments from './pages/Profile/MyEnrollments';
@@ -110,6 +111,7 @@ function AppLayout() {
             {/* ===== PROTECTED ROUTES - User Dashboard & Profile ===== */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/profile/:userId" element={<PublicUserProfile />} />
             <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/profile/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
             <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent={true}><MyEnrollments /></ProtectedRoute>} />

@@ -41,6 +41,12 @@ namespace backend.Data
         public DbSet<Clan> Clans => Set<Clan>();
         public DbSet<ClanMember> ClanMembers => Set<ClanMember>();
         public DbSet<ClanJoinRequest> ClanJoinRequests => Set<ClanJoinRequest>();
+        public DbSet<ClanAnnouncement> ClanAnnouncements => Set<ClanAnnouncement>();
+        public DbSet<ClanAnnouncementReaction> ClanAnnouncementReactions => Set<ClanAnnouncementReaction>();
+        public DbSet<PostReaction> PostReactions => Set<PostReaction>();
+
+        // Notification System
+        public DbSet<Notification> Notifications => Set<Notification>();
 
         // Competition System
         public DbSet<Competition> Competitions => Set<Competition>();

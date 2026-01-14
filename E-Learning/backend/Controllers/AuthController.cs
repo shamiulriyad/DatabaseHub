@@ -108,6 +108,20 @@ namespace backend.Controllers
             });
         }
 
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetPublicUserProfile(int userId)
+        {
+            var result = await _authService.GetUserProfile(userId);
+            
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                user = result.Data
+            });
+        }
+
         [Authorize]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO profileDto)

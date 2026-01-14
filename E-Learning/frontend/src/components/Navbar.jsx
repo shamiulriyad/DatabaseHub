@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import NotificationBell from './NotificationBell';
 import {
   Box,
   Container,
@@ -95,6 +96,7 @@ const Navbar = () => {
           <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
             {user ? (
               <>
+                <NotificationBell />
                 {user.isAdmin ? (
                   <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>
                 ) : user.isTeacher ? (

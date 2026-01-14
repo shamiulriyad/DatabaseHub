@@ -27,11 +27,19 @@ export const AuthProvider = ({ children }) => {
       
       // Only set user if both token and user exist
       if (storedUser && token) {
+        // Immediately restore user from localStorage
+        // This prevents logout on page refresh
+        setUser(storedUser);
+        
         // Verify token is still valid by calling profile endpoint
+        // But don't wait for it - just update the state if it fails
         api.get('/auth/profile')
           .then(response => {
             console.log('AuthContext: Token verified successfully');
-            setUser(storedUser);
+            // Update user with latest data from server if available
+            if (response.data.user) {
+              setUser(response.data.user);
+            }
           })
           .catch(error => {
             console.log('AuthContext: Token invalid or expired', error.response?.status);

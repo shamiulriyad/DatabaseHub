@@ -1143,5 +1143,315 @@ namespace backend.Services
             return await _context.ClanMembers
                 .FirstOrDefaultAsync(m => m.ClanId == clanId && m.UserId == userId);
         }
+
+        // ===== ANNOUNCEMENTS =====
+        
+        public async Task<ServiceResult<List<ClanAnnouncementDTO>>> GetClanAnnouncements(int clanId, int? currentUserId, int page, int pageSize)
+        {
+            try
+            {
+                var announcements = await _context.ClanAnnouncements
+                    .Where(a => a.ClanId == clanId)
+                    .OrderByDescending(a => a.IsPinned)
+                    .ThenByDescending(a => a.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Include(a => a.User)
+                    .Include(a => a.Reactions)
+                    .ThenInclude(r => r.User)
+                    .ToListAsync();
+
+                var dtos = announcements.Select(a => new ClanAnnouncementDTO
+                {
+                    Id = a.Id,
+                    ClanId = a.ClanId,
+                    UserId = a.UserId,
+                    UserName = a.User.Username,
+                    UserProfileImage = a.User.ProfileImageUrl,
+                    UserRole = _context.ClanMembers.FirstOrDefault(m => m.ClanId == clanId && m.UserId == a.UserId)?.Role,
+                    Title = a.Title,
+                    Content = a.Content,
+                    Type = a.Type ?? "General",
+                    IsPinned = a.IsPinned,
+                    ViewCount = a.ViewCount,
+                    CreatedAt = a.CreatedAt,
+                    UpdatedAt = a.UpdatedAt,
+                    Reactions = a.Reactions
+                        .GroupBy(r => r.Emoji)
+                        .Select(g => new ReactionSummaryDTO
+                        {
+                            Emoji = g.Key,
+                            Count = g.Count(),
+                            UserNames = g.Select(r => r.User.Username).ToList()
+                        }).ToList(),
+                    MyReaction = currentUserId.HasValue 
+                        ? a.Reactions.FirstOrDefault(r => r.UserId == currentUserId.Value)?.Emoji 
+                        : null
+                }).ToList();
+
+                return ServiceResult<List<ClanAnnouncementDTO>>.SuccessResult(dtos);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<ClanAnnouncementDTO>>.FailureResult($"Error fetching announcements: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<ClanAnnouncementDTO>> CreateAnnouncement(int clanId, int userId, CreateAnnouncementDTO dto)
+        {
+            try
+            {
+                var membership = await GetUserClanMembership(clanId, userId);
+                if (membership == null || (membership.Role != "Leader" && membership.Role != "CoLeader"))
+                    return ServiceResult<ClanAnnouncementDTO>.FailureResult("Only Leaders and Co-Leaders can create announcements");
+
+                var announcement = new Models.ClanAnnouncement
+                {
+                    ClanId = clanId,
+                    UserId = userId,
+                    Title = dto.Title,
+                    Content = dto.Content,
+                    Type = dto.Type,
+                    IsPinned = dto.IsPinned,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ClanAnnouncements.Add(announcement);
+                await _context.SaveChangesAsync();
+
+                var user = await _context.Users.FindAsync(userId);
+                var announcementDto = new ClanAnnouncementDTO
+                {
+                    Id = announcement.Id,
+                    ClanId = announcement.ClanId,
+                    UserId = announcement.UserId,
+                    UserName = user?.Username ?? "",
+                    UserProfileImage = user?.ProfileImageUrl,
+                    UserRole = membership.Role,
+                    Title = announcement.Title,
+                    Content = announcement.Content,
+                    Type = announcement.Type ?? "General",
+                    IsPinned = announcement.IsPinned,
+                    ViewCount = announcement.ViewCount,
+                    CreatedAt = announcement.CreatedAt,
+                    Reactions = new List<ReactionSummaryDTO>()
+                };
+
+                return ServiceResult<ClanAnnouncementDTO>.SuccessResult(announcementDto);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<ClanAnnouncementDTO>.FailureResult($"Error creating announcement: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> ReactToAnnouncement(int announcementId, int userId, string emoji)
+        {
+            try
+            {
+                var existing = await _context.ClanAnnouncementReactions
+                    .FirstOrDefaultAsync(r => r.AnnouncementId == announcementId && r.UserId == userId);
+
+                if (existing != null)
+                {
+                    if (existing.Emoji == emoji)
+                    {
+                        _context.ClanAnnouncementReactions.Remove(existing);
+                    }
+                    else
+                    {
+                        existing.Emoji = emoji;
+                    }
+                }
+                else
+                {
+                    var reaction = new Models.ClanAnnouncementReaction
+                    {
+                        AnnouncementId = announcementId,
+                        UserId = userId,
+                        Emoji = emoji,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.ClanAnnouncementReactions.Add(reaction);
+                }
+
+                await _context.SaveChangesAsync();
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error reacting to announcement: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> RemoveAnnouncementReaction(int announcementId, int userId)
+        {
+            try
+            {
+                var reaction = await _context.ClanAnnouncementReactions
+                    .FirstOrDefaultAsync(r => r.AnnouncementId == announcementId && r.UserId == userId);
+
+                if (reaction != null)
+                {
+                    _context.ClanAnnouncementReactions.Remove(reaction);
+                    await _context.SaveChangesAsync();
+                }
+
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error removing reaction: {ex.Message}");
+            }
+        }
+
+        // ===== COMMUNITY POSTS =====
+
+        public async Task<ServiceResult<ClanPostDTO>> CreateClanPost(int clanId, int userId, CreateClanPostDTO dto)
+        {
+            try
+            {
+                var membership = await GetUserClanMembership(clanId, userId);
+                if (membership == null)
+                    return ServiceResult<ClanPostDTO>.FailureResult("You must be a clan member to post");
+
+                var post = new Models.Post
+                {
+                    Title = dto.Title,
+                    Content = dto.Content,
+                    UserId = userId,
+                    ClanId = clanId,
+                    PostType = "Discussion",
+                    MediaUrl = dto.MediaUrl,
+                    MediaType = dto.MediaType,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Posts.Add(post);
+                await _context.SaveChangesAsync();
+
+                var user = await _context.Users.FindAsync(userId);
+                var postDto = new ClanPostDTO
+                {
+                    Id = post.Id,
+                    ClanId = post.ClanId.Value,
+                    UserId = post.UserId,
+                    UserName = user?.Username ?? "",
+                    UserProfileImage = user?.ProfileImageUrl,
+                    UserRole = membership.Role,
+                    Title = post.Title,
+                    Content = post.Content,
+                    MediaUrl = post.MediaUrl,
+                    MediaType = post.MediaType,
+                    UpvoteCount = post.UpvoteCount,
+                    DownvoteCount = post.DownvoteCount,
+                    CommentCount = post.CommentCount,
+                    ViewCount = post.ViewCount,
+                    IsPinned = post.IsPinned,
+                    CreatedAt = post.CreatedAt,
+                    Reactions = new List<ReactionSummaryDTO>()
+                };
+
+                return ServiceResult<ClanPostDTO>.SuccessResult(postDto);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<ClanPostDTO>.FailureResult($"Error creating post: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> ReactToPost(int postId, int userId, string emoji)
+        {
+            try
+            {
+                var existing = await _context.PostReactions
+                    .FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId);
+
+                if (existing != null)
+                {
+                    if (existing.Emoji == emoji)
+                    {
+                        _context.PostReactions.Remove(existing);
+                    }
+                    else
+                    {
+                        existing.Emoji = emoji;
+                    }
+                }
+                else
+                {
+                    var reaction = new Models.PostReaction
+                    {
+                        PostId = postId,
+                        UserId = userId,
+                        Emoji = emoji,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.PostReactions.Add(reaction);
+                }
+
+                await _context.SaveChangesAsync();
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error reacting to post: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> VoteOnPost(int postId, int userId, int vote)
+        {
+            try
+            {
+                var existingVote = await _context.PostVotes
+                    .FirstOrDefaultAsync(v => v.PostId == postId && v.UserId == userId);
+
+                var post = await _context.Posts.FindAsync(postId);
+                if (post == null)
+                    return ServiceResult<bool>.FailureResult("Post not found");
+
+                if (existingVote != null)
+                {
+                    // Update vote counts
+                    if (existingVote.VoteType == 1) post.UpvoteCount--;
+                    else post.DownvoteCount--;
+
+                    if (existingVote.VoteType == vote)
+                    {
+                        // Remove vote if clicking same button
+                        _context.PostVotes.Remove(existingVote);
+                    }
+                    else
+                    {
+                        // Change vote
+                        existingVote.VoteType = vote;
+                        if (vote == 1) post.UpvoteCount++;
+                        else post.DownvoteCount++;
+                    }
+                }
+                else
+                {
+                    // New vote
+                    var newVote = new Models.PostVote
+                    {
+                        PostId = postId,
+                        UserId = userId,
+                        VoteType = vote,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.PostVotes.Add(newVote);
+
+                    if (vote == 1) post.UpvoteCount++;
+                    else post.DownvoteCount++;
+                }
+
+                await _context.SaveChangesAsync();
+                return ServiceResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error voting on post: {ex.Message}");
+            }
+        }
     }
 }

@@ -20,8 +20,9 @@ import {
   useToast,
   Spinner,
   Divider,
+  IconButton,
 } from '@chakra-ui/react';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
+import { FaSave, FaArrowLeft, FaCamera } from 'react-icons/fa';
 import axios from 'axios';
 
 const EditProfile = () => {
@@ -31,7 +32,9 @@ const EditProfile = () => {
     lastName: '',
     email: '',
     username: '',
+    profileImageUrl: '',
   });
+  const [preview, setPreview] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,7 +65,9 @@ const EditProfile = () => {
           lastName: profile.lastName || '',
           email: profile.email || '',
           username: profile.username || '',
+          profileImageUrl: profile.profileImageUrl || '',
         });
+        setPreview(profile.profileImageUrl || '');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -72,7 +77,9 @@ const EditProfile = () => {
         lastName: user.lastName || '',
         email: user.email || '',
         username: user.username || '',
+        profileImageUrl: user.profileImageUrl || '',
       });
+      setPreview(user.profileImageUrl || '');
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +117,43 @@ const EditProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid File',
+          description: 'Please select an image file',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Image size must be less than 5MB',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+        setFormData((prev) => ({ ...prev, profileImageUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -185,13 +229,34 @@ const EditProfile = () => {
           <CardBody p={8}>
             <VStack spacing={6}>
               <VStack spacing={2} textAlign="center" w="full">
-                <Avatar
-                  size="xl"
-                  name={`${formData.firstName} ${formData.lastName}`}
-                  bg="purple.500"
-                  color="white"
-                  mb={2}
-                />
+                <Box position="relative" mb={2}>
+                  <Avatar
+                    size="xl"
+                    name={`${formData.firstName} ${formData.lastName}`}
+                    src={preview}
+                    bg="purple.500"
+                    color="white"
+                  />
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    display="none"
+                  />
+                  <IconButton
+                    icon={<FaCamera />}
+                    position="absolute"
+                    bottom={0}
+                    right={0}
+                    borderRadius="full"
+                    bg="purple.600"
+                    color="white"
+                    size="sm"
+                    onClick={() => document.getElementById('image-upload').click()}
+                    _hover={{ bg: 'purple.700' }}
+                  />
+                </Box>
                 <Heading size="lg">Edit Profile</Heading>
                 <Text color="gray.600">Update your personal information</Text>
               </VStack>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ClanAnnouncements from './ClanAnnouncements';
+import ClanCommunity from './ClanCommunity';
 
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
@@ -105,8 +107,10 @@ const StatCard = ({ icon, label, value, color }) => {
 };
 
 const MemberCard = ({ member }) => {
+  const navigate = useNavigate();
   const cardBg = useColorModeValue('white', 'gray.700');
   const border = useColorModeValue('gray.200', 'gray.600');
+  const hoverBg = useColorModeValue('gray.50', 'gray.600');
 
   const roleColor = {
     Leader: 'yellow',
@@ -116,7 +120,16 @@ const MemberCard = ({ member }) => {
   };
 
   return (
-    <Card bg={cardBg} borderColor={border} borderWidth="1px" size="sm">
+    <Card 
+      bg={cardBg} 
+      borderColor={border} 
+      borderWidth="1px" 
+      size="sm"
+      cursor="pointer"
+      onClick={() => navigate(`/profile/${member.userId}`)}
+      _hover={{ bg: hoverBg, transform: 'translateY(-2px)', shadow: 'md' }}
+      transition="all 0.2s"
+    >
       <CardBody>
         <HStack spacing={3}>
           <Avatar
@@ -206,6 +219,7 @@ const ClanDetail = () => {
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('white', 'gray.700');
   const memberCardBg = useColorModeValue('gray.50', 'gray.700');
+  const topMembersHoverBg = useColorModeValue('gray.50', 'gray.600');
   const [joinStatus, setJoinStatus] = React.useState('idle');
   const [userRole, setUserRole] = React.useState(null); // 'Leader', 'CoLeader', 'Elder', 'Member'
 
@@ -583,6 +597,8 @@ const ClanDetail = () => {
         <Tabs colorScheme="purple">
           <TabList>
             <Tab>Overview</Tab>
+            {isMember && <Tab>📢 Announcements</Tab>}
+            {isMember && <Tab>💬 Community</Tab>}
             <Tab>Members ({members?.length || 0})</Tab>
             <Tab>Competitions ({competitions?.length || 0})</Tab>
             <Tab>Statistics</Tab>
@@ -656,7 +672,16 @@ const ClanDetail = () => {
                         {stats?.topMembers
                           ?.slice(0, 5)
                           .map((member, index) => (
-                            <HStack key={member.userId} spacing={3}>
+                            <HStack 
+                              key={member.userId} 
+                              spacing={3}
+                              cursor="pointer"
+                              p={2}
+                              borderRadius="md"
+                              _hover={{ bg: topMembersHoverBg }}
+                              onClick={() => navigate(`/profile/${member.userId}`)}
+                              transition="all 0.2s"
+                            >
                               <Badge colorScheme="purple">{index + 1}</Badge>
                               <Avatar
                                 size="sm"
@@ -708,6 +733,20 @@ const ClanDetail = () => {
                 </GridItem>
               </Grid>
             </TabPanel>
+
+            {/* Announcements Tab - Members Only */}
+            {isMember && (
+              <TabPanel>
+                <ClanAnnouncements userRole={userRole} />
+              </TabPanel>
+            )}
+
+            {/* Community Tab - Members Only */}
+            {isMember && (
+              <TabPanel>
+                <ClanCommunity />
+              </TabPanel>
+            )}
 
             {/* Members Tab */}
             <TabPanel>
@@ -856,9 +895,17 @@ const ClanDetail = () => {
                                     size="sm"
                                     name={req.userName}
                                     src={req.profileImageUrl}
+                                    cursor="pointer"
+                                    onClick={() => navigate(`/profile/${req.userId}`)}
                                   />
                                   <VStack align="start" spacing={1} flex={1}>
-                                    <Text fontSize="sm" fontWeight="bold">
+                                    <Text 
+                                      fontSize="sm" 
+                                      fontWeight="bold"
+                                      cursor="pointer"
+                                      _hover={{ color: 'purple.500' }}
+                                      onClick={() => navigate(`/profile/${req.userId}`)}
+                                    >
                                       {req.userName}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">
@@ -871,6 +918,17 @@ const ClanDetail = () => {
                                     )}
                                   </VStack>
                                   <VStack spacing={2}>
+                                    <Button
+                                      size="xs"
+                                      colorScheme="blue"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/profile/${req.userId}`);
+                                      }}
+                                    >
+                                      View Profile
+                                    </Button>
                                     <Button
                                       size="xs"
                                       colorScheme="green"

@@ -33,5 +33,16 @@ namespace backend.Services.Interfaces
         
         // Helper methods
         Task<Models.ClanMember?> GetUserClanMembership(int clanId, int userId);
+
+        // Announcements
+        Task<ServiceResult<List<ClanAnnouncementDTO>>> GetClanAnnouncements(int clanId, int? currentUserId, int page, int pageSize);
+        Task<ServiceResult<ClanAnnouncementDTO>> CreateAnnouncement(int clanId, int userId, CreateAnnouncementDTO dto);
+        Task<ServiceResult<bool>> ReactToAnnouncement(int announcementId, int userId, string emoji);
+        Task<ServiceResult<bool>> RemoveAnnouncementReaction(int announcementId, int userId);
+
+        // Community Posts  
+        Task<ServiceResult<ClanPostDTO>> CreateClanPost(int clanId, int userId, CreateClanPostDTO dto);
+        Task<ServiceResult<bool>> ReactToPost(int postId, int userId, string emoji);
+        Task<ServiceResult<bool>> VoteOnPost(int postId, int userId, int vote);
     }
 }

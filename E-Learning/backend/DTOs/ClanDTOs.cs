@@ -276,4 +276,109 @@ namespace backend.DTOs
         [Required]
         public string Action { get; set; } = "approve"; // approve | reject
     }
+
+    // Clan Announcements
+    public class CreateAnnouncementDTO
+    {
+        [Required]
+        [MaxLength(200)]
+        public string Title { get; set; }
+
+        [Required]
+        public string Content { get; set; }
+
+        [MaxLength(50)]
+        public string Type { get; set; } = "General"; // General, Competition, Deadline, Important, Event
+
+        public bool IsPinned { get; set; } = false;
+    }
+
+    public class ClanAnnouncementDTO
+    {
+        public int Id { get; set; }
+        public int ClanId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string? UserProfileImage { get; set; }
+        public string? UserRole { get; set; }
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public string Type { get; set; }
+        public bool IsPinned { get; set; }
+        public int ViewCount { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public List<ReactionSummaryDTO> Reactions { get; set; }
+        public string? MyReaction { get; set; }
+    }
+
+    // Reactions
+    public class AddReactionDTO
+    {
+        [Required]
+        [MaxLength(10)]
+        public string Emoji { get; set; }
+    }
+
+    public class ReactionSummaryDTO
+    {
+        public string Emoji { get; set; }
+        public int Count { get; set; }
+        public List<string> UserNames { get; set; }
+    }
+
+    // Community Posts (extends Post but clan-specific)
+    public class CreateClanPostDTO
+    {
+        [Required]
+        [MaxLength(200)]
+        public string Title { get; set; }
+
+        [Required]
+        public string Content { get; set; }
+
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
+    }
+
+    public class ClanPostDTO
+    {
+        public int Id { get; set; }
+        public int ClanId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string? UserProfileImage { get; set; }
+        public string? UserRole { get; set; }
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
+        public int UpvoteCount { get; set; }
+        public int DownvoteCount { get; set; }
+        public int CommentCount { get; set; }
+        public int ViewCount { get; set; }
+        public bool IsPinned { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public List<ReactionSummaryDTO> Reactions { get; set; }
+        public string? MyReaction { get; set; }
+        public int? MyVote { get; set; } // 1 for upvote, -1 for downvote, null for no vote
+    }
+
+    // Notifications
+    public class NotificationDTO
+    {
+        public int Id { get; set; }
+        public string Type { get; set; }
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public string? ActionUrl { get; set; }
+        public int? ClanId { get; set; }
+        public string? ClanName { get; set; }
+        public int? FromUserId { get; set; }
+        public string? FromUserName { get; set; }
+        public string? FromUserImage { get; set; }
+        public bool IsRead { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 }
