@@ -86,8 +86,21 @@ export const AuthProvider = ({ children }) => {
   }, [initializeAuth]);
 
   const login = async (email, password) => {
+    console.log('AuthContext: Login started');
     const response = await authService.login(email, password);
-    setUser(response.user);
+    console.log('AuthContext: Login response received:', response);
+    
+    if (response.user) {
+      console.log('AuthContext: Setting user state:', response.user);
+      setUser(response.user);
+      
+      // Double check localStorage
+      const storedUser = authService.getUser();
+      console.log('AuthContext: Verified user in localStorage:', storedUser);
+    } else {
+      console.error('AuthContext: No user in response!');
+    }
+    
     return response;
   };
 

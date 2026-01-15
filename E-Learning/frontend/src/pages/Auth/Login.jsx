@@ -60,7 +60,10 @@ const Login = () => {
     setError('');
 
     try {
-      await login(email, password);
+      const response = await login(email, password);
+      console.log('Login successful, response:', response);
+      console.log('User from login:', response.user);
+      
       toast({
         title: 'Success',
         description: 'Logged in successfully!',
@@ -68,7 +71,12 @@ const Login = () => {
         duration: 3,
         isClosable: true,
       });
-      navigate('/home', { replace: false });
+      
+      // Wait a bit for state to update before navigating
+      setTimeout(() => {
+        console.log('Navigating to /home after login');
+        navigate('/home', { replace: true });
+      }, 500);
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';
       

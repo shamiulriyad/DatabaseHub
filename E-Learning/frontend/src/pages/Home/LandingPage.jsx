@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import {
@@ -45,6 +45,11 @@ const LandingPage = () => {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const textColor = useColorModeValue('gray.700', 'gray.300');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const featuresRef = useRef(null);
+
+  const scrollToFeatures = () => {
+    featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const features = [
     {
@@ -161,8 +166,7 @@ const LandingPage = () => {
                   color="white"
                   _hover={{ bg: 'whiteAlpha.2' }}
                   transition="all 0.3s"
-                  as={RouterLink}
-                  to="/courses"
+                  onClick={scrollToFeatures}
                   rightIcon={<FaArrowRight />}
                   fontWeight="bold"
                 >
@@ -203,7 +207,7 @@ const LandingPage = () => {
       </Box>
 
       {/* ===== FEATURES SECTION ===== */}
-      <Container maxW="7xl" py={20}>
+      <Container maxW="7xl" py={20} ref={featuresRef}>
         <VStack spacing={12} align="center">
           <VStack spacing={4} textAlign="center">
             <Badge colorScheme="purple" variant="subtle" px={3} py={1} borderRadius="full">

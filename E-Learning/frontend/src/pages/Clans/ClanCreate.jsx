@@ -115,7 +115,9 @@ const ClanCreate = () => {
     setIsSubmitting(true);
 
     try {
+      console.log('Submitting clan data:', formData);
       const { data } = await api.post('/clans', formData);
+      console.log('Clan created successfully:', data);
       toast({
         title: 'Clan Created!',
         description: `${formData.name} has been created successfully`,
@@ -124,9 +126,12 @@ const ClanCreate = () => {
       });
       navigate(`/clans/${data?.clan?.id}`);
     } catch (error) {
+      console.error('Error creating clan:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
       toast({
         title: 'Failed to create clan',
-        description: error.response?.data?.message || 'Something went wrong',
+        description: errorMessage,
         status: 'error',
         duration: 5000,
       });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import {
   Box,
@@ -109,19 +110,22 @@ const NotificationItem = ({ notification, onRead }) => {
 };
 
 const NotificationBell = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: fetchNotifications,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
+    enabled: !!user, // Only fetch if user is authenticated
   });
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['notificationCount'],
     queryFn: fetchUnreadCount,
     refetchInterval: 30000,
+    enabled: !!user, // Only fetch if user is authenticated
   });
 
   const markAsReadMutation = useMutation({

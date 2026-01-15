@@ -1,25 +1,28 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './context/NotificationContext';
-import PublicNavbar from './components/PublicNavbar';
-import PrivateNavbar from './components/PrivateNavbar';
+
+import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
+// ===== Pages =====
 import Home from './pages/Home/Home';
 import LandingPage from './pages/Home/LandingPage';
 import About from './pages/Home/About';
+import ExplorePage from './pages/Explore/ExplorePage';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
+
 import CourseList from './pages/Courses/CourseList';
 
 // Clan Pages
@@ -28,9 +31,8 @@ import ClanDetail from './pages/Clans/ClanDetail';
 import ClanCreate from './pages/Clans/ClanCreate';
 import ClanMembers from './pages/Clans/ClanMembers';
 
-//user Profile Pages
+// Profile Pages
 import UserProfile from './pages/Profile/UserProfile';
-import PublicUserProfile from './pages/Profile/PublicUserProfile';
 import EditProfile from './pages/Profile/EditProfile';
 import ChangePassword from './pages/Profile/ChangePassword';
 import MyEnrollments from './pages/Profile/MyEnrollments';
@@ -54,6 +56,7 @@ import NotFound from './pages/NotFound/NotFound';
 import './App.css';
 import './styles/global.css';
 
+// ===== React Query =====
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -63,71 +66,81 @@ const queryClient = new QueryClient({
   },
 });
 
-// Public Layout - Landing, Auth pages (no sidebar, no authenticated nav)
+
+// =======================
+// PUBLIC LAYOUT
+// =======================
 function PublicLayout() {
   return (
     <div className="app">
-      <PublicNavbar />
-      <div className="app-container">
-        <main className="main-content">
-          <Routes>
-            {/* ===== PUBLIC ROUTES ===== */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/courses" element={<CourseList />} />
-            <Route path="/clans" element={<ClanList />} />
-            <Route path="/clans/:clanId" element={<ClanDetail />} />
-            <Route path="/clans/:clanId/members" element={<ClanMembers />} />
-            <Route path="/profile/:userId" element={<PublicUserProfile />} />
-          </Routes>
-        </main>
-      </div>
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/explore" element={<ExplorePage />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+          <Route path="/courses" element={<CourseList />} />
+
+          <Route path="/clans" element={<ClanList />} />
+          <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
+          <Route path="/clans/:clanId" element={<ClanDetail />} />
+          <Route path="/clans/:clanId/members" element={<ClanMembers />} />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
       <Footer />
     </div>
   );
 }
 
-// Private Layout - Dashboard, protected pages (with sidebar and authenticated nav)
-function PrivateLayout() {
-  const location = useLocation();
-  
-  // Routes where sidebar should NOT be shown (some private pages)
-  const noSidebarRoutes = [];
-  const showSidebar = !noSidebarRoutes.includes(location.pathname);
 
+// =======================
+// PRIVATE LAYOUT
+// =======================
+function PrivateLayout() {
   return (
     <div className="app">
-      <PrivateNavbar />
+      <Navbar />
       <div className="app-container">
-        {showSidebar && <Sidebar />}
+        <Sidebar />
         <main className="main-content">
           <Routes>
-            {/* ===== PROTECTED ROUTES - User Dashboard & Profile ===== */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+            {/* Dashboard */}
+            <Route
+              path="/dashboard"
+              element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+            />
+
+            {/* Profile */}
             <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/profile/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-            <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent={true}><MyEnrollments /></ProtectedRoute>} />
-            <Route path="/profile/certificates" element={<ProtectedRoute requiredStudent={true}><Certificates /></ProtectedRoute>} />
-            <Route path="/profile/assignments" element={<ProtectedRoute requiredStudent={true}><MyAssignments /></ProtectedRoute>} />
+            <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent><MyEnrollments /></ProtectedRoute>} />
+            <Route path="/profile/certificates" element={<ProtectedRoute requiredStudent><Certificates /></ProtectedRoute>} />
+            <Route path="/profile/assignments" element={<ProtectedRoute requiredStudent><MyAssignments /></ProtectedRoute>} />
 
-            {/* ===== PROTECTED ROUTES - Teacher Dashboard ===== */}
-            <Route path="/teacher" element={<ProtectedRoute requiredTeacher={true}><TeacherDashboard /></ProtectedRoute>} />
-            <Route path="/teacher/create-course" element={<ProtectedRoute requiredTeacher={true}><CreateCourse /></ProtectedRoute>} />
-            <Route path="/teacher/manage-courses" element={<ProtectedRoute requiredTeacher={true}><ManageCourses /></ProtectedRoute>} />
-            <Route path="/teacher/course/:courseId/submissions" element={<ProtectedRoute requiredTeacher={true}><StudentSubmissions /></ProtectedRoute>} />
-            <Route path="/teacher/submissions" element={<ProtectedRoute requiredTeacher={true}><StudentSubmissions /></ProtectedRoute>} />
-            <Route path="/teacher/reviews" element={<ProtectedRoute requiredTeacher={true}><TeacherReviews /></ProtectedRoute>} />
+            {/* Teacher */}
+            <Route path="/teacher" element={<ProtectedRoute requiredTeacher><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/teacher/create-course" element={<ProtectedRoute requiredTeacher><CreateCourse /></ProtectedRoute>} />
+            <Route path="/teacher/manage-courses" element={<ProtectedRoute requiredTeacher><ManageCourses /></ProtectedRoute>} />
+            <Route path="/teacher/course/:courseId/submissions" element={<ProtectedRoute requiredTeacher><StudentSubmissions /></ProtectedRoute>} />
+            <Route path="/teacher/reviews" element={<ProtectedRoute requiredTeacher><TeacherReviews /></ProtectedRoute>} />
 
-            {/* ===== PROTECTED ROUTES - Admin Dashboard ===== */}
-            <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin={true}><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin={true}><AdminPanel /></ProtectedRoute>} />
-            <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin={true}><ManageTeachers /></ProtectedRoute>} />
+            {/* Admin */}
+            <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin><ManageTeachers /></ProtectedRoute>} />
+
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>
@@ -136,19 +149,41 @@ function PrivateLayout() {
   );
 }
 
-// Main router that decides which layout to use
-function AppRouter() {
-  const { user } = useAuth();
-  const location = useLocation();
-  
-  // Public routes that use PublicLayout
-  const publicRoutes = ['/', '/home', '/about', '/login', '/register', '/forgot-password', '/reset-password', '/courses', '/clans'];
-  const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
 
-  return isPublicRoute ? <PublicLayout /> : <PrivateLayout />;
+// =======================
+// ROUTER DECIDER
+// =======================
+function AppRouter() {
+  const { loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return null;
+
+  const publicRoutes = [
+    '/',
+    '/home',
+    '/about',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/universities',
+    '/courses',
+    '/clans',
+  ];
+
+  const isPublic = publicRoutes.some(path =>
+    location.pathname === path || location.pathname.startsWith(path + '/')
+  );
+
+  return isPublic ? <PublicLayout /> : <PrivateLayout />;
 }
 
-function App() {
+
+// =======================
+// APP ROOT
+// =======================
+export default function App() {
   return (
     <ChakraProvider>
       <QueryClientProvider client={queryClient}>
@@ -163,5 +198,3 @@ function App() {
     </ChakraProvider>
   );
 }
-
-export default App;
