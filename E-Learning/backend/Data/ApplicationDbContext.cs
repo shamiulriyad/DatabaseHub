@@ -52,6 +52,7 @@ namespace backend.Data
         public DbSet<Competition> Competitions => Set<Competition>();
         public DbSet<CompetitionParticipant> CompetitionParticipants => Set<CompetitionParticipant>();
         public DbSet<CompetitionScore> CompetitionScores => Set<CompetitionScore>();
+        public DbSet<CompetitionQuestion> CompetitionQuestions => Set<CompetitionQuestion>();
 
         // Review System
         public DbSet<Review> Reviews => Set<Review>();
@@ -314,6 +315,14 @@ namespace backend.Data
                 entity.Property(c => c.TeamSize).HasDefaultValue(1);
                 entity.Property(c => c.ParticipantCount).HasDefaultValue(0);
                 entity.Property(c => c.CreatedAt).HasDefaultValueSql("NOW()");
+            });
+
+            // CompetitionParticipant Configuration
+            modelBuilder.Entity<CompetitionParticipant>(entity =>
+            {
+                entity.HasIndex(cp => new { cp.CompetitionId, cp.UserId }).IsUnique();
+                entity.HasIndex(cp => cp.Status);
+                entity.HasIndex(cp => cp.JoinedAt);
             });
 
             // Review Configuration

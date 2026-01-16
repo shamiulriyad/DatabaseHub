@@ -22,6 +22,17 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log detailed error info for debugging
+    if (error.response?.status === 400) {
+      console.error('400 Bad Request:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        params: error.config?.params,
+        data: error.config?.data,
+        message: error.response?.data?.message,
+      });
+    }
+    
     if (error.response?.status === 401) {
       // Clear auth data
       localStorage.removeItem('token');

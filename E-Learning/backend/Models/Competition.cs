@@ -40,6 +40,13 @@ namespace backend.Models
         public int TeamSize { get; set; } = 1;
         public bool AllowMultipleAttempts { get; set; } = false;
 
+        // Visibility
+        public bool IsPublic { get; set; } = true;
+        public string? AllowedMemberIds { get; set; } // Comma-separated user IDs for private competitions
+        public string? AllowedClanIds { get; set; } // Comma-separated clan IDs for clan-based participation
+        public int? PointRangeMin { get; set; } // Minimum points required for participation (for clan members)
+        public int? PointRangeMax { get; set; } // Maximum points allowed for participation (for clan members)
+
         // Content
         public int? QuizId { get; set; }
         public int? AssignmentId { get; set; }
@@ -57,10 +64,18 @@ namespace backend.Models
         public string? PrizeBadge { get; set; }
         public int PrizePoints { get; set; } = 100;
 
+        // Creator & Approval
+        public int CreatorId { get; set; }
+        [MaxLength(20)]
+        public string CreatorRole { get; set; } = "Student"; // Student, Teacher, Admin, ClanLeader
+        public bool IsApproved { get; set; } = true; // Default approved; students set to false
+        public int? ApprovedBy { get; set; } // Admin user ID who approved
+        public DateTime? ApprovedAt { get; set; }
+
         // Status
         [Required]
         [MaxLength(20)]
-        public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled
+        public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled, PendingApproval
 
         // Season Context
         public int Season { get; set; } = 1; // Season number for tracking season-specific leaderboards and points
@@ -79,6 +94,9 @@ namespace backend.Models
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation Properties
+        [ForeignKey("CreatorId")]
+        public virtual User? Creator { get; set; }
+
         [ForeignKey("UniversityId")]
         public virtual University? University { get; set; }
 
@@ -99,5 +117,6 @@ namespace backend.Models
 
         public virtual ICollection<CompetitionParticipant> Participants { get; set; } = new List<CompetitionParticipant>();
         public virtual ICollection<CompetitionScore> Scores { get; set; } = new List<CompetitionScore>();
+        public virtual ICollection<CompetitionQuestion> Questions { get; set; } = new List<CompetitionQuestion>();
     }
 }

@@ -24,13 +24,28 @@ import {
 import { FaBell } from 'react-icons/fa';
 
 const fetchNotifications = async () => {
-  const { data } = await api.get('/notifications?unreadOnly=true&pageSize=10');
-  return data?.notifications || [];
+  try {
+    const { data } = await api.get('/notifications', {
+      params: {
+        unreadOnly: true,
+        pageSize: 10
+      }
+    });
+    return data?.notifications || [];
+  } catch (error) {
+    console.warn('Failed to fetch notifications:', error.response?.status, error.message);
+    return [];
+  }
 };
 
 const fetchUnreadCount = async () => {
-  const { data } = await api.get('/notifications/count');
-  return data?.count || 0;
+  try {
+    const { data } = await api.get('/notifications/count');
+    return data?.count || 0;
+  } catch (error) {
+    console.warn('Failed to fetch unread count:', error.response?.status, error.message);
+    return 0;
+  }
 };
 
 const NotificationItem = ({ notification, onRead }) => {

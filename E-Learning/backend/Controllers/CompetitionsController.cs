@@ -45,7 +45,77 @@ namespace backend.Controllers
             });
         }
 
-        [Authorize(Roles = "Teacher,Admin")]
+        [HttpGet("{id}/questions")]
+        [Authorize]
+        public async Task<IActionResult> GetCompetitionQuestions(int id)
+        {
+            var result = await _competitionService.GetCompetitionQuestions(id);
+            
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                data = result.Data
+            });
+        }
+
+        /// <summary>
+        /// ADMIN ENDPOINT: Get questions for competition creator/admin (anytime access)
+        /// Codeforces-style: Admin can see questions before contest starts
+        /// </summary>
+        [HttpGet("{id}/admin/questions")]
+        [Authorize]
+        public async Task<IActionResult> GetAdminQuestions(int id)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _competitionService.GetAdminQuestions(id, userId);
+            
+            if (!result.Success)
+                return result.Success ? 
+                    NotFound(new { success = false, message = result.Message }) :
+                    Forbid();
+
+            return Ok(new {
+                success = true,
+                message = result.Message,
+                data = result.Data
+            });
+        }
+
+        /// <summary>
+        /// PARTICIPANT ENDPOINT: Get questions (ONLY during Ongoing status)
+        /// Codeforces-style: Questions only visible when contest is running
+        /// Requires: User is registered participant
+        /// </summary>
+        [HttpGet("{id}/participant/questions")]
+        [Authorize]
+        public async Task<IActionResult> GetParticipantQuestions(int id)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _competitionService.GetParticipantQuestions(id, userId);
+            
+            if (!result.Success)
+                return result.Success ? 
+                    NotFound(new { success = false, message = result.Message }) :
+                    Forbid();
+
+            return Ok(new {
+                success = true,
+                message = result.Message,
+                data = result.Data
+            });
+        }
+
+        [Authorize(Roles = "Teacher,Admin,Student")]
         [HttpPost]
         public async Task<IActionResult> CreateCompetition([FromBody] CreateCompetitionDTO competitionDto)
         {
@@ -64,7 +134,7 @@ namespace backend.Controllers
 
             return CreatedAtAction(nameof(GetCompetition), new { id = result.Data?.Id }, new {
                 success = true,
-                message = "Competition created successfully",
+                message = result.Message,
                 data = result.Data
             });
         }
@@ -198,6 +268,79 @@ namespace backend.Controllers
                 success = result.Success,
                 message = result.Message,
                 data = result.Data
+            });
+        }
+
+        // ADMIN APPROVAL
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("pending-competitions")]
+        public async Task<IActionResult> GetPendingCompetitions(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _competitionService.GetPendingCompetitions(page, pageSize);
+            
+            return Ok(new {
+                success = result.Success,
+                message = result.Message,
+                data = result.Data
+            });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/all-competitions")]
+        public async Task<IActionResult> GetAllCompetitionsForAdmin(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
+        {
+            var result = await _competitionService.GetAllCompetitionsForAdmin(page, pageSize);
+            
+            return Ok(new {
+                success = result.Success,
+                message = result.Message,
+                data = result.Data
+            });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("{id}/approve")]
+        public async Task<IActionResult> ApproveCompetition(int id)
+        {
+            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            
+            if (adminId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _competitionService.ApproveCompetition(id, adminId);
+            
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                message = result.Message,
+                data = result.Data
+            });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("{id}/reject")]
+        public async Task<IActionResult> RejectCompetition(int id)
+        {
+            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            
+            if (adminId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _competitionService.RejectCompetition(id, adminId);
+            
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                message = result.Message
             });
         }
     }

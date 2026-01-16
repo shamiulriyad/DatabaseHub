@@ -28,6 +28,7 @@ import {
   FaChalkboardTeacher,
   FaStar,
   FaShieldAlt,
+  FaTrophy,
 } from 'react-icons/fa';
 
 const Sidebar = () => {
@@ -143,6 +144,7 @@ const Sidebar = () => {
             <SidebarLink to="/admin/manage-teachers" icon={FaGraduationCap} label="All Applications" />
             <SidebarLink to="/admin/users" icon={FaUsers} label="Users" />
             <SidebarLink to="/admin/courses" icon={FaBook} label="Courses" />
+            <SidebarLink to="/admin/competitions" icon={FaTrophy} label="Competitions" />
             <SidebarLink to="/admin/payments" icon={FaFileInvoiceDollar} label="Payments" />
             <Divider my={2} />
             <SidebarLink to="/admin/settings" icon={FaCog} label="Settings" />

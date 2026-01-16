@@ -31,6 +31,13 @@ import ClanDetail from './pages/Clans/ClanDetail';
 import ClanCreate from './pages/Clans/ClanCreate';
 import ClanMembers from './pages/Clans/ClanMembers';
 
+// Competition Pages
+import CompetitionList from './pages/Competitions/CompetitionList';
+import CompetitionDetail from './pages/Competitions/CompetitionDetail';
+import CompetitionCreate from './pages/Competitions/CompetitionCreate';
+import Leaderboard from './pages/Competitions/Leaderboard';
+import Rankings from './pages/Competitions/Rankings';
+
 // Profile Pages
 import UserProfile from './pages/Profile/UserProfile';
 import EditProfile from './pages/Profile/EditProfile';
@@ -50,6 +57,8 @@ import TeacherReviews from './pages/Teacher/TeacherReviews';
 import AdminPanel from './pages/Admin/AdminPanel';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ManageTeachers from './pages/Admin/ManageTeachers';
+import PendingCompetitions from './pages/Admin/PendingCompetitions';
+import CompetitionManagement from './pages/Admin/CompetitionManagement';
 
 import NotFound from './pages/NotFound/NotFound';
 
@@ -87,6 +96,12 @@ function PublicLayout() {
           <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/courses" element={<CourseList />} />
+
+          <Route path="/competitions" element={<CompetitionList />} />
+          <Route path="/competitions/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
+          <Route path="/competitions/:id" element={<CompetitionDetail />} />
+          <Route path="/competitions/leaderboard" element={<Leaderboard />} />
+          <Route path="/competitions/rankings" element={<Rankings />} />
 
           <Route path="/clans" element={<ClanList />} />
           <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
@@ -139,6 +154,8 @@ function PrivateLayout() {
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin><AdminPanel /></ProtectedRoute>} />
             <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin><ManageTeachers /></ProtectedRoute>} />
+            <Route path="/admin/pending-competitions" element={<ProtectedRoute requiredAdmin><PendingCompetitions /></ProtectedRoute>} />
+            <Route path="/admin/competitions" element={<ProtectedRoute requiredAdmin><CompetitionManagement /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -170,6 +187,7 @@ function AppRouter() {
     '/universities',
     '/courses',
     '/clans',
+    '/competitions',
   ];
 
   const isPublic = publicRoutes.some(path =>

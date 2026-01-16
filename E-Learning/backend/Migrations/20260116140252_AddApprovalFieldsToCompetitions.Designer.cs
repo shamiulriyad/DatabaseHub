@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260116140252_AddApprovalFieldsToCompetitions")]
+    partial class AddApprovalFieldsToCompetitions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -665,12 +668,6 @@ namespace backend.Migrations
                     b.Property<bool>("AllowMultipleAttempts")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("AllowedClanIds")
-                        .HasColumnType("text");
-
-                    b.Property<string>("AllowedMemberIds")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("ApprovedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -731,9 +728,6 @@ namespace backend.Migrations
                     b.Property<bool>("IsLive")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsTeamBased")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -753,12 +747,6 @@ namespace backend.Migrations
                         .HasDefaultValue(0);
 
                     b.Property<int>("ParticipationPoints")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PointRangeMax")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PointRangeMin")
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("PrizeAmount")
@@ -914,58 +902,6 @@ namespace backend.Migrations
                         .IsUnique();
 
                     b.ToTable("CompetitionParticipants");
-                });
-
-            modelBuilder.Entity("backend.Models.CompetitionQuestion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CompetitionId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CorrectAnswer")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("character varying(1)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("OptionA")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionB")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionC")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionD")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("QuestionText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetitionId");
-
-                    b.ToTable("CompetitionQuestions");
                 });
 
             modelBuilder.Entity("backend.Models.CompetitionScore", b =>
@@ -2882,17 +2818,6 @@ namespace backend.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("backend.Models.CompetitionQuestion", b =>
-                {
-                    b.HasOne("backend.Models.Competition", "Competition")
-                        .WithMany("Questions")
-                        .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Competition");
-                });
-
             modelBuilder.Entity("backend.Models.CompetitionScore", b =>
                 {
                     b.HasOne("backend.Models.Competition", "Competition")
@@ -3303,8 +3228,6 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.Competition", b =>
                 {
                     b.Navigation("Participants");
-
-                    b.Navigation("Questions");
 
                     b.Navigation("Scores");
                 });

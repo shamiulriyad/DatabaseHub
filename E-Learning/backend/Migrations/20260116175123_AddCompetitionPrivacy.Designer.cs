@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260116175123_AddCompetitionPrivacy")]
+    partial class AddCompetitionPrivacy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -665,9 +668,6 @@ namespace backend.Migrations
                     b.Property<bool>("AllowMultipleAttempts")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("AllowedClanIds")
-                        .HasColumnType("text");
-
                     b.Property<string>("AllowedMemberIds")
                         .HasColumnType("text");
 
@@ -753,12 +753,6 @@ namespace backend.Migrations
                         .HasDefaultValue(0);
 
                     b.Property<int>("ParticipationPoints")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PointRangeMax")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PointRangeMin")
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("PrizeAmount")
