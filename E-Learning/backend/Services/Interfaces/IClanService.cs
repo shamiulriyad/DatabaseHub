@@ -33,6 +33,7 @@ namespace backend.Services.Interfaces
         
         // Helper methods
         Task<Models.ClanMember?> GetUserClanMembership(int clanId, int userId);
+        Task<bool> HasLeadershipRole(int userId);
 
         // Announcements
         Task<ServiceResult<List<ClanAnnouncementDTO>>> GetClanAnnouncements(int clanId, int? currentUserId, int page, int pageSize);

@@ -15,10 +15,22 @@ namespace backend.Services
             _context = context;
         }
 
+        public async Task<bool> HasLeadershipRole(int userId)
+        {
+            return await _context.ClanMembers
+                .AnyAsync(m => m.UserId == userId && (m.Role == "Leader" || m.Role == "CoLeader"));
+        }
+
         public async Task<ServiceResult<ClanDTO>> CreateClan(CreateClanDTO dto, int userId)
         {
             try
             {
+                // Leadership exclusivity: a user cannot create a clan if already Leader/CoLeader elsewhere
+                var hasLeadership = await HasLeadershipRole(userId);
+                if (hasLeadership)
+                {
+                    return ServiceResult<ClanDTO>.FailureResult("User already holds a leadership role in a clan. Creating a new clan is forbidden.");
+                }
                 var clan = new Models.Clan
                 {
                     Name = dto.Name,
@@ -535,6 +547,16 @@ namespace backend.Services
 
                 if (member.Role == "Leader")
                     return ServiceResult<bool>.FailureResult("Leader role cannot be changed");
+
+                // Enforce leadership exclusivity across clans
+                if (role == "Leader" || role == "CoLeader")
+                {
+                    var hasLeadershipElsewhere = await _context.ClanMembers
+                        .AnyAsync(m => m.UserId == member.UserId && (m.Role == "Leader" || m.Role == "CoLeader") && m.ClanId != clanId);
+
+                    if (hasLeadershipElsewhere)
+                        return ServiceResult<bool>.FailureResult("User already has a leadership role in another clan");
+                }
 
                 member.Role = role;
                 await _context.SaveChangesAsync();

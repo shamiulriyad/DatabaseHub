@@ -44,6 +44,7 @@ const UserProfile = () => {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [myClans, setMyClans] = useState([]);
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -77,6 +78,18 @@ const UserProfile = () => {
           streakDays: 7,
           completionRate: 40,
         });
+      }
+
+      // Fetch user clans
+      try {
+        const clansResp = await axios.get('http://localhost:5145/api/clans/my-clans', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (clansResp.data?.success) {
+          setMyClans(clansResp.data.clans || []);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch user clans:', e.response?.data || e.message);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -256,6 +269,46 @@ const UserProfile = () => {
             </CardBody>
           </Card>
         </Grid>
+
+        {/* My Clans */}
+        <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} mb={8}>
+          <CardBody p={6}>
+            <HStack justify="space-between" mb={4}>
+              <HStack spacing={2}>
+                <Icon as={FaShieldAlt} color="purple.500" />
+                <Heading size="md">My Clans</Heading>
+              </HStack>
+              <Badge colorScheme="purple" borderRadius="full">{myClans.length}</Badge>
+            </HStack>
+            {myClans.length === 0 ? (
+              <Text color="gray.600">You are not a member of any clan yet.</Text>
+            ) : (
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
+                {myClans.map((clan) => (
+                  <Card key={clan.id} borderWidth="1px" borderColor={borderColor} _hover={{ shadow: 'md' }}>
+                    <CardBody>
+                      <HStack justify="space-between" mb={2}>
+                        <Heading size="sm">{clan.name}</Heading>
+                        {clan.tag && <Badge>{clan.tag}</Badge>}
+                      </HStack>
+                      <HStack spacing={3}>
+                        <Badge colorScheme={clan.memberRole === 'Leader' ? 'red' : clan.memberRole === 'CoLeader' ? 'orange' : 'green'}>
+                          {clan.memberRole}
+                        </Badge>
+                        {clan.universityName && (
+                          <Badge colorScheme="blue" variant="subtle">{clan.universityName}</Badge>
+                        )}
+                        {typeof clan.rank === 'number' && (
+                          <Badge colorScheme="yellow" variant="outline">Rank #{clan.rank}</Badge>
+                        )}
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </Grid>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Progress & Rank Section */}
         <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6} mb={8}>

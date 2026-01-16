@@ -84,10 +84,20 @@ namespace backend.Controllers
             if (leaderId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
+            // Enforce leadership exclusivity: cannot create if already Leader/CoLeader in any clan
+            var alreadyLeader = await _clanService.HasLeadershipRole(leaderId);
+            if (alreadyLeader)
+                return StatusCode(403, new { success = false, message = "You already hold a leadership role in a clan and cannot create a new one" });
+
             var result = await _clanService.CreateClan(clanDto, leaderId);
             
             if (!result.Success)
+            {
+                // If service flagged leadership conflict, return 403
+                if (result.Message.Contains("leadership", StringComparison.OrdinalIgnoreCase))
+                    return StatusCode(403, new { success = false, message = result.Message });
                 return BadRequest(new { success = false, message = result.Message });
+            }
 
             return CreatedAtAction(nameof(GetClan), new { id = result.Data.Id }, new {
                 success = true,

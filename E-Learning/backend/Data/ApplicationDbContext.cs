@@ -286,6 +286,11 @@ namespace backend.Data
                 entity.HasIndex(cm => new { cm.UserId, cm.ClanId }).IsUnique();
                 entity.HasIndex(cm => cm.ClanId);
                 entity.HasIndex(cm => cm.Role);
+                // DB-level guard: a user can have only one leadership role across clans
+                // Creates a partial/filtered unique index on UserId for leadership roles
+                entity.HasIndex(cm => cm.UserId)
+                      .IsUnique()
+                      .HasFilter("Role IN ('Leader','CoLeader')");
                 
                 entity.Property(cm => cm.Role).HasDefaultValue("Member");
                 entity.Property(cm => cm.JoinedAt).HasDefaultValueSql("NOW()");
