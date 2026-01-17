@@ -23,6 +23,14 @@ import {
   IconButton,
   Wrap,
   WrapItem,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
@@ -33,6 +41,27 @@ const CompetitionCreate = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [competitionTypeChoice, setCompetitionTypeChoice] = useState(null);
+  // Show modal on mount
+  useEffect(() => {
+    onOpen();
+  }, [onOpen]);
+  // Handle competition type selection
+  const handleTypeSelect = (type) => {
+    setCompetitionTypeChoice(type);
+    onClose();
+    // Route if needed
+    if (type === 'clan-vs-clan') {
+      navigate('/clans-competitions/create');
+    } else if (type === 'university') {
+      navigate('/universities/competitions/create');
+    } else if (type === 'public') {
+      setFormData(prev => ({ ...prev, isPublic: true }));
+    } else if (type === 'private') {
+      setFormData(prev => ({ ...prev, isPublic: false }));
+    }
+  };
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -312,6 +341,32 @@ const CompetitionCreate = () => {
           </Card>
         </Container>
       </Box>
+    );
+  }
+
+  // Show modal for type selection if not chosen
+  if (!competitionTypeChoice) {
+    return (
+      <>
+        <Modal isOpen={isOpen} onClose={() => {}} isCentered closeOnOverlayClick={false} closeOnEsc={false}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Select Competition Type</ModalHeader>
+            <ModalCloseButton display="none" />
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <Button colorScheme="blue" onClick={() => handleTypeSelect('university')}>For University</Button>
+                <Button colorScheme="orange" onClick={() => handleTypeSelect('clan-vs-clan')}>Clan vs Clan</Button>
+                <Button colorScheme="green" onClick={() => handleTypeSelect('public')}>Public</Button>
+                <Button colorScheme="purple" onClick={() => handleTypeSelect('private')}>Private</Button>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Text fontSize="sm" color="gray.500">Please select the type of competition you want to create.</Text>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 

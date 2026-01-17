@@ -35,6 +35,9 @@ import ClanMembers from './pages/Clans/ClanMembers';
 import CompetitionList from './pages/Competitions/CompetitionList';
 import CompetitionDetail from './pages/Competitions/CompetitionDetail';
 import CompetitionCreate from './pages/Competitions/CompetitionCreate';
+import ClanVsClansCompetitionCreate from './pages/Competitions/ClanVsClansCompetitionCreate';
+import ClanVsClansCompetitionDetail from './pages/Competitions/ClanVsClansCompetitionDetail';
+import ClanVsClansCompetitionList from './pages/Competitions/ClanVsClansCompetitionList';
 import Leaderboard from './pages/Competitions/Leaderboard';
 import Rankings from './pages/Competitions/Rankings';
 
@@ -59,6 +62,13 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import ManageTeachers from './pages/Admin/ManageTeachers';
 import PendingCompetitions from './pages/Admin/PendingCompetitions';
 import CompetitionManagement from './pages/Admin/CompetitionManagement';
+
+// Community Pages
+import CommunityPage from './pages/Community/CommunityPage';
+import PostDetail from './pages/Community/PostDetail';
+import CreatePost from './pages/Community/CreatePost';
+import PostList from './pages/Community/PostList';
+import Forum from './pages/Community/Forum';
 
 import NotFound from './pages/NotFound/NotFound';
 
@@ -103,10 +113,22 @@ function PublicLayout() {
           <Route path="/competitions/leaderboard" element={<Leaderboard />} />
           <Route path="/competitions/rankings" element={<Rankings />} />
 
+          <Route path="/clans-competitions" element={<ClanVsClansCompetitionList />} />
+          <Route path="/clans-competitions/create" element={<ProtectedRoute><ClanVsClansCompetitionCreate /></ProtectedRoute>} />
+          <Route path="/clans-competitions/:id" element={<ClanVsClansCompetitionDetail />} />
+          <Route path="/clans/competitions/:id" element={<ClanVsClansCompetitionDetail />} />
+
           <Route path="/clans" element={<ClanList />} />
           <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
           <Route path="/clans/:clanId" element={<ClanDetail />} />
           <Route path="/clans/:clanId/members" element={<ClanMembers />} />
+
+          {/* Community Routes - Public */}
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/community/posts" element={<PostList />} />
+          <Route path="/community/forum" element={<Forum />} />
+          <Route path="/community/post/:postId" element={<PostDetail />} />
+          <Route path="/community/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -128,7 +150,6 @@ function PrivateLayout() {
         <Sidebar />
         <main className="main-content">
           <Routes>
-
             {/* Dashboard */}
             <Route
               path="/dashboard"
@@ -157,6 +178,13 @@ function PrivateLayout() {
             <Route path="/admin/pending-competitions" element={<ProtectedRoute requiredAdmin><PendingCompetitions /></ProtectedRoute>} />
             <Route path="/admin/competitions" element={<ProtectedRoute requiredAdmin><CompetitionManagement /></ProtectedRoute>} />
 
+            {/* Community Routes - Private (Same as public but accessible from private layout) */}
+            <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+            <Route path="/community/posts" element={<ProtectedRoute><PostList /></ProtectedRoute>} />
+            <Route path="/community/forum" element={<ProtectedRoute><Forum /></ProtectedRoute>} />
+            <Route path="/community/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+            <Route path="/community/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
@@ -184,10 +212,11 @@ function AppRouter() {
     '/register',
     '/forgot-password',
     '/reset-password',
-    '/universities',
     '/courses',
     '/clans',
     '/competitions',
+    '/clans-competitions', 
+    '/community',
   ];
 
   const isPublic = publicRoutes.some(path =>

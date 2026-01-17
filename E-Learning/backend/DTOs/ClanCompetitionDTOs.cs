@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace backend.DTOs;
 
+// ===== REGULAR COMPETITION DTOs =====
+
 // Competition DTOs
 public class CompetitionDetailDTO : CompetitionDTO
 {
@@ -173,4 +175,164 @@ public class CompetitionQuestionDTO
     public int Points { get; set; }
     public int Order { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+// ===== CLAN VS CLAN COMPETITION DTOs =====
+
+public class CreateClanVsClansCompetitionDTO
+{
+    [Required]
+    [MaxLength(200)]
+    public required string Title { get; set; }
+
+    public string? Description { get; set; }
+
+    [Required]
+    [MaxLength(20)]
+    public required string CompetitionType { get; set; } // Programming, Quiz, Mixed
+
+    [Required]
+    [MaxLength(10)]
+    public required string DifficultyLevel { get; set; } // Easy, Medium, Hard
+
+    [Required]
+    public int ParticipantsPerClan { get; set; } // e.g., 3, 5
+
+    [Required]
+    public int DurationMinutes { get; set; } // e.g., 20, 30, 60
+
+    [Required]
+    public int OpponentClanId { get; set; } // Clan being challenged
+
+    public DateTime? ScheduledStartTime { get; set; } // Optional: when the competition should start
+}
+
+public class ClanVsClansCompetitionDetailDTO
+{
+    public int Id { get; set; }
+
+    [Required]
+    public required string Title { get; set; }
+
+    public string? Description { get; set; }
+
+    public required ClanBasicDTO ChallengerClan { get; set; }
+    public required ClanBasicDTO OpponentClan { get; set; }
+
+    public required string CompetitionType { get; set; }
+    public required string DifficultyLevel { get; set; }
+    public int ParticipantsPerClan { get; set; }
+    public int DurationMinutes { get; set; }
+
+    [Required]
+    public required string Status { get; set; } // Pending, Scheduled, Ongoing, Completed, Rejected, Cancelled
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ScheduledStartTime { get; set; }
+    public DateTime? CompetitionStartTime { get; set; }
+    public DateTime? CompetitionEndTime { get; set; }
+
+    public required List<ClanVsClansCompetitionParticipantDTO> ChallengerParticipants { get; set; }
+    public required List<ClanVsClansCompetitionParticipantDTO> OpponentParticipants { get; set; }
+
+    public int? ChallengerTotalScore { get; set; }
+    public int? OpponentTotalScore { get; set; }
+
+    public string? WinnerClanStatus { get; set; } // ChallengerWon, OpponentWon, Draw
+    public bool ChallengerReady { get; set; }
+    public bool OpponentReady { get; set; }
+    public string? OpponentResponse { get; set; } // Pending, Accepted, Rejected
+}
+
+public class ClanVsClansCompetitionQuestionDTO
+{
+    public int Id { get; set; }
+    public required string QuestionText { get; set; }
+    public required string OptionA { get; set; }
+    public required string OptionB { get; set; }
+    public required string OptionC { get; set; }
+    public required string OptionD { get; set; }
+    public int Points { get; set; }
+    public int QuestionOrder { get; set; }
+    public string? Topic { get; set; }
+    public required string DifficultyLevel { get; set; }
+}
+
+public class ClanVsClansCompetitionParticipantDTO
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public required string UserName { get; set; }
+    public string? ProfileImageUrl { get; set; }
+    public required string Status { get; set; } // Selected, Started, Completed, Disqualified
+    public int Score { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int WrongAnswers { get; set; }
+    public int UnansweredQuestions { get; set; }
+    public int? TimeTakenSeconds { get; set; }
+    public DateTime SelectedAt { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+}
+
+public class SelectClanVsClansCompetitionParticipantsDTO
+{
+    [Required]
+    public required List<int> SelectedUserIds { get; set; }
+}
+
+public class SubmitClanVsClansCompetitionAnswerDTO
+{
+    [Required]
+    public int QuestionId { get; set; }
+
+    [Required]
+    [MaxLength(1)]
+    public required string Answer { get; set; } // A, B, C, D
+}
+
+public class AcceptClanVsClansCompetitionDTO
+{
+    [Required]
+    public required string Action { get; set; } // "accept" or "reject"
+
+    public string? RejectionReason { get; set; }
+}
+
+public class ClanVsClansCompetitionResultDTO
+{
+    public int CompetitionId { get; set; }
+    public required ClanBasicDTO ChallengerClan { get; set; }
+    public required ClanBasicDTO OpponentClan { get; set; }
+
+    public int ChallengerTotalScore { get; set; }
+    public int OpponentTotalScore { get; set; }
+
+    public required string WinnerClan { get; set; } // "Challenger", "Opponent", "Draw"
+
+    public required List<ClanVsClansCompetitionParticipantResultDTO> ChallengerResults { get; set; }
+    public required List<ClanVsClansCompetitionParticipantResultDTO> OpponentResults { get; set; }
+
+    public DateTime CompletedAt { get; set; }
+}
+
+public class ClanVsClansCompetitionParticipantResultDTO
+{
+    public int UserId { get; set; }
+    public required string UserName { get; set; }
+    public int Score { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int WrongAnswers { get; set; }
+    public int UnansweredQuestions { get; set; }
+    public int? TimeTakenSeconds { get; set; }
+    public int Rank { get; set; } // Rank within clan
+}
+
+public class ClanBasicDTO
+{
+    public int Id { get; set; }
+    public required string Name { get; set; }
+    public required string Tag { get; set; }
+    public string? LogoUrl { get; set; }
+    public int MemberCount { get; set; }
 }

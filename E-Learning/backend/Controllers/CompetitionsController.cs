@@ -11,10 +11,39 @@ namespace backend.Controllers
     public class CompetitionsController : ControllerBase
     {
         private readonly ICompetitionService _competitionService;
+        private readonly IClanService _clanService;
 
-        public CompetitionsController(ICompetitionService competitionService)
+        public CompetitionsController(ICompetitionService competitionService, IClanService clanService)
         {
             _competitionService = competitionService;
+            _clanService = clanService;
+        }
+
+        /// <summary>
+        /// Provides all necessary clan/role/permission data for competition creation (self-contained for frontend)
+        /// </summary>
+        [Authorize]
+        [HttpGet("create-context")]
+        public async Task<IActionResult> GetCreateContext()
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            // Get all clans the user is a member of
+            var myClansResult = await _clanService.GetMyClans(userId);
+            if (!myClansResult.Success)
+                return BadRequest(new { success = false, message = myClansResult.Message });
+
+            // Identify which clans the user is a leader/co-leader of
+            var leaderClans = myClansResult.Data?.Where(c => c.MemberRole == "Leader" || c.MemberRole == "CoLeader").ToList() ?? new List<backend.DTOs.ClanDTO>();
+
+            return Ok(new {
+                success = true,
+                clans = myClansResult.Data,
+                leaderClans = leaderClans,
+                userId = userId
+            });
         }
 
         [HttpGet]

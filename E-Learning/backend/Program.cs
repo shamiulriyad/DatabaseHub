@@ -98,6 +98,7 @@ builder.Services.AddScoped<ILearningService, LearningService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IClanService, ClanService>();
 builder.Services.AddScoped<ICompetitionService, CompetitionService>();
+builder.Services.AddScoped<IClanVsClansCompetitionService, ClanVsClansCompetitionService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IRankingService, RankingService>();

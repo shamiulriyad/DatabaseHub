@@ -54,6 +54,12 @@ namespace backend.Data
         public DbSet<CompetitionScore> CompetitionScores => Set<CompetitionScore>();
         public DbSet<CompetitionQuestion> CompetitionQuestions => Set<CompetitionQuestion>();
 
+        // Clan vs Clan Competition System
+        public DbSet<ClanVsClansCompetition> ClanVsClansCompetitions => Set<ClanVsClansCompetition>();
+        public DbSet<ClanVsClansCompetitionParticipant> ClanVsClansCompetitionParticipants => Set<ClanVsClansCompetitionParticipant>();
+        public DbSet<ClanVsClansCompetitionScore> ClanVsClansCompetitionScores => Set<ClanVsClansCompetitionScore>();
+        public DbSet<ClanVsClansCompetitionQuestion> ClanVsClansCompetitionQuestions => Set<ClanVsClansCompetitionQuestion>();
+
         // Review System
         public DbSet<Review> Reviews => Set<Review>();
 
@@ -195,6 +201,102 @@ namespace backend.Data
             {
                 entity.HasIndex(asub => asub.UserId);
                 entity.HasIndex(asub => asub.AssignmentId);
+                // ClanVsClansCompetition Configuration
+                modelBuilder.Entity<ClanVsClansCompetition>(entity =>
+                {
+                    entity.HasIndex(cvsc => cvsc.ChallengerClanId);
+                    entity.HasIndex(cvsc => cvsc.OpponentClanId);
+                    entity.HasIndex(cvsc => cvsc.CreatedByUserId);
+                    entity.HasIndex(cvsc => cvsc.Status);
+                    entity.HasIndex(cvsc => cvsc.CreatedAt);
+
+                    entity.Property(cvsc => cvsc.Status).HasDefaultValue("Pending");
+                    entity.Property(cvsc => cvsc.CompetitionType).HasDefaultValue("Programming");
+                    entity.Property(cvsc => cvsc.DifficultyLevel).HasDefaultValue("Medium");
+                    entity.Property(cvsc => cvsc.ParticipantsPerClan).HasDefaultValue(3);
+                    entity.Property(cvsc => cvsc.DurationMinutes).HasDefaultValue(30);
+                    entity.Property(cvsc => cvsc.CreatedAt).HasDefaultValueSql("NOW()");
+                    entity.Property(cvsc => cvsc.ChallengerReady).HasDefaultValue(false);
+                    entity.Property(cvsc => cvsc.OpponentReady).HasDefaultValue(false);
+                    entity.Property(cvsc => cvsc.ShowScoresToOpponent).HasDefaultValue(true);
+                    entity.Property(cvsc => cvsc.AllowWithdrawal).HasDefaultValue(false);
+
+                    // Challenger Clan relationship
+                    entity.HasOne(cvsc => cvsc.ChallengerClan)
+                        .WithMany(c => c.ChallengedCompetitions)
+                        .HasForeignKey(cvsc => cvsc.ChallengerClanId)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    // Opponent Clan relationship
+                    entity.HasOne(cvsc => cvsc.OpponentClan)
+                        .WithMany(c => c.OpponentCompetitions)
+                        .HasForeignKey(cvsc => cvsc.OpponentClanId)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    // Creator relationship
+                    entity.HasOne(cvsc => cvsc.CreatedBy)
+                        .WithMany()
+                        .HasForeignKey(cvsc => cvsc.CreatedByUserId)
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+                // ClanVsClansCompetitionParticipant Configuration
+                modelBuilder.Entity<ClanVsClansCompetitionParticipant>(entity =>
+                {
+                    entity.HasIndex(cvscm => cvscm.CompetitionId);
+                    entity.HasIndex(cvscm => cvscm.UserId);
+                    entity.HasIndex(cvscm => cvscm.ClanId);
+                    entity.HasIndex(cvscm => new { cvscm.CompetitionId, cvscm.UserId });
+
+                    entity.Property(cvscm => cvscm.Status).HasDefaultValue("Pending");
+                    entity.Property(cvscm => cvscm.Score).HasDefaultValue(0);
+                    entity.Property(cvscm => cvscm.CorrectAnswers).HasDefaultValue(0);
+                    entity.Property(cvscm => cvscm.WrongAnswers).HasDefaultValue(0);
+                    entity.Property(cvscm => cvscm.TimeTakenSeconds).HasDefaultValue(0);
+
+                    entity.HasOne(cvscm => cvscm.Competition)
+                        .WithMany(cvsc => cvsc.AllParticipants)
+                        .HasForeignKey(cvscm => cvscm.CompetitionId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(cvscm => cvscm.User)
+                        .WithMany()
+                        .HasForeignKey(cvscm => cvscm.UserId)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    entity.HasOne(cvscm => cvscm.Clan)
+                        .WithMany(c => c.CompetitionParticipants)
+                        .HasForeignKey(cvscm => cvscm.ClanId)
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+                // ClanVsClansCompetitionQuestion Configuration
+                modelBuilder.Entity<ClanVsClansCompetitionQuestion>(entity =>
+                {
+                    entity.HasIndex(cvscq => cvscq.CompetitionId);
+
+                    entity.HasOne(cvscq => cvscq.Competition)
+                        .WithMany(cvsc => cvsc.Questions)
+                        .HasForeignKey(cvscq => cvscq.CompetitionId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+                // ClanVsClansCompetitionScore Configuration
+                modelBuilder.Entity<ClanVsClansCompetitionScore>(entity =>
+                {
+                    entity.HasIndex(cvscs => cvscs.CompetitionId);
+                    entity.HasIndex(cvscs => cvscs.ParticipantId);
+
+                    entity.HasOne(cvscs => cvscs.Competition)
+                        .WithMany(cvsc => cvsc.Scores)
+                        .HasForeignKey(cvscs => cvscs.CompetitionId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(cvscs => cvscs.Participant)
+                        .WithMany()
+                        .HasForeignKey(cvscs => cvscs.ParticipantId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
                 entity.HasIndex(asub => new { asub.UserId, asub.AssignmentId });
                 entity.HasIndex(asub => asub.Status);
                 entity.HasIndex(asub => asub.SubmittedAt);

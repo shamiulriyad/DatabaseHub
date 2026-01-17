@@ -51,4 +51,35 @@ api.interceptors.response.use(
   }
 );
 
+
+// Community API endpoints
+export const communityAPI = {
+  // Get single post by ID
+  getPostById: (postId) => api.get(`/community/posts/${postId}`),
+
+  // Update comment
+  updateComment: (commentId, commentData) =>
+    api.put(`/community/comments/${commentId}`, commentData),
+
+  // Delete comment
+  deleteComment: (commentId) =>
+    api.delete(`/community/comments/${commentId}`),
+
+  // Get posts with filters
+  getPosts: (params = {}) => {
+    // Accepts either (page, pageSize, sortBy, search) or an object
+    let page = 1, pageSize = 10, sortBy = 'latest', search = '';
+    if (typeof params === 'object' && params !== null) {
+      page = Number(params.page) || 1;
+      pageSize = Number(params.pageSize) || 10;
+      sortBy = params.sortBy || 'latest';
+      search = params.search || '';
+    }
+    let url = `/community/posts?page=${page}&pageSize=${pageSize}`;
+    if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get(url);
+  },
+};
+
 export default api;

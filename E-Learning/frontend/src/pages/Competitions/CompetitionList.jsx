@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -29,21 +29,17 @@ const CompetitionList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  // Removed unused page state
   const navigate = useNavigate();
   const toast = useToast();
 
-  useEffect(() => {
-    fetchCompetitions();
-  }, [page]);
-
-  const fetchCompetitions = async () => {
+  // Memoize fetchCompetitions to avoid useEffect warning
+  const fetchCompetitions = useCallback(async () => {
     try {
       setLoading(true);
       const response = await competitionApi.get('/competitions', {
-        params: { page, pageSize: 20 }
+        params: { page: 1, pageSize: 20 }
       });
-      
       if (response.data.success) {
         setCompetitions(response.data.data || []);
         setFilteredCompetitions(response.data.data || []);
@@ -60,7 +56,13 @@ const CompetitionList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCompetitions();
+  }, [fetchCompetitions]);
+
+  // ...existing code...
 
   useEffect(() => {
     let filtered = competitions;
@@ -125,13 +127,15 @@ const CompetitionList = () => {
             <Heading as="h1" size="2xl" color="purple.600">
               Competitions
             </Heading>
-            <Button
-              colorScheme="purple"
-              size="lg"
-              onClick={() => navigate('/competitions/create')}
-            >
-              Create Competition
-            </Button>
+            <HStack spacing={4}>
+              <Button
+                colorScheme="purple"
+                size="lg"
+                onClick={() => navigate('/competitions/create')}
+              >
+                Create Competition
+              </Button>
+            </HStack>
           </HStack>
 
           {/* Filters */}

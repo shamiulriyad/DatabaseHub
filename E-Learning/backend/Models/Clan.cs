@@ -77,5 +77,10 @@ namespace backend.Models
         public virtual ICollection<ClanMember> Members { get; set; } = new List<ClanMember>();
         public virtual ICollection<Competition> Competitions { get; set; } = new List<Competition>();
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+        
+        // Clan vs Clan Competitions
+        public virtual ICollection<ClanVsClansCompetition> ChallengedCompetitions { get; set; } = new List<ClanVsClansCompetition>();
+        public virtual ICollection<ClanVsClansCompetition> OpponentCompetitions { get; set; } = new List<ClanVsClansCompetition>();
+        public virtual ICollection<ClanVsClansCompetitionParticipant> CompetitionParticipants { get; set; } = new List<ClanVsClansCompetitionParticipant>();
     }
 }

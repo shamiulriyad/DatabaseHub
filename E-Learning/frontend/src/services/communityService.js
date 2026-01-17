@@ -1,8 +1,19 @@
 import api from './api';
 
 export const communityService = {
-  async getPosts(page = 1, pageSize = 20) {
-    const response = await api.get('/community/posts', { params: { page, pageSize } });
+  async getPosts(params = {}) {
+    // Accepts either (page, pageSize, sortBy, search) or an object
+    let page = 1, pageSize = 10, sortBy = 'latest', search = '';
+    if (typeof params === 'object' && params !== null) {
+      page = Number(params.page) || 1;
+      pageSize = Number(params.pageSize) || 10;
+      sortBy = params.sortBy || 'latest';
+      search = params.search || '';
+    }
+    let url = `/community/posts?page=${page}&pageSize=${pageSize}`;
+    if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    const response = await api.get(url);
     return response.data.data;
   },
 
