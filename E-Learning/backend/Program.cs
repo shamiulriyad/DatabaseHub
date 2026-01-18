@@ -110,6 +110,9 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
+// Add SignalR for real-time updates
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -132,5 +135,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR hubs (match frontend which prefixes API routes with `/api`)
+app.MapHub<backend.Hubs.CommunityHub>("/api/hubs/community");
 
 app.Run();

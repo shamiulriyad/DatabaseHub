@@ -36,7 +36,9 @@ const Comments = ({ postId }) => {
     enabled: !!postId,
   });
 
-  const comments = commentsData?.data || [];
+  // Normalize the response: backend returns { success: true, comments: [...] }
+  // but some API helpers may return the raw axios response. Ensure we always have an array.
+  const comments = commentsData?.data?.comments ?? commentsData?.data ?? [];
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -73,7 +75,8 @@ const Comments = ({ postId }) => {
   };
 
   const handleEdit = (comment) => {
-    setEditingComment(comment._id);
+    const cid = comment._id ?? comment.id ?? comment.Id ?? String(comment.Id ?? comment.id ?? comment._id ?? Math.random());
+    setEditingComment(cid);
     setEditText(comment.content);
   };
 
@@ -107,20 +110,24 @@ const Comments = ({ postId }) => {
         </Text>
       ) : (
         <VStack spacing={4} align="stretch" divider={<Divider />}>
-          {comments.map((comment) => (
-            <CommentItem
-              key={comment._id}
-              comment={comment}
-              userId={userId}
-              isEditing={editingComment === comment._id}
-              editText={editText}
-              onEditTextChange={setEditText}
-              onEdit={handleEdit}
-              onUpdate={handleUpdate}
-              onCancelEdit={handleCancelEdit}
-              onDelete={handleDelete}
-            />
-          ))}
+          {comments.map((comment) => {
+            const cid = comment._id ?? comment.id ?? comment.Id ?? String(comment.Id ?? comment.id ?? comment._id ?? Math.random());
+            return (
+              <CommentItem
+                key={cid}
+                comment={comment}
+                commentId={cid}
+                userId={userId}
+                isEditing={editingComment === cid}
+                editText={editText}
+                onEditTextChange={setEditText}
+                onEdit={handleEdit}
+                onUpdate={handleUpdate}
+                onCancelEdit={handleCancelEdit}
+                onDelete={handleDelete}
+              />
+            );
+          })}
         </VStack>
       )}
     </Box>
@@ -129,6 +136,7 @@ const Comments = ({ postId }) => {
 
 const CommentItem = ({
   comment,
+  commentId,
   userId,
   isEditing,
   editText,
@@ -138,26 +146,26 @@ const CommentItem = ({
   onCancelEdit,
   onDelete,
 }) => {
-  const isOwner = comment.userId === userId;
+  const isOwner = String(comment.userId) === String(userId);
 
   return (
     <Box>
       <Flex align="start">
         <Avatar
           size="sm"
-          name={comment.user?.name}
-          src={comment.user?.avatar}
+          name={comment.user?.name ?? comment.userName ?? comment.UserName}
+          src={comment.user?.avatar ?? comment.profileImageUrl ?? comment.ProfileImageUrl}
           mr={3}
         />
         
         <Box flex={1}>
           <Flex align="center" mb={2}>
             <Text fontWeight="bold" mr={2}>
-              {comment.user?.name}
+              {comment.user?.name ?? comment.userName ?? comment.UserName}
             </Text>
             <Text fontSize="sm" color="gray.500">
               <TimeIcon mr={1} />
-              {new Date(comment.createdAt).toLocaleDateString()}
+              {new Date(comment.createdAt ?? comment.CreatedAt).toLocaleDateString()}
             </Text>
             
             {isOwner && (
@@ -175,7 +183,7 @@ const CommentItem = ({
                   <MenuItem
                     icon={<DeleteIcon />}
                     color="red.500"
-                    onClick={() => onDelete(comment._id)}
+                    onClick={() => onDelete(commentId)}
                   >
                     Delete
                   </MenuItem>
@@ -195,7 +203,7 @@ const CommentItem = ({
                 <Button
                   size="sm"
                   colorScheme="blue"
-                  onClick={() => onUpdate(comment._id)}
+                  onClick={() => onUpdate(commentId)}
                 >
                   Save
                 </Button>

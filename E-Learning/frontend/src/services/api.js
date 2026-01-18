@@ -57,6 +57,12 @@ export const communityAPI = {
   // Get single post by ID
   getPostById: (postId) => api.get(`/community/posts/${postId}`),
 
+  // Comments for a post
+  getComments: (postId) => api.get(`/community/posts/${postId}/comments`),
+
+  // Add comment to a post
+  addComment: (postId, commentData) => api.post(`/community/posts/${postId}/comments`, commentData),
+
   // Update comment
   updateComment: (commentId, commentData) =>
     api.put(`/community/comments/${commentId}`, commentData),

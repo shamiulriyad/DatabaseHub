@@ -6,6 +6,14 @@ export const authService = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Keep a simple userId key for legacy components that read it directly
+      try {
+        if (response.data.user && response.data.user.id) {
+          localStorage.setItem('userId', String(response.data.user.id));
+        }
+      } catch (e) {
+        // ignore
+      }
     }
     return response.data;
   },
@@ -18,6 +26,7 @@ export const authService = {
   async logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userId');
   },
 
   getToken() {

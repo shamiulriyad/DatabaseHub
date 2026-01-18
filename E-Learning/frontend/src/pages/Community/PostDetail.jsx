@@ -67,7 +67,24 @@ const PostDetail = () => {
   const commentMutation = useMutation({
     mutationFn: (commentData) => 
       communityAPI.addComment(postId, commentData),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      try {
+        const resp = data?.data ?? data; // axios response or direct
+        const newComment = resp?.comment ?? resp?.data ?? resp;
+        if (newComment) {
+          queryClient.setQueryData(['comments', postId], (old) => {
+            let arr = [];
+            if (Array.isArray(old)) arr = old;
+            else if (old?.data?.comments) arr = old.data.comments;
+            else if (old?.data) arr = old.data;
+            else if (old?.comments) arr = old.comments;
+            else arr = Array.isArray(old) ? old : [];
+            return [...arr, newComment];
+          });
+        }
+      } catch (e) {
+        queryClient.invalidateQueries(['comments', postId]);
+      }
       queryClient.invalidateQueries(['post', postId]);
       queryClient.invalidateQueries(['comments', postId]);
       setCommentText('');

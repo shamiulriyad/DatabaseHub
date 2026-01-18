@@ -1,23 +1,26 @@
 using backend.Data;
 using backend.DTOs;
 using backend.Services.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 
 namespace backend.Services
 {
     public class CommunityService : ICommunityService
     {
         private readonly ApplicationDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<backend.Hubs.CommunityHub>? _hubContext;
 
-        public CommunityService(ApplicationDbContext context)
+        public CommunityService(ApplicationDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<backend.Hubs.CommunityHub>? hubContext = null)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
-        public Task<ServiceResult<PostDTO>> CreatePost(CreatePostDTO dto, int userId)
+        public async Task<ServiceResult<PostDTO>> CreatePost(CreatePostDTO dto, int userId)
         {
             // Validate DTO
             if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Content))
-                return Task.FromResult(ServiceResult<PostDTO>.FailureResult("Title and Content are required."));
+                return ServiceResult<PostDTO>.FailureResult("Title and Content are required.");
 
 
             var post = new Models.Post
@@ -52,21 +55,48 @@ namespace backend.Services
             _context.SaveChanges();
 
             // Map to PostDTO (simplified, add more fields as needed)
+            // Populate author info from Users table to ensure authorship is always from authenticated user
+            var author = _context.Users.Find(userId);
+
             var postDto = new DTOs.PostDTO
             {
                 Id = post.Id,
                 Title = post.Title,
                 Content = post.Content,
                 UserId = post.UserId,
+                UserName = author != null ? (author.FirstName + " " + author.LastName) : "Anonymous",
+                ProfileImageUrl = author?.ProfileImageUrl,
                 PostType = post.PostType,
                 IsExamRelated = post.IsExamRelated,
                 ExamTags = dto.ExamTags ?? new List<string>(),
                 Subject = post.Subject,
                 MediaUrl = post.MediaUrl,
-                MediaType = post.MediaType
+                MediaType = post.MediaType,
+                CreatedAt = post.CreatedAt
             };
 
-            return Task.FromResult(ServiceResult<DTOs.PostDTO>.SuccessResult(postDto, "Post created successfully"));
+            // Broadcast real-time event if hub is available
+            try
+            {
+                if (_hubContext != null)
+                {
+                    // Use SendAsync if available; fall back to SendCoreAsync to avoid missing extension method in some target frameworks
+                    try
+                    {
+                        await _hubContext.Clients.All.SendAsync("PostCreated", postDto);
+                    }
+                    catch (System.MissingMethodException)
+                    {
+                        await _hubContext.Clients.All.SendCoreAsync("PostCreated", new object[] { postDto });
+                    }
+                }
+            }
+            catch
+            {
+                // Swallow hub errors to avoid breaking post creation
+            }
+
+            return ServiceResult<DTOs.PostDTO>.SuccessResult(postDto, "Post created successfully");
         }
 
         public Task<ServiceResult<PostDTO>> GetPostById(int postId)
@@ -81,6 +111,8 @@ namespace backend.Services
                 Title = post.Title,
                 Content = post.Content,
                 UserId = post.UserId,
+                UserName = _context.Users.Find(post.UserId) != null ? (_context.Users.Find(post.UserId).FirstName + " " + _context.Users.Find(post.UserId).LastName) : null,
+                ProfileImageUrl = _context.Users.Find(post.UserId)?.ProfileImageUrl,
                 PostType = post.PostType,
                 IsExamRelated = post.IsExamRelated,
                 ExamTags = post.ExamTags != null ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(post.ExamTags) ?? new List<string>() : new List<string>(),
@@ -106,6 +138,8 @@ namespace backend.Services
                 Title = post.Title,
                 Content = post.Content,
                 UserId = post.UserId,
+                UserName = _context.Users.Find(post.UserId) != null ? (_context.Users.Find(post.UserId).FirstName + " " + _context.Users.Find(post.UserId).LastName) : null,
+                ProfileImageUrl = _context.Users.Find(post.UserId)?.ProfileImageUrl,
                 PostType = post.PostType,
                 IsExamRelated = post.IsExamRelated,
                 ExamTags = post.ExamTags != null ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(post.ExamTags) ?? new List<string>() : new List<string>(),
@@ -344,7 +378,36 @@ namespace backend.Services
             => Task.FromResult(ServiceResult<List<PostDTO>>.FailureResult("Not implemented"));
 
         public Task<ServiceResult<List<PostDTO>>> GetUserPosts(int userId, int page, int pageSize)
-            => Task.FromResult(ServiceResult<List<PostDTO>>.FailureResult("Not implemented"));
+        {
+            var posts = _context.Posts
+                .Where(p => p.UserId == userId)
+                .OrderByDescending(p => p.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var postDtos = posts.Select(post => {
+                var author = _context.Users.Find(post.UserId);
+                return new DTOs.PostDTO
+                {
+                    Id = post.Id,
+                    Title = post.Title,
+                    Content = post.Content,
+                    UserId = post.UserId,
+                    UserName = author != null ? (author.FirstName + " " + author.LastName) : null,
+                    ProfileImageUrl = author?.ProfileImageUrl,
+                    PostType = post.PostType,
+                    IsExamRelated = post.IsExamRelated,
+                    ExamTags = post.ExamTags != null ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(post.ExamTags) ?? new List<string>() : new List<string>(),
+                    Subject = post.Subject,
+                    MediaUrl = post.MediaUrl,
+                    MediaType = post.MediaType,
+                    CreatedAt = post.CreatedAt
+                };
+            }).ToList();
+
+            return Task.FromResult(ServiceResult<List<PostDTO>>.SuccessResult(postDtos));
+        }
 
         public Task<ServiceResult<List<CommentDTO>>> GetUserComments(int userId, int page, int pageSize)
             => Task.FromResult(ServiceResult<List<CommentDTO>>.FailureResult("Not implemented"));

@@ -16,7 +16,8 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as signalR from '@microsoft/signalr';
 import { communityAPI } from '../../services/api';
 import PostCard from './PostCard';
 
@@ -37,6 +38,40 @@ const PostList = ({ type = 'all' }) => {
     queryFn: () => communityAPI.getPosts({ page: Number(page), pageSize: Number(pageSize), sortBy, search }),
     keepPreviousData: true,
   });
+
+  const queryClient = useQueryClient();
+
+  // Subscribe to real-time post events via SignalR and refresh feed instantly
+  React.useEffect(() => {
+    const start = async () => {
+      try {
+        const hubUrl = (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL : '') + '/hubs/community';
+        const connection = new signalR.HubConnectionBuilder()
+          .withUrl(hubUrl, { skipNegotiation: true, transport: signalR.HttpTransportType.WebSockets })
+          .withAutomaticReconnect()
+          .build();
+
+        connection.on('PostCreated', (newPost) => {
+          // Invalidate so queries refetch and UI updates without refresh
+          queryClient.invalidateQueries(['communityPosts']);
+          // Optional: if viewing my posts, also invalidate my-posts query
+          queryClient.invalidateQueries(['myPosts']);
+        });
+
+        await connection.start();
+
+        // Cleanup on unmount
+        return () => {
+          connection.stop().catch(() => {});
+        };
+      } catch (err) {
+        console.warn('SignalR connection failed', err);
+      }
+    };
+
+    const stopPromise = start();
+    return () => { stopPromise.catch(() => {}); };
+  }, [queryClient]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -63,10 +98,21 @@ const PostList = ({ type = 'all' }) => {
 
   // Debug: log the data and posts for troubleshooting
   console.log('PostList data:', data);
-  // Align with backend: posts array is data.data, each post has id, title, content, userId, userName, postType, createdAt, etc.
-  const posts = Array.isArray(data?.data) ? data.data : [];
-  const totalPages = data?.data?.totalPages || 1;
-  const total = data?.data?.total || posts.length;
+  // Normalize axios response / API payload to extract posts array and pagination
+  const payload = data?.data ?? data; // axios response has .data as payload
+  let posts = [];
+  if (Array.isArray(payload)) {
+    posts = payload;
+  } else if (Array.isArray(payload.data)) {
+    posts = payload.data;
+  } else if (Array.isArray(payload.posts)) {
+    posts = payload.posts;
+  } else if (Array.isArray(payload.items)) {
+    posts = payload.items;
+  }
+
+  const totalPages = payload?.totalPages || payload?.total_pages || payload?.TotalPages || 1;
+  const total = payload?.total || payload?.totalCount || payload?.TotalCount || posts.length;
 
   return (
     <Box p={4}>

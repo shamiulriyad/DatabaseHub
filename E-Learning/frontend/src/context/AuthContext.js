@@ -30,6 +30,14 @@ export const AuthProvider = ({ children }) => {
         // Immediately restore user from localStorage
         // This prevents logout on page refresh
         setUser(storedUser);
+        // ensure legacy `userId` key exists for components reading localStorage directly
+        try {
+          if (storedUser && storedUser.id) {
+            localStorage.setItem('userId', String(storedUser.id));
+          }
+        } catch (e) {
+          // ignore
+        }
         
         // Verify token is still valid by calling profile endpoint
         // But don't wait for it - just update the state if it fails
@@ -93,6 +101,13 @@ export const AuthProvider = ({ children }) => {
     if (response.user) {
       console.log('AuthContext: Setting user state:', response.user);
       setUser(response.user);
+      try {
+        if (response.user && response.user.id) {
+          localStorage.setItem('userId', String(response.user.id));
+        }
+      } catch (e) {
+        // ignore
+      }
       
       // Double check localStorage
       const storedUser = authService.getUser();
