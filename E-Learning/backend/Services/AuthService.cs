@@ -145,14 +145,26 @@ namespace backend.Services
             try
             {
                 var user = await _context.Users.FindAsync(userId);
-                
+
                 if (user == null)
                     return ServiceResult<UserDTO>.FailureResult("User not found");
 
-                // Get user's current clan membership
+                // Get user's current clan membership (if any)
+                // Use projection to avoid large joins that can exhaust Postgres memory.
                 var clanMembership = await _context.ClanMembers
-                    .Include(cm => cm.Clan)
-                    .FirstOrDefaultAsync(cm => cm.UserId == userId);
+                    .Where(cm => cm.UserId == userId)
+                    .Select(cm => new
+                    {
+                        cm.ClanId,
+                        cm.Role,
+                        cm.ContributionPoints,
+                        cm.JoinedAt,
+                        ClanName = cm.Clan.Name,
+                        ClanTag = cm.Clan.Tag,
+                        ClanLogoUrl = cm.Clan.LogoUrl
+                    })
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
 
                 UserClanDTO? currentClan = null;
                 if (clanMembership != null)
@@ -160,33 +172,20 @@ namespace backend.Services
                     currentClan = new UserClanDTO
                     {
                         ClanId = clanMembership.ClanId,
-                        ClanName = clanMembership.Clan.Name,
-                        ClanTag = clanMembership.Clan.Tag,
-                        ClanLogoUrl = clanMembership.Clan.LogoUrl,
+                        ClanName = clanMembership.ClanName,
+                        ClanTag = clanMembership.ClanTag,
+                        ClanLogoUrl = clanMembership.ClanLogoUrl,
                         Role = clanMembership.Role,
                         ContributionPoints = clanMembership.ContributionPoints,
                         JoinedAt = clanMembership.JoinedAt
                     };
                 }
 
-                var userDto = new UserDTO
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IsStudent = user.IsStudent,
-                    IsTeacher = user.IsTeacher,
-                    IsAdmin = user.IsAdmin,
-                    IsCompetitor = user.IsCompetitor,
-                    TotalPoints = user.TotalPoints,
-                    CurrentRank = user.CurrentRank,
-                    CreatedAt = user.CreatedAt,
-                    CurrentClan = currentClan
-                };
+                // Use the central mapper so ProfileImageUrl and CoverImageUrl are included
+                var mapped = MapUserToDTO(user);
+                mapped.CurrentClan = currentClan;
 
-                return ServiceResult<UserDTO>.SuccessResult(userDto);
+                return ServiceResult<UserDTO>.SuccessResult(mapped);
             }
             catch (Exception ex)
             {
@@ -218,6 +217,8 @@ namespace backend.Services
                     user.PhoneNumber = dto.PhoneNumber;
                 if (!string.IsNullOrEmpty(dto.ProfileImageUrl))
                     user.ProfileImageUrl = dto.ProfileImageUrl;
+                if (!string.IsNullOrEmpty(dto.CoverImageUrl))
+                    user.CoverImageUrl = dto.CoverImageUrl;
                 if (!string.IsNullOrEmpty(dto.Address))
                     user.Address = dto.Address;
                 if (dto.DateOfBirth.HasValue)
@@ -228,23 +229,9 @@ namespace backend.Services
                 _context.Users.Update(user);
                 await _context.SaveChangesAsync();
 
-                var userDto = new UserDTO
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IsStudent = user.IsStudent,
-                    IsTeacher = user.IsTeacher,
-                    IsAdmin = user.IsAdmin,
-                    IsCompetitor = user.IsCompetitor,
-                    TotalPoints = user.TotalPoints,
-                    CurrentRank = user.CurrentRank,
-                    CreatedAt = user.CreatedAt
-                };
-
-                return ServiceResult<UserDTO>.SuccessResult(userDto, "Profile updated successfully");
+                // Return full mapped DTO so caller receives Profile/Cover image URLs and other fields
+                var mapped = MapUserToDTO(user);
+                return ServiceResult<UserDTO>.SuccessResult(mapped, "Profile updated successfully");
             }
             catch (Exception ex)
             {
@@ -367,6 +354,7 @@ namespace backend.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 ProfileImageUrl = user.ProfileImageUrl,
+                CoverImageUrl = user.CoverImageUrl,
                 Bio = user.Bio,
                 PhoneNumber = user.PhoneNumber,
                 DateOfBirth = user.DateOfBirth,

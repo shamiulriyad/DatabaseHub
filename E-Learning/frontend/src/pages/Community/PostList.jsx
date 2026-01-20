@@ -73,6 +73,16 @@ const PostList = ({ type = 'all' }) => {
     return () => { stopPromise.catch(() => {}); };
   }, [queryClient]);
 
+  // Listen for profile changes and refresh posts so avatars update immediately
+  React.useEffect(() => {
+    const handler = () => {
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['post']);
+    };
+    window.addEventListener('profileUpdated', handler);
+    return () => window.removeEventListener('profileUpdated', handler);
+  }, [queryClient]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setPage(1);

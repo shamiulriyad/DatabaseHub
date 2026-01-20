@@ -31,6 +31,7 @@ namespace backend.DTOs
         public string? PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? ProfileImageUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
     }
 
     // Login
@@ -67,6 +68,7 @@ namespace backend.DTOs
         public string? PhoneNumber { get; set; }
 
         public string? ProfileImageUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
         public string? Address { get; set; }
         public DateTime? DateOfBirth { get; set; }
         
@@ -137,6 +139,7 @@ namespace backend.DTOs
         public string LastName { get; set; } = null!;
         public string FullName => $"{FirstName} {LastName}";
         public string? ProfileImageUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
         public string? Bio { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
@@ -197,6 +200,7 @@ namespace backend.DTOs
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? ProfileImageUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
         public string? Bio { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }

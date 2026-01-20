@@ -94,9 +94,12 @@ const PostCard = ({ post, type }) => {
           size="sm"
           name={post.userName || 'Anonymous'}
           mr={3}
+          src={post.profileImageUrl || post.user?.profileImageUrl || post.user?.avatar}
+          cursor="pointer"
+          onClick={() => navigate(`/user/${post.userId}`)}
         />
         <VStack align="start" spacing={0} flex={1}>
-          <Text fontWeight="bold">
+          <Text fontWeight="bold" cursor="pointer" onClick={() => navigate(`/user/${post.userId}`)}>
             {post.userName || 'Anonymous'}
           </Text>
           <HStack spacing={2}>

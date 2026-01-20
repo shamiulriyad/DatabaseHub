@@ -48,6 +48,7 @@ import ChangePassword from './pages/Profile/ChangePassword';
 import MyEnrollments from './pages/Profile/MyEnrollments';
 import Certificates from './pages/Profile/Certificates';
 import MyAssignments from './pages/Profile/MyAssignments';
+import PublicUserProfile from './pages/Profile/PublicUserProfile';
 
 // Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard';
@@ -130,6 +131,9 @@ function PublicLayout() {
           <Route path="/community/post/:postId" element={<PostDetail />} />
           <Route path="/community/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
+          {/* Public user profile (view other users) */}
+          <Route path="/user/:userId" element={<PublicUserProfile />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -184,6 +188,9 @@ function PrivateLayout() {
             <Route path="/community/forum" element={<ProtectedRoute><Forum /></ProtectedRoute>} />
             <Route path="/community/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
             <Route path="/community/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+
+            {/* Public user profile (view other users) */}
+            <Route path="/user/:userId" element={<PublicUserProfile />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

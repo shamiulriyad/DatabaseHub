@@ -16,6 +16,7 @@ import {
   Card,
   CardBody,
   Avatar,
+  Image,
   useColorModeValue,
   useToast,
   Spinner,
@@ -33,8 +34,10 @@ const EditProfile = () => {
     email: '',
     username: '',
     profileImageUrl: '',
+    coverImageUrl: '',
   });
   const [preview, setPreview] = useState('');
+  const [coverPreview, setCoverPreview] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,8 +69,10 @@ const EditProfile = () => {
           email: profile.email || '',
           username: profile.username || '',
           profileImageUrl: profile.profileImageUrl || '',
+          coverImageUrl: profile.coverImageUrl || '',
         });
         setPreview(profile.profileImageUrl || '');
+        setCoverPreview(profile.coverImageUrl || '');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -78,8 +83,10 @@ const EditProfile = () => {
         email: user.email || '',
         username: user.username || '',
         profileImageUrl: user.profileImageUrl || '',
+        coverImageUrl: user.coverImageUrl || '',
       });
       setPreview(user.profileImageUrl || '');
+      setCoverPreview(user.coverImageUrl || '');
     } finally {
       setIsLoading(false);
     }
@@ -157,6 +164,30 @@ const EditProfile = () => {
     }
   };
 
+  const handleCoverChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({ title: 'Invalid File', description: 'Please select an image file', status: 'error', duration: 3000, isClosable: true });
+        return;
+      }
+
+      // Validate file size (max 8MB for cover)
+      if (file.size > 8 * 1024 * 1024) {
+        toast({ title: 'File Too Large', description: 'Cover image must be less than 8MB', status: 'error', duration: 3000, isClosable: true });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPreview(reader.result);
+        setFormData((prev) => ({ ...prev, coverImageUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -188,6 +219,13 @@ const EditProfile = () => {
           duration: 3000,
           isClosable: true,
         });
+
+        // notify other parts of the app so community posts/comments refresh avatars
+        try {
+          window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedUser }));
+        } catch (e) {
+          // ignore
+        }
 
         navigate('/profile');
       }
@@ -229,33 +267,66 @@ const EditProfile = () => {
           <CardBody p={8}>
             <VStack spacing={6}>
               <VStack spacing={2} textAlign="center" w="full">
-                <Box position="relative" mb={2}>
-                  <Avatar
-                    size="xl"
-                    name={`${formData.firstName} ${formData.lastName}`}
-                    src={preview}
-                    bg="purple.500"
-                    color="white"
-                  />
+                <Box w="100%" position="relative" mb={2}>
+                  <Box h="120px" w="100%" borderRadius="md" overflow="hidden" bg="gray.100">
+                    {coverPreview || formData.coverImageUrl ? (
+                      <Image src={coverPreview || formData.coverImageUrl} objectFit="cover" w="100%" h="120px" />
+                    ) : (
+                      <Box bgGradient="linear(135deg, purple.600, blue.600)" h="120px" />
+                    )}
+                  </Box>
+
                   <Input
-                    id="image-upload"
+                    id="cover-upload"
                     type="file"
                     accept="image/*"
-                    onChange={handleImageChange}
+                    onChange={handleCoverChange}
                     display="none"
                   />
                   <IconButton
                     icon={<FaCamera />}
                     position="absolute"
-                    bottom={0}
-                    right={0}
-                    borderRadius="full"
+                    top={2}
+                    right={2}
+                    borderRadius="md"
                     bg="purple.600"
                     color="white"
                     size="sm"
-                    onClick={() => document.getElementById('image-upload').click()}
+                    onClick={() => document.getElementById('cover-upload').click()}
                     _hover={{ bg: 'purple.700' }}
                   />
+
+                  <Box position="relative" mt={-10} display="flex" justifyContent="center">
+                    <Avatar
+                      size="xl"
+                      name={`${formData.firstName} ${formData.lastName}`}
+                      src={preview}
+                      bg="purple.500"
+                      color="white"
+                      borderWidth={4}
+                      borderColor={cardBg}
+                    />
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      display="none"
+                    />
+                    <IconButton
+                      icon={<FaCamera />}
+                      position="absolute"
+                      bottom={0}
+                      right={0}
+                      ml={2}
+                      borderRadius="full"
+                      bg="purple.600"
+                      color="white"
+                      size="sm"
+                      onClick={() => document.getElementById('image-upload').click()}
+                      _hover={{ bg: 'purple.700' }}
+                    />
+                  </Box>
                 </Box>
                 <Heading size="lg">Edit Profile</Heading>
                 <Text color="gray.600">Update your personal information</Text>

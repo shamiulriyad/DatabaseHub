@@ -136,25 +136,41 @@ const UserProfile = () => {
     <Box minH="100vh" bg={bgColor} py={12}>
       <Container maxW="6xl">
         {/* Hero Header with Profile */}
-        <Box bgGradient={headerBg} borderRadius="2xl" p={{ base: 6, md: 8 }} mb={8} color="white" shadow="2xl">
-          <Grid templateColumns={{ base: '1fr', md: 'auto 1fr' }} gap={{ base: 6, md: 8 }} alignItems="center">
+        <Box
+          borderRadius="2xl"
+          p={{ base: 0, md: 0 }}
+          mb={8}
+          color="white"
+          shadow="2xl"
+          overflow="hidden"
+          bgGradient={!displayProfile.coverImageUrl ? headerBg : undefined}
+        >
+          {displayProfile.coverImageUrl ? (
+            <Box position="relative" h={{ base: '180px', md: '220px' }} w="100%" bg="gray.100" overflow="hidden">
+              <img src={displayProfile.coverImageUrl} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Box position="absolute" top={0} left={0} w="100%" h="100%" bg="rgba(0,0,0,0.6)" />
+            </Box>
+          ) : (
+            <Box h={{ base: '120px', md: '160px' }} />
+          )}
+          <Grid templateColumns={{ base: '1fr', md: 'auto 1fr' }} gap={{ base: 6, md: 8 }} alignItems="center" p={{ base: 6, md: 8 }}>
             {/* Avatar */}
             <Box display="flex" justifyContent={{ base: 'center', md: 'flex-start' }}>
               <Avatar
                 size="2xl"
                 name={`${displayProfile.firstName || ''} ${displayProfile.lastName || ''}`}
-                src={displayProfile.avatar}
-                bg="whiteAlpha.300"
+                src={displayProfile.profileImageUrl || displayProfile.avatar}
+                bg="whiteAlpha.200"
                 color="white"
                 borderWidth={4}
-                borderColor="white"
+                borderColor="whiteAlpha.900"
               />
             </Box>
 
             {/* Profile Info */}
             <VStack align={{ base: 'center', md: 'flex-start' }} spacing={3} w="full">
-              <VStack align={{ base: 'center', md: 'flex-start' }} spacing={1} w="full">
-                <Heading as="h1" size="2xl" fontWeight="black">
+              <VStack align={{ base: 'center', md: 'flex-start' }} spacing={1} w="full" color="black">
+                <Heading as="h1" size="2xl" fontWeight="black" textShadow="0 1px 4px rgba(0,0,0,0.6)">
                   {displayProfile.firstName} {displayProfile.lastName}
                 </Heading>
                 <HStack spacing={2} fontSize="sm" opacity={0.9}>

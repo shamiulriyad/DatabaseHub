@@ -18,6 +18,7 @@ import {
   MenuItem,
   Center,
 } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
 import { TimeIcon, DeleteIcon, EditIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
@@ -26,6 +27,7 @@ const Comments = ({ postId }) => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const userId = localStorage.getItem('userId');
+  const navigate = useNavigate();
   const [editingComment, setEditingComment] = useState(null);
   const [editText, setEditText] = useState('');
 
@@ -125,6 +127,7 @@ const Comments = ({ postId }) => {
                 onUpdate={handleUpdate}
                 onCancelEdit={handleCancelEdit}
                 onDelete={handleDelete}
+                navigate={navigate}
               />
             );
           })}
@@ -145,9 +148,10 @@ const CommentItem = ({
   onUpdate,
   onCancelEdit,
   onDelete,
+  navigate,
 }) => {
   const isOwner = String(comment.userId) === String(userId);
-
+  
   return (
     <Box>
       <Flex align="start">
@@ -156,11 +160,13 @@ const CommentItem = ({
           name={comment.user?.name ?? comment.userName ?? comment.UserName}
           src={comment.user?.avatar ?? comment.profileImageUrl ?? comment.ProfileImageUrl}
           mr={3}
+          cursor="pointer"
+          onClick={() => navigate && navigate(`/user/${comment.userId}`)}
         />
         
         <Box flex={1}>
           <Flex align="center" mb={2}>
-            <Text fontWeight="bold" mr={2}>
+            <Text fontWeight="bold" mr={2} cursor="pointer" onClick={() => navigate && navigate(`/user/${comment.userId}`)}>
               {comment.user?.name ?? comment.userName ?? comment.UserName}
             </Text>
             <Text fontSize="sm" color="gray.500">

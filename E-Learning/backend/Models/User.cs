@@ -30,6 +30,7 @@ namespace backend.Models
         public string LastName { get; set; } = null!;
 
         public string? ProfileImageUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
         public string? Bio { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Address { get; set; }

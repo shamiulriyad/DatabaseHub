@@ -110,9 +110,16 @@ const PublicUserProfile = () => {
 
         {/* Profile Header */}
         <Card bg={cardBg} mb={6} overflow="hidden">
-          <Box bgGradient={headerBg} h="120px" />
+          {profile.coverImageUrl ? (
+            <Box position="relative" h="140px" w="100%" overflow="hidden">
+              <img src={profile.coverImageUrl} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Box position="absolute" top={0} left={0} w="100%" h="100%" bg="rgba(0,0,0,0.45)" />
+            </Box>
+          ) : (
+            <Box bgGradient={headerBg} h="120px" />
+          )}
           <CardBody mt={-16}>
-            <VStack spacing={4} align="center">
+            <VStack spacing={4} align="center" color="white">
               <Avatar
                 size="2xl"
                 name={profile.username || profile.firstName}
