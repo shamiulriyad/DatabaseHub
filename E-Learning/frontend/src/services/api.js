@@ -71,6 +71,12 @@ export const communityAPI = {
   deleteComment: (commentId) =>
     api.delete(`/community/comments/${commentId}`),
 
+  // Upvote a comment
+  upvoteComment: (commentId) => api.post(`/community/comments/${commentId}/upvote`),
+
+  // Downvote a comment
+  downvoteComment: (commentId) => api.post(`/community/comments/${commentId}/downvote`),
+
   // Get posts with filters
   getPosts: (params = {}) => {
     // Accepts either (page, pageSize, sortBy, search) or an object
@@ -86,6 +92,37 @@ export const communityAPI = {
     if (search) url += `&search=${encodeURIComponent(search)}`;
     return api.get(url);
   },
+  // Get posts created by current user (requires auth)
+  getMyPosts: (params = {}) => {
+    let page = 1, pageSize = 10, sortBy = 'latest', search = '';
+    if (typeof params === 'object' && params !== null) {
+      page = Number(params.page) || 1;
+      pageSize = Number(params.pageSize) || 10;
+      sortBy = params.sortBy || 'latest';
+      search = params.search || '';
+    }
+    let url = `/community/my-posts?page=${page}&pageSize=${pageSize}`;
+    if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get(url);
+  },
+  // Like a post
+  likePost: (postId) => api.post(`/community/posts/${postId}/like`),
+
+  // Unlike a post
+  unlikePost: (postId) => api.post(`/community/posts/${postId}/unlike`),
+
+  // Dislike / downvote a post
+  dislikePost: (postId) => api.post(`/community/posts/${postId}/dislike`),
+  
+  // Create a post
+  createPost: (postData) => api.post('/community/posts', postData),
+
+  // Update a post
+  updatePost: (postId, postData) => api.put(`/community/posts/${postId}`, postData),
+
+  // Delete a post
+  deletePost: (postId) => api.delete(`/community/posts/${postId}`),
 };
 
 export default api;

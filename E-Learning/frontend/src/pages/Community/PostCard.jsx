@@ -25,11 +25,12 @@ import {
   DeleteIcon,
   ChevronDownIcon,
 } from '@chakra-ui/icons';
-import { FaHeart, FaRegHeart, FaShareAlt } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaShareAlt, FaThumbsDown } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { normalizeAvatar, normalizeUrl } from '../../utils/imageUtils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
+import CreatePost from './CreatePost';
 
 const PostCard = ({ post, type }) => {
   const navigate = useNavigate();
@@ -37,18 +38,67 @@ const PostCard = ({ post, type }) => {
   const queryClient = useQueryClient();
   const userId = localStorage.getItem('userId');
   
-  // Like/Unlike not implemented in backend DTO, so always false
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(Boolean(post.HasUpvoted ?? post.hasUpvoted ?? false));
+  const [isDisliked, setIsDisliked] = useState(Boolean(post.HasDownvoted ?? post.hasDownvoted ?? false));
 
-  // Like/Unlike mutation
-  // Like/Unlike mutation placeholder (not functional)
-  const likeMutation = { isLoading: false, mutate: () => {} };
+  // normalize id across possible payload shapes
+  const pid = post.Id ?? post.id ?? post._id ?? post.postId ?? post.PostId ?? post.postID ?? post.post_id;
+
+  // Like mutation
+  const likeMutation = useMutation({
+    // accept post id when we call mutate(id)
+    mutationFn: (postId) => (isLiked ? communityAPI.unlikePost(postId) : communityAPI.likePost(postId)),
+    onMutate: async () => {
+      // optimistic update
+      const keyAll = ['communityPosts'];
+      const keyMy = ['myPosts'];
+      // adjust local UI immediately
+      setIsLiked((v) => !v);
+      if (!isLiked) {
+        post.upvoteCount = (post.upvoteCount ?? post.UpvoteCount ?? 0) + 1;
+      } else {
+        post.upvoteCount = Math.max(0, (post.upvoteCount ?? post.UpvoteCount ?? 1) - 1);
+      }
+      queryClient.invalidateQueries(keyAll);
+      queryClient.invalidateQueries(keyMy);
+      queryClient.invalidateQueries(['post', pid]);
+    },
+    onError: () => {
+      // revert optimistic
+      setIsLiked((v) => !v);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['myPosts']);
+      queryClient.invalidateQueries(['post', pid]);
+    }
+  });
+
+  const dislikeMutation = useMutation({
+    // accept post id when we call mutate(id)
+    mutationFn: (postId) => communityAPI.dislikePost(postId),
+    onMutate: async () => {
+      setIsDisliked(true);
+      post.downvoteCount = (post.downvoteCount ?? post.DownvoteCount ?? 0) + 1;
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['myPosts']);
+      queryClient.invalidateQueries(['post', pid]);
+    },
+    onError: () => {
+      setIsDisliked(false);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['myPosts']);
+      queryClient.invalidateQueries(['post', pid]);
+    }
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: () => communityAPI.deletePost(post.id),
+    mutationFn: () => communityAPI.deletePost(pid),
     onSuccess: () => {
-      queryClient.invalidateQueries(['posts']);
+      queryClient.invalidateQueries(['communityPosts']);
       queryClient.invalidateQueries(['myPosts']);
       toast({
         title: 'Post deleted',
@@ -65,7 +115,29 @@ const PostCard = ({ post, type }) => {
   });
 
   const handleLike = () => {
-    likeMutation.mutate();
+    if (!localStorage.getItem('token')) {
+      toast({ title: 'Login required', description: 'You need to login to like posts', status: 'warning' });
+      return;
+    }
+    likeMutation.mutate(pid);
+  };
+
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const openEdit = () => setIsEditOpen(true);
+  const closeEdit = () => setIsEditOpen(false);
+  const handleEditSuccess = () => {
+    queryClient.invalidateQueries(['communityPosts']);
+    queryClient.invalidateQueries(['myPosts']);
+    closeEdit();
+    toast({ title: 'Post updated', status: 'success' });
+  };
+
+  const handleDislike = () => {
+    if (!localStorage.getItem('token')) {
+      toast({ title: 'Login required', description: 'You need to login to dislike posts', status: 'warning' });
+      return;
+    }
+    dislikeMutation.mutate(pid);
   };
 
   const handleDelete = () => {
@@ -75,10 +147,10 @@ const PostCard = ({ post, type }) => {
   };
 
   const handleViewDetail = () => {
-    navigate(`/community/post/${post.id}`);
+    navigate(`/community/post/${pid}`);
   };
 
-  const isOwner = post.userId === userId;
+  const isOwner = String(post.userId ?? post.UserId) === String(userId);
 
   return (
     <Box
@@ -128,7 +200,7 @@ const PostCard = ({ post, type }) => {
               size="sm"
             />
             <MenuList>
-              <MenuItem icon={<EditIcon />}>Edit</MenuItem>
+              <MenuItem icon={<EditIcon />} onClick={openEdit}>Edit</MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}
                 color="red.500"
@@ -140,6 +212,14 @@ const PostCard = ({ post, type }) => {
           </Menu>
         )}
       </Flex>
+
+      <CreatePost isOpen={isEditOpen} onClose={closeEdit} onSuccess={handleEditSuccess} initialData={{
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        category: post.postType ? post.postType.toLowerCase() : 'general',
+        mediaUrl: post.mediaUrl || post.MediaUrl || ''
+      }} isEdit />
 
       {/* Content */}
       <Box px={4} pb={3}>
@@ -168,7 +248,16 @@ const PostCard = ({ post, type }) => {
             onClick={handleLike}
             isLoading={likeMutation.isLoading}
           >
-            {post.upvoteCount || 0}
+            {post.upvoteCount ?? post.UpvoteCount ?? post.upvote_count ?? 0}
+          </Button>
+          <Button
+            leftIcon={<FaThumbsDown />}
+            size="sm"
+            variant="ghost"
+            onClick={handleDislike}
+            isLoading={dislikeMutation.isLoading}
+          >
+            {post.downvoteCount ?? post.DownvoteCount ?? 0}
           </Button>
           <Button
             leftIcon={<ChatIcon />}
@@ -176,7 +265,7 @@ const PostCard = ({ post, type }) => {
             variant="ghost"
             onClick={handleViewDetail}
           >
-            {post.commentCount || 0}
+            {post.commentCount ?? post.CommentCount ?? post.comment_count ?? 0}
           </Button>
         </HStack>
         <Button

@@ -28,6 +28,7 @@ import {
   IconButton,
 } from '@chakra-ui/react';
 import { FaBars, FaTimes, FaUserCircle, FaBook } from 'react-icons/fa';
+import { normalizeAvatar } from '../utils/imageUtils';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -35,10 +36,8 @@ const Navbar = () => {
     user.profileImageUrl || user.ProfileImageUrl || user.ProfileImage || user.avatar || user.Avatar || (user.user && (user.user.profileImageUrl || user.user.ProfileImageUrl))
   );
 
-  // Normalize avatar URL: if it's a relative /Uploads path, make it absolute so browser can load it
-  const avatarSrc = rawAvatar && typeof rawAvatar === 'string'
-    ? (rawAvatar.startsWith('/Uploads') ? `${window.location.origin}${rawAvatar}` : rawAvatar)
-    : rawAvatar;
+  // Use shared normalizer so 'Uploads/...' and '/Uploads/...' both resolve to absolute URLs
+  const avatarSrc = normalizeAvatar(rawAvatar) || null;
 
   useEffect(() => {
     if (user) {

@@ -43,6 +43,43 @@ const Comments = ({ postId }) => {
   // but some API helpers may return the raw axios response. Ensure we always have an array.
   const comments = commentsData?.data?.comments ?? commentsData?.data ?? [];
 
+  // Helper to resolve avatar from various possible fields present in comment objects
+  const resolveAvatar = (comment) => {
+    if (!comment) return normalizeAvatar('/Uploads/default-avatar.svg');
+    const candidates = [
+      // common camelCase
+      comment.user?.avatar,
+      comment.user?.profileImageUrl,
+      comment.profileImageUrl,
+      comment.profileImage,
+      comment.profile_image,
+      comment.userImageUrl,
+      comment.userImage,
+      comment.avatarUrl,
+      comment.avatar,
+      comment.user?.imageUrl,
+      comment.user?.image,
+      // PascalCase / legacy
+      comment.ProfileImageUrl,
+      comment.ProfileImage,
+      comment.Profile_image,
+      comment.Avatar,
+      comment.UserImageUrl,
+      comment.UserImage,
+      // nested PascalCase
+      comment.user?.ProfileImageUrl,
+      comment.user?.ProfileImage,
+      comment.user?.Avatar,
+      comment.user?.ImageUrl,
+      comment.user?.Image,
+    ];
+    for (const c of candidates) {
+      const url = normalizeAvatar(c);
+      if (url) return url;
+    }
+    return normalizeAvatar('/Uploads/default-avatar.svg');
+  };
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (commentId) => communityAPI.deleteComment(commentId),
@@ -54,6 +91,23 @@ const Comments = ({ postId }) => {
         status: 'success',
       });
     },
+  });
+
+  // Upvote / Downvote mutations
+  const upvoteMutation = useMutation({
+    mutationFn: (commentId) => communityAPI.upvoteComment(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['comments', postId]);
+      queryClient.invalidateQueries(['post', postId]);
+    }
+  });
+
+  const downvoteMutation = useMutation({
+    mutationFn: (commentId) => communityAPI.downvoteComment(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['comments', postId]);
+      queryClient.invalidateQueries(['post', postId]);
+    }
   });
 
   // Update mutation
@@ -129,6 +183,9 @@ const Comments = ({ postId }) => {
                 onCancelEdit={handleCancelEdit}
                 onDelete={handleDelete}
                 navigate={navigate}
+                resolveAvatar={resolveAvatar}
+                upvoteMutation={upvoteMutation}
+                downvoteMutation={downvoteMutation}
               />
             );
           })}
@@ -150,8 +207,13 @@ const CommentItem = ({
   onCancelEdit,
   onDelete,
   navigate,
+  resolveAvatar,
+  upvoteMutation,
+  downvoteMutation,
 }) => {
   const isOwner = String(comment.userId) === String(userId);
+  const hasUpvoted = Boolean(comment.HasUpvoted ?? comment.hasUpvoted ?? false);
+  const hasDownvoted = Boolean(comment.HasDownvoted ?? comment.hasDownvoted ?? false);
   
   return (
     <Box>
@@ -159,10 +221,7 @@ const CommentItem = ({
         <Avatar
           size="sm"
           name={comment.user?.name ?? comment.userName ?? comment.UserName}
-          src={
-            normalizeAvatar(comment.user?.avatar ?? comment.profileImageUrl ?? comment.ProfileImageUrl) ||
-            normalizeAvatar('/Uploads/default-avatar.svg')
-          }
+          src={resolveAvatar(comment)}
           mr={3}
           cursor="pointer"
           onClick={() => navigate && navigate(`/user/${comment.userId}`)}
@@ -223,7 +282,17 @@ const CommentItem = ({
               </HStack>
             </Box>
           ) : (
-            <Text whiteSpace="pre-line">{comment.content}</Text>
+            <Box>
+              <Text whiteSpace="pre-line">{comment.content}</Text>
+              <HStack mt={2} spacing={4}>
+                <Button size="sm" variant="ghost" onClick={() => upvoteMutation.mutate(commentId)}>
+                  👍 {comment.upvoteCount ?? comment.UpvoteCount ?? comment.Upvotes ?? 0}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => downvoteMutation.mutate(commentId)}>
+                  👎 {comment.downvoteCount ?? comment.DownvoteCount ?? 0}
+                </Button>
+              </HStack>
+            </Box>
           )}
         </Box>
       </Flex>

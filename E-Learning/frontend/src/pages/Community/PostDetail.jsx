@@ -25,12 +25,13 @@ import {
   EditIcon,
   DeleteIcon,
 } from '@chakra-ui/icons';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaThumbsDown } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
 import Comments from './Comments';
 import { normalizeAvatar, normalizeUrl } from '../../utils/imageUtils';
+import CreatePost from './CreatePost';
 
 const PostDetail = () => {
   const { postId } = useParams();
@@ -51,7 +52,8 @@ const PostDetail = () => {
     enabled: !!postId,
   });
 
-  const post = postData?.data;
+  // Extract actual post object from axios response shape: { success, post }
+  const post = postData?.data?.post ?? postData?.data;
 
   // Like mutation
   const likeMutation = useMutation({
@@ -63,6 +65,40 @@ const PostDetail = () => {
       queryClient.invalidateQueries(['post', postId]);
     },
   });
+
+  const dislikeMutation = useMutation({
+    mutationFn: () => communityAPI.dislikePost(postId),
+    onMutate: () => {
+      // optimistic
+      queryClient.invalidateQueries(['post', postId]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['post', postId]);
+    }
+  });
+
+  // Edit modal state and delete mutation need to be declared unconditionally
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const openEdit = () => setIsEditOpen(true);
+  const closeEdit = () => setIsEditOpen(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => communityAPI.deletePost(postId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['myPosts']);
+      toast({ title: 'Post deleted', status: 'success' });
+      navigate('/community/posts');
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete post', status: 'error' });
+    }
+  });
+
+  const handleDelete = () => {
+    if (!window.confirm('Delete this post?')) return;
+    deleteMutation.mutate();
+  };
 
   // Comment mutation
   const commentMutation = useMutation({
@@ -155,8 +191,9 @@ const PostDetail = () => {
     );
   }
 
-  const isLiked = post.likes?.includes(userId);
-  const isOwner = post.userId === userId;
+  const isLiked = post.HasUpvoted ?? post.hasUpvoted ?? (Array.isArray(post.likes) ? post.likes.includes(userId) : false);
+  const isOwner = String(post.userId ?? post.UserId) === String(userId);
+
 
   return (
     <Container maxW="container.lg" py={8}>
@@ -173,15 +210,17 @@ const PostDetail = () => {
         {/* Post Content */}
         <Box bg="white" borderRadius="lg" shadow="md" p={6}>
           {/* Header */}
-          <Flex align="center" mb={6}>
-            <Avatar
-              name={post.user?.name}
-              src={
-                normalizeAvatar(post.user?.avatar ?? post.user?.profileImageUrl) ||
-                normalizeAvatar('/Uploads/default-avatar.svg')
-              }
-              mr={4}
-            />
+                  <Flex align="center" mb={6}>
+                    <Avatar
+                      name={post.user?.name ?? post.userName ?? post.user?.username}
+                      src={
+                        // Try several possible locations for avatar/profile image
+                        normalizeAvatar(
+                          post.user?.avatar || post.user?.profileImageUrl || post.profileImageUrl || post.profileImage || post.user?.ProfileImageUrl || post.user?.Avatar
+                        ) || normalizeAvatar('/Uploads/default-avatar.svg')
+                      }
+                      mr={4}
+                    />
             <Box flex={1}>
               <Text fontWeight="bold" fontSize="lg">
                 {post.user?.name}
@@ -234,13 +273,38 @@ const PostDetail = () => {
                 onClick={handleLike}
                 isLoading={likeMutation.isLoading}
               >
-                {post.likes?.length || 0} Likes
+                {(post.UpvoteCount ?? post.upvoteCount ?? post.Upvotes ?? (post.likes?.length ?? 0))} Likes
+              </Button>
+              <Button
+                leftIcon={<FaThumbsDown />}
+                variant="ghost"
+                onClick={() => {
+                  if (!userId) { toast({ title: 'Please login', description: 'You need to login to dislike posts', status: 'warning' }); return; }
+                  dislikeMutation.mutate();
+                }}
+                isLoading={dislikeMutation.isLoading}
+              >
+                {(post.DownvoteCount ?? post.downvoteCount ?? 0)} Dislikes
               </Button>
               <Text color="gray.600">
-                {post.comments?.length || 0} Comments
+                {(post.CommentCount ?? post.commentCount ?? post.Comments?.length ?? post.comments?.length ?? 0)} Comments
               </Text>
             </HStack>
+            {isOwner && (
+              <HStack spacing={3}>
+                <Button size="sm" variant="outline" onClick={openEdit} leftIcon={<EditIcon />}>Edit</Button>
+                <Button size="sm" variant="ghost" colorScheme="red" onClick={handleDelete} leftIcon={<DeleteIcon />}>Delete</Button>
+              </HStack>
+            )}
           </Flex>
+
+          <CreatePost isOpen={isEditOpen} onClose={closeEdit} onSuccess={() => { queryClient.invalidateQueries(['post', postId]); closeEdit(); toast({ title: 'Post updated', status: 'success' }); }} initialData={{
+            id: post.Id ?? post.id ?? post.postId ?? postId,
+            title: post.title ?? post.Title,
+            content: post.content ?? post.Content,
+            category: post.postType ?? post.PostType,
+            mediaUrl: post.mediaUrl ?? post.MediaUrl
+          }} isEdit />
 
           {/* Add Comment */}
           <Box mt={8}>

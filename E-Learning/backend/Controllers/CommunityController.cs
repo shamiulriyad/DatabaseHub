@@ -155,6 +155,26 @@ namespace backend.Controllers
             });
         }
 
+        [Authorize]
+        [HttpPost("posts/{id}/dislike")]
+        public async Task<IActionResult> DislikePost(int id)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _communityService.DownvotePost(id, userId);
+            
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                message = "Post downvoted successfully"
+            });
+        }
+
         // COMMENTS
 
         [HttpGet("posts/{postId}/comments")]

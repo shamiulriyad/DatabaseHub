@@ -34,9 +34,14 @@ const PostList = ({ type = 'all' }) => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['communityPosts'],
-    queryFn: () => communityAPI.getPosts({ page: Number(page), pageSize: Number(pageSize), sortBy, search }),
+    queryKey: ['communityPosts', type, page, pageSize, sortBy, search],
+    queryFn: () => {
+      const params = { page: Number(page), pageSize: Number(pageSize), sortBy, search };
+      if (type === 'my') return communityAPI.getMyPosts(params);
+      return communityAPI.getPosts(params);
+    },
     keepPreviousData: true,
+    enabled: type !== 'my' || !!localStorage.getItem('token'),
   });
 
   const queryClient = useQueryClient();
@@ -173,13 +178,18 @@ const PostList = ({ type = 'all' }) => {
         </Center>
       ) : (
         <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={4}>
-          {posts.map((post) => (
-            <PostCard key={post.id} post={{
+          {posts.map((post) => {
+            const pid = post.id ?? post.Id ?? post.postId ?? post._id ?? post.post_id;
+            const norm = {
               ...post,
-              userName: post.userName || post.user_name || 'Anonymous',
-              // fallback for userName if backend changes
-            }} type={type} />
-          ))}
+              id: pid,
+              userName: post.userName || post.user_name || post.user?.name || 'Anonymous',
+              upvoteCount: post.upvoteCount ?? post.UpvoteCount ?? post.Upvotes ?? 0,
+              downvoteCount: post.downvoteCount ?? post.DownvoteCount ?? 0,
+              commentCount: post.commentCount ?? post.CommentCount ?? (post.comments?.length ?? post.Comments?.length ?? 0),
+            };
+            return <PostCard key={pid ?? Math.random()} post={norm} type={type} />;
+          })}
         </SimpleGrid>
       )}
 

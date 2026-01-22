@@ -29,13 +29,30 @@ const CommunityPage = () => {
     queryKey: ['myPostsCount'],
     queryFn: () => communityAPI.getMyPosts(),
     enabled: !!localStorage.getItem('token'),
-    select: (data) => data.data?.length || 0,
+    // backend may return { success, posts: [...] } or { success, data: [...] }
+    select: (response) => {
+      const payload = response?.data ?? {};
+      if (Array.isArray(payload.posts)) return payload.posts.length;
+      if (Array.isArray(payload.data)) return payload.data.length;
+      if (Array.isArray(payload)) return payload.length;
+      return 0;
+    },
   });
 
   const { data: allPostsCount } = useQuery({
     queryKey: ['allPostsCount'],
-    queryFn: () => communityAPI.getPosts({ page: 1, pageSize: 1 }),
-    select: (data) => data.data?.total || 0,
+    // request many items so backend returns full list (backend currently doesn't return total)
+    queryFn: () => communityAPI.getPosts({ page: 1, pageSize: 10000 }),
+    // backend may return { success, data: [...] } or { success, message, data: { posts: [...], total } }
+    select: (response) => {
+      const payload = response?.data ?? {};
+      // if backend wrapped paginated object in payload.data
+      if (payload.total != null) return payload.total;
+      if (Array.isArray(payload.posts)) return payload.posts.length;
+      if (Array.isArray(payload.data)) return payload.data.length;
+      if (Array.isArray(payload)) return payload.length;
+      return 0;
+    },
   });
 
   return (

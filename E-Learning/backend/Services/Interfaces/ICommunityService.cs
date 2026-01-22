@@ -15,6 +15,7 @@ namespace backend.Services.Interfaces
         Task<ServiceResult<List<CommentDTO>>> GetPostComments(int postId);
         Task<ServiceResult<bool>> LikePost(int postId, int userId);
         Task<ServiceResult<bool>> UnlikePost(int postId, int userId);
+        Task<ServiceResult<bool>> DownvotePost(int postId, int userId);
         Task<ServiceResult<bool>> UpvoteComment(int commentId, int userId);
         Task<ServiceResult<bool>> DownvoteComment(int commentId, int userId);
         Task<ServiceResult<bool>> MarkAsAnswer(int commentId, int userId);

@@ -20,16 +20,28 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityService } from '../../services/communityService';
 
-const CreatePost = ({ isOpen, onClose, onSuccess }) => {
+const CreatePost = ({ isOpen, onClose, onSuccess, initialData = null, isEdit = false }) => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(initialData || {
     title: '',
     content: '',
     category: 'general',
     mediaUrl: '',
   });
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || initialData.Title || '',
+        content: initialData.content || initialData.Content || '',
+        category: initialData.category || (initialData.postType ? String(initialData.postType).toLowerCase() : 'general'),
+        mediaUrl: initialData.mediaUrl || initialData.MediaUrl || ''
+      });
+    } else {
+      setFormData({ title: '', content: '', category: 'general', mediaUrl: '' });
+    }
+  }, [initialData, isOpen]);
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
@@ -66,20 +78,30 @@ const CreatePost = ({ isOpen, onClose, onSuccess }) => {
         title: formData.title.trim(),
         content: formData.content.trim(),
         postType: formData.category ? formData.category.charAt(0).toUpperCase() + formData.category.slice(1) : "Discussion",
-        ...(formData.mediaUrl.trim() && { mediaUrl: formData.mediaUrl.trim() }),
+        ...(formData.mediaUrl && formData.mediaUrl.trim() && { mediaUrl: formData.mediaUrl.trim() }),
       };
-      
+
       console.log('Post data to send:', postData);
-      
-      const response = await communityService.createPost(postData);
-      
+
+      let response;
+      if (isEdit && initialData) {
+        const uid = initialData.id ?? initialData.Id ?? initialData.postId ?? initialData.postID ?? initialData.post_id;
+        response = await communityService.updatePost(uid, postData);
+      } else {
+        response = await communityService.createPost(postData);
+      }
+
       console.log('Backend response:', response);
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['myPosts'] });
-      queryClient.invalidateQueries({ queryKey: ['allPostsCount'] });
-      queryClient.invalidateQueries({ queryKey: ['myPostsCount'] });
+      queryClient.invalidateQueries(['communityPosts']);
+      queryClient.invalidateQueries(['myPosts']);
+      queryClient.invalidateQueries(['allPostsCount']);
+      queryClient.invalidateQueries(['myPostsCount']);
+      if (isEdit && initialData) {
+        const pid = initialData.id ?? initialData.Id ?? initialData.postId ?? initialData.postID ?? initialData.post_id;
+        if (pid) queryClient.invalidateQueries(['post', pid]);
+      }
       
       toast({
         title: 'Post Created!',
@@ -89,13 +111,15 @@ const CreatePost = ({ isOpen, onClose, onSuccess }) => {
         isClosable: true,
       });
       
-      // Reset form
-      setFormData({
-        title: '',
-        content: '',
-        category: 'general',
-        mediaUrl: '',
-      });
+      // Reset form (if not editing)
+      if (!isEdit) {
+        setFormData({
+          title: '',
+          content: '',
+          category: 'general',
+          mediaUrl: '',
+        });
+      }
       setErrors({});
       
       // Close modal and call onSuccess if provided

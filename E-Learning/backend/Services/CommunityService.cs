@@ -72,6 +72,9 @@ namespace backend.Services
                 Subject = post.Subject,
                 MediaUrl = post.MediaUrl,
                 MediaType = post.MediaType,
+                UpvoteCount = post.UpvoteCount,
+                DownvoteCount = post.DownvoteCount,
+                CommentCount = post.CommentCount,
                 CreatedAt = post.CreatedAt
             };
 
@@ -104,23 +107,73 @@ namespace backend.Services
             var post = _context.Posts.Find(postId);
             if (post == null)
                 return Task.FromResult(ServiceResult<PostDTO>.FailureResult("Post not found"));
+            // Build a PostDetailDTO including author and comments so frontend can render full post page
+            var authorEntity = _context.Users.Find(post.UserId);
 
-            var postDto = new DTOs.PostDTO
+            var postDto = new DTOs.PostDetailDTO
             {
                 Id = post.Id,
                 Title = post.Title,
                 Content = post.Content,
                 UserId = post.UserId,
-                UserName = _context.Users.Find(post.UserId) != null ? (_context.Users.Find(post.UserId).FirstName + " " + _context.Users.Find(post.UserId).LastName) : null,
-                ProfileImageUrl = _context.Users.Find(post.UserId)?.ProfileImageUrl,
+                UserName = authorEntity != null ? (authorEntity.FirstName + " " + authorEntity.LastName) : null,
+                ProfileImageUrl = authorEntity?.ProfileImageUrl,
+                UpvoteCount = post.UpvoteCount,
+                DownvoteCount = post.DownvoteCount,
                 PostType = post.PostType,
                 IsExamRelated = post.IsExamRelated,
                 ExamTags = post.ExamTags != null ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(post.ExamTags) ?? new List<string>() : new List<string>(),
                 Subject = post.Subject,
                 MediaUrl = post.MediaUrl,
                 MediaType = post.MediaType,
-                CreatedAt = post.CreatedAt
+                CreatedAt = post.CreatedAt,
+                // Author DTO
+                Author = authorEntity != null ? new DTOs.UserDTO {
+                    Id = authorEntity.Id,
+                    Username = authorEntity.Username,
+                    Email = authorEntity.Email,
+                    FirstName = authorEntity.FirstName,
+                    LastName = authorEntity.LastName,
+                    ProfileImageUrl = authorEntity.ProfileImageUrl,
+                    CoverImageUrl = authorEntity.CoverImageUrl,
+                    CreatedAt = authorEntity.CreatedAt
+                }! : null
             };
+
+            // Load comments for this post (top-level only)
+            var comments = _context.Comments.Where(c => c.PostId == postId && c.ParentCommentId == null)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
+
+            var commentDtos = comments.Select(comment => {
+                var author = _context.Users.Find(comment.UserId);
+                return new DTOs.CommentDTO
+                {
+                    Id = comment.Id,
+                    Content = comment.Content,
+                    UserId = comment.UserId,
+                    UserName = author != null ? (author.FirstName + " " + author.LastName) : null,
+                    ProfileImageUrl = author?.ProfileImageUrl,
+                    PostId = comment.PostId,
+                    ParentCommentId = comment.ParentCommentId,
+                    Depth = comment.Depth,
+                    UpvoteCount = comment.UpvoteCount,
+                    DownvoteCount = comment.DownvoteCount,
+                    ReplyCount = comment.ReplyCount,
+                    IsAnswer = comment.IsAnswer,
+                    IsTeacherAnswer = comment.IsTeacherAnswer,
+                    IsBestAnswer = comment.IsBestAnswer,
+                    CreatedAt = comment.CreatedAt
+                };
+            }).ToList();
+
+            postDto.Comments = commentDtos;
+            postDto.CommentCount = commentDtos.Count;
+
+            // Ensure detail counts are present
+            postDto.UpvoteCount = post.UpvoteCount;
+            postDto.DownvoteCount = post.DownvoteCount;
+
             return Task.FromResult(ServiceResult<PostDTO>.SuccessResult(postDto));
         }
 
@@ -146,6 +199,9 @@ namespace backend.Services
                 Subject = post.Subject,
                 MediaUrl = post.MediaUrl,
                 MediaType = post.MediaType,
+                UpvoteCount = post.UpvoteCount,
+                DownvoteCount = post.DownvoteCount,
+                CommentCount = post.CommentCount,
                 CreatedAt = post.CreatedAt
             }).ToList();
 
@@ -219,11 +275,15 @@ namespace backend.Services
             _context.Comments.Add(comment);
             _context.SaveChanges();
 
+            var author = _context.Users.Find(userId);
+
             var commentDto = new DTOs.CommentDTO
             {
                 Id = comment.Id,
                 Content = comment.Content,
                 UserId = comment.UserId,
+                UserName = author != null ? (author.FirstName + " " + author.LastName) : null,
+                ProfileImageUrl = author?.ProfileImageUrl,
                 PostId = comment.PostId,
                 ParentCommentId = comment.ParentCommentId,
                 Depth = comment.Depth,
@@ -257,21 +317,26 @@ namespace backend.Services
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
 
-            var commentDtos = comments.Select(comment => new DTOs.CommentDTO
-            {
-                Id = comment.Id,
-                Content = comment.Content,
-                UserId = comment.UserId,
-                PostId = comment.PostId,
-                ParentCommentId = comment.ParentCommentId,
-                Depth = comment.Depth,
-                UpvoteCount = comment.UpvoteCount,
-                DownvoteCount = comment.DownvoteCount,
-                ReplyCount = comment.ReplyCount,
-                IsAnswer = comment.IsAnswer,
-                IsTeacherAnswer = comment.IsTeacherAnswer,
-                IsBestAnswer = comment.IsBestAnswer,
-                CreatedAt = comment.CreatedAt
+            var commentDtos = comments.Select(comment => {
+                var author = _context.Users.Find(comment.UserId);
+                return new DTOs.CommentDTO
+                {
+                    Id = comment.Id,
+                    Content = comment.Content,
+                    UserId = comment.UserId,
+                    UserName = author != null ? (author.FirstName + " " + author.LastName) : null,
+                    ProfileImageUrl = author?.ProfileImageUrl,
+                    PostId = comment.PostId,
+                    ParentCommentId = comment.ParentCommentId,
+                    Depth = comment.Depth,
+                    UpvoteCount = comment.UpvoteCount,
+                    DownvoteCount = comment.DownvoteCount,
+                    ReplyCount = comment.ReplyCount,
+                    IsAnswer = comment.IsAnswer,
+                    IsTeacherAnswer = comment.IsTeacherAnswer,
+                    IsBestAnswer = comment.IsBestAnswer,
+                    CreatedAt = comment.CreatedAt
+                };
             }).ToList();
 
             return Task.FromResult(ServiceResult<List<CommentDTO>>.SuccessResult(commentDtos));
@@ -314,6 +379,29 @@ namespace backend.Services
             post.UpvoteCount = Math.Max(0, post.UpvoteCount - 1);
             _context.SaveChanges();
             return Task.FromResult(ServiceResult<bool>.SuccessResult(true, "Upvote removed"));
+        }
+
+        public Task<ServiceResult<bool>> DownvotePost(int postId, int userId)
+        {
+            var post = _context.Posts.Find(postId);
+            if (post == null)
+                return Task.FromResult(ServiceResult<bool>.FailureResult("Post not found"));
+
+            var existingVote = _context.PostVotes.FirstOrDefault(v => v.PostId == postId && v.UserId == userId);
+            if (existingVote != null && existingVote.VoteType == -1)
+                return Task.FromResult(ServiceResult<bool>.FailureResult("Already downvoted"));
+
+            if (existingVote == null)
+            {
+                _context.PostVotes.Add(new Models.PostVote { PostId = postId, UserId = userId, VoteType = -1, CreatedAt = DateTime.UtcNow });
+            }
+            else
+            {
+                existingVote.VoteType = -1;
+            }
+            post.DownvoteCount++;
+            _context.SaveChanges();
+            return Task.FromResult(ServiceResult<bool>.SuccessResult(true, "Post downvoted"));
         }
 
         public Task<ServiceResult<bool>> UpvoteComment(int commentId, int userId)
