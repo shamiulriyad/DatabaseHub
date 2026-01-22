@@ -38,6 +38,8 @@ const EditProfile = () => {
   });
   const [preview, setPreview] = useState('');
   const [coverPreview, setCoverPreview] = useState('');
+  const [profileFile, setProfileFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -154,13 +156,10 @@ const EditProfile = () => {
         return;
       }
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-        setFormData((prev) => ({ ...prev, profileImageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      // Create preview and keep the File object for upload
+      setPreview(URL.createObjectURL(file));
+      setProfileFile(file);
+      setFormData((prev) => ({ ...prev, profileImageUrl: '' }));
     }
   };
 
@@ -179,12 +178,10 @@ const EditProfile = () => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result);
-        setFormData((prev) => ({ ...prev, coverImageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      // Create preview and keep the File object for upload
+      setCoverPreview(URL.createObjectURL(file));
+      setCoverFile(file);
+      setFormData((prev) => ({ ...prev, coverImageUrl: '' }));
     }
   };
 
@@ -196,21 +193,46 @@ const EditProfile = () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(
-        'http://localhost:5145/api/auth/profile',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      console.log('EditProfile: submitting', { formData });
+      console.log('EditProfile: token present?', !!token);
+      // If user selected new profile or cover files, upload them first to get URLs
+      const uploadImage = async (file) => {
+        if (!file) return null;
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await axios.post('http://localhost:5145/api/auth/upload-image', fd, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data?.url || null;
+      };
 
-      if (response.data.success) {
-        // Update localStorage
-        const updatedUser = response.data.user || { ...JSON.parse(localStorage.getItem('user') || '{}'), ...formData };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+      const profileUrl = await uploadImage(profileFile);
+      const coverUrl = await uploadImage(coverFile);
+
+      const payload = {
+        ...formData,
+        profileImageUrl: profileUrl || formData.profileImageUrl,
+        coverImageUrl: coverUrl || formData.coverImageUrl,
+      };
+
+      const response = await axios.put('http://localhost:5145/api/auth/profile', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+        if (response.data.success) {
+        // Update localStorage (sanitize large data URIs before storing to avoid quota errors)
+        const updatedUser = response.data.user || { ...JSON.parse(localStorage.getItem('user') || '{}'), ...payload };
+        const sanitizeForStorage = (u) => {
+          const copy = { ...u };
+          if (typeof copy.profileImageUrl === 'string' && copy.profileImageUrl.startsWith('data:')) delete copy.profileImageUrl;
+          if (typeof copy.coverImageUrl === 'string' && copy.coverImageUrl.startsWith('data:')) delete copy.coverImageUrl;
+          return copy;
+        };
+        try {
+          localStorage.setItem('user', JSON.stringify(sanitizeForStorage(updatedUser)));
+        } catch (e) {
+          console.warn('Could not save sanitized user to localStorage', e);
+        }
 
         toast({
           title: 'Success',
@@ -231,11 +253,14 @@ const EditProfile = () => {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      console.error('EditProfile: response status:', error.response?.status);
+      console.error('EditProfile: response data:', error.response?.data);
+      const serverMessage = error.response?.data?.message || error.response?.data || 'Failed to update profile';
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update profile',
+        description: typeof serverMessage === 'string' ? serverMessage : JSON.stringify(serverMessage),
         status: 'error',
-        duration: 5000,
+        duration: 7000,
         isClosable: true,
       });
     } finally {

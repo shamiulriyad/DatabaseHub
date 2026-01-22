@@ -52,6 +52,7 @@ const UserProfile = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const headerBg = useColorModeValue('linear(135deg, purple.600, blue.600)', 'linear(135deg, purple.700, blue.700)');
+  const headerTextColor = useColorModeValue('gray.700', 'gray.200');
 
   useEffect(() => {
     fetchProfileData();
@@ -130,7 +131,45 @@ const UserProfile = () => {
     );
   }
 
-  const displayProfile = profile || authUser || JSON.parse(localStorage.getItem('user') || '{}');
+  const normalizeProfile = (p) => {
+    if (!p) return {};
+    const currentClan = p.currentClan || p.CurrentClan || null;
+    return {
+      id: p.id ?? p.Id,
+      username: p.username ?? p.Username,
+      email: p.email ?? p.Email,
+      firstName: p.firstName ?? p.FirstName,
+      lastName: p.lastName ?? p.LastName,
+      profileImageUrl: p.profileImageUrl ?? p.ProfileImageUrl ?? p.profileImage ?? p.ProfileImage,
+      coverImageUrl: p.coverImageUrl ?? p.CoverImageUrl ?? p.coverImage ?? p.CoverImage,
+      bio: p.bio ?? p.Bio,
+      phoneNumber: p.phoneNumber ?? p.PhoneNumber,
+      createdAt: p.createdAt ?? p.CreatedAt,
+      totalPoints: p.totalPoints ?? p.TotalPoints,
+      currentRank: p.currentRank ?? p.CurrentRank,
+      isStudent: p.isStudent ?? p.IsStudent,
+      isTeacher: p.isTeacher ?? p.IsTeacher,
+      isAdmin: p.isAdmin ?? p.IsAdmin,
+      isCompetitor: p.isCompetitor ?? p.IsCompetitor,
+      usernameDisplay: p.username ?? p.Username ?? p.userName,
+      avatar: p.avatar ?? p.Avatar,
+      currentClan: currentClan
+        ? {
+            clanId: currentClan.clanId ?? currentClan.ClanId ?? currentClan.ClanId,
+            clanName: currentClan.clanName ?? currentClan.ClanName ?? currentClan.ClanName,
+            clanTag: currentClan.clanTag ?? currentClan.ClanTag ?? currentClan.ClanTag,
+            clanLogoUrl: currentClan.clanLogoUrl ?? currentClan.ClanLogoUrl ?? currentClan.clanLogoUrl,
+            role: currentClan.role ?? currentClan.Role,
+            contributionPoints: currentClan.contributionPoints ?? currentClan.ContributionPoints,
+            joinedAt: currentClan.joinedAt ?? currentClan.JoinedAt,
+          }
+        : null,
+      // keep original object as fallback for any other fields
+      _raw: p,
+    };
+  };
+
+  const displayProfile = normalizeProfile(profile || authUser || JSON.parse(localStorage.getItem('user') || '{}'));
 
   return (
     <Box minH="100vh" bg={bgColor} py={12}>
@@ -194,14 +233,14 @@ const UserProfile = () => {
                 )}
               </HStack>
 
-              <HStack spacing={6} pt={2}>
+              <HStack spacing={6} pt={2} color={headerTextColor}>
                 <HStack spacing={2} fontSize="sm" opacity={0.9}>
                   <Icon as={FaEnvelope} />
-                  <Text>{displayProfile.email}</Text>
+                  <Text color={headerTextColor}>{displayProfile.email}</Text>
                 </HStack>
                 <HStack spacing={2} fontSize="sm" opacity={0.9}>
                   <Icon as={FaCalendar} />
-                  <Text>
+                  <Text color={headerTextColor}>
                     Joined {new Date(displayProfile.createdAt || Date.now()).toLocaleDateString('en-US', {
                       month: 'short',
                       year: 'numeric'

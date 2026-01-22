@@ -133,6 +133,8 @@ app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// Serve uploaded static files from wwwroot/uploads
+app.UseStaticFiles();
 
 app.MapControllers();
 

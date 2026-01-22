@@ -19,6 +19,7 @@ import {
   Center,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
+import { normalizeAvatar } from '../../utils/imageUtils';
 import { TimeIcon, DeleteIcon, EditIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
@@ -158,7 +159,10 @@ const CommentItem = ({
         <Avatar
           size="sm"
           name={comment.user?.name ?? comment.userName ?? comment.UserName}
-          src={comment.user?.avatar ?? comment.profileImageUrl ?? comment.ProfileImageUrl}
+          src={
+            normalizeAvatar(comment.user?.avatar ?? comment.profileImageUrl ?? comment.ProfileImageUrl) ||
+            normalizeAvatar('/Uploads/default-avatar.svg')
+          }
           mr={3}
           cursor="pointer"
           onClick={() => navigate && navigate(`/user/${comment.userId}`)}

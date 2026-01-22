@@ -27,6 +27,7 @@ import {
 } from '@chakra-ui/icons';
 import { FaHeart, FaRegHeart, FaShareAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { normalizeAvatar, normalizeUrl } from '../../utils/imageUtils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
 
@@ -94,7 +95,10 @@ const PostCard = ({ post, type }) => {
           size="sm"
           name={post.userName || 'Anonymous'}
           mr={3}
-          src={post.profileImageUrl || post.user?.profileImageUrl || post.user?.avatar}
+          src={
+            normalizeAvatar(post.profileImageUrl || post.user?.profileImageUrl || post.user?.avatar) ||
+            normalizeAvatar('/Uploads/default-avatar.svg')
+          }
           cursor="pointer"
           onClick={() => navigate(`/user/${post.userId}`)}
         />
@@ -148,15 +152,7 @@ const PostCard = ({ post, type }) => {
           {post.content}
         </Text>
         {post.mediaUrl && (
-          <Image
-            src={post.mediaUrl}
-            alt="Post media"
-            borderRadius="md"
-            mb={3}
-            maxH="200px"
-            objectFit="cover"
-            w="100%"
-          />
+          <PostMedia src={post.mediaUrl} />
         )}
       </Box>
 
@@ -197,3 +193,22 @@ const PostCard = ({ post, type }) => {
 };
 
 export default PostCard;
+
+// Small component to safely render post media and hide broken images
+function PostMedia({ src }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) return null;
+  const url = normalizeUrl(src);
+  return (
+    <Image
+      src={url}
+      alt="Post media"
+      borderRadius="md"
+      mb={3}
+      maxH="200px"
+      objectFit="cover"
+      w="100%"
+      onError={() => setBroken(true)}
+    />
+  );
+}

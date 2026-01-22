@@ -30,6 +30,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communityAPI } from '../../services/api';
 import Comments from './Comments';
+import { normalizeAvatar, normalizeUrl } from '../../utils/imageUtils';
 
 const PostDetail = () => {
   const { postId } = useParams();
@@ -175,7 +176,10 @@ const PostDetail = () => {
           <Flex align="center" mb={6}>
             <Avatar
               name={post.user?.name}
-              src={post.user?.avatar}
+              src={
+                normalizeAvatar(post.user?.avatar ?? post.user?.profileImageUrl) ||
+                normalizeAvatar('/Uploads/default-avatar.svg')
+              }
               mr={4}
             />
             <Box flex={1}>
@@ -209,13 +213,14 @@ const PostDetail = () => {
 
           {post.mediaUrl && (
             <Image
-              src={post.mediaUrl}
+              src={normalizeUrl(post.mediaUrl)}
               alt="Post media"
               borderRadius="md"
               mb={6}
               maxH="400px"
               objectFit="contain"
               w="100%"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           )}
 

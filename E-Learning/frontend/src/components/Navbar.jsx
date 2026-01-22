@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationBell from './NotificationBell';
@@ -10,6 +10,8 @@ import {
   VStack,
   Link,
   Button,
+  Text,
+  Avatar,
   Menu,
   MenuButton,
   MenuList,
@@ -29,6 +31,22 @@ import { FaBars, FaTimes, FaUserCircle, FaBook } from 'react-icons/fa';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const rawAvatar = user && (
+    user.profileImageUrl || user.ProfileImageUrl || user.ProfileImage || user.avatar || user.Avatar || (user.user && (user.user.profileImageUrl || user.user.ProfileImageUrl))
+  );
+
+  // Normalize avatar URL: if it's a relative /Uploads path, make it absolute so browser can load it
+  const avatarSrc = rawAvatar && typeof rawAvatar === 'string'
+    ? (rawAvatar.startsWith('/Uploads') ? `${window.location.origin}${rawAvatar}` : rawAvatar)
+    : rawAvatar;
+
+  useEffect(() => {
+    if (user) {
+      // Helpful debug info when avatar isn't showing
+      // eslint-disable-next-line no-console
+      console.debug('Navbar user:', user, 'avatarSrc:', avatarSrc);
+    }
+  }, [user, avatarSrc]);
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   
@@ -109,9 +127,15 @@ const Navbar = () => {
                     as={Button}
                     variant="ghost"
                     size="sm"
-                    leftIcon={<Icon as={FaUserCircle} boxSize={5} />}
+                    leftIcon={
+                      avatarSrc ? (
+                        <Avatar src={avatarSrc} name={user?.firstName || user?.FirstName || user?.username || user?.Username} size="sm" />
+                      ) : (
+                        <Icon as={FaUserCircle} boxSize={5} />
+                      )
+                    }
                   >
-                    {user.firstName || user.username || 'Profile'}
+                    {user.firstName || user.FirstName || user.username || user.Username || 'Profile'}
                   </MenuButton>
                   <MenuList>
                     <MenuItem as={RouterLink} to="/profile">
@@ -190,7 +214,7 @@ const Navbar = () => {
           <DrawerCloseButton />
           <DrawerBody pt={8}>
             <VStack spacing={4} align="start">
-              <NavLink to="/courses" onClick={onClose}>Courses</NavLink>
+              <NavLink to="/courses" onClick={onClose}>University</NavLink>
               <NavLink to="/about" onClick={onClose}>About</NavLink>
               <NavLink to="/community" onClick={onClose}>Community</NavLink>
               <NavLink to="/clans" onClick={onClose}>Clans</NavLink>

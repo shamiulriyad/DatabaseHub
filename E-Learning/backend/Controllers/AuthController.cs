@@ -9,7 +9,9 @@ using Microsoft.IdentityModel.Tokens;
 using backend.DTOs;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
 
 namespace backend.Controllers
 {
@@ -24,11 +26,61 @@ namespace backend.Controllers
             _authService = authService;
         }
 
+        private string? SaveDataUrlToUploads(string? dataUrl, string subfolder = "")
+        {
+            if (string.IsNullOrEmpty(dataUrl) || !dataUrl.StartsWith("data:")) return null;
+
+            try
+            {
+                var parts = dataUrl.Split(',');
+                if (parts.Length < 2) return null;
+
+                var meta = parts[0];
+                var base64 = parts[1];
+
+                string ext = ".png";
+                if (meta.Contains("image/jpeg") || meta.Contains("image/jpg")) ext = ".jpg";
+                else if (meta.Contains("image/png")) ext = ".png";
+                else if (meta.Contains("image/svg+xml")) ext = ".svg";
+                else if (meta.Contains("image/gif")) ext = ".gif";
+
+                var fileName = Guid.NewGuid().ToString() + ext;
+
+                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads");
+                if (!string.IsNullOrEmpty(subfolder)) uploadsRoot = Path.Combine(uploadsRoot, subfolder);
+                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
+
+                var filePath = Path.Combine(uploadsRoot, fileName);
+
+                var bytes = Convert.FromBase64String(base64);
+                System.IO.File.WriteAllBytes(filePath, bytes);
+
+                var url = $"{Request.Scheme}://{Request.Host}/Uploads/{(string.IsNullOrEmpty(subfolder) ? "" : subfolder + "/")}{fileName}";
+                return url;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            // If frontend sent base64 data-urls for images, save them to wwwroot/Uploads and replace with URLs
+            if (!string.IsNullOrEmpty(registerDto.ProfileImageUrl) && registerDto.ProfileImageUrl.StartsWith("data:"))
+            {
+                var url = SaveDataUrlToUploads(registerDto.ProfileImageUrl, "profile");
+                if (url != null) registerDto.ProfileImageUrl = url;
+            }
+            if (!string.IsNullOrEmpty(registerDto.CoverImageUrl) && registerDto.CoverImageUrl.StartsWith("data:"))
+            {
+                var url = SaveDataUrlToUploads(registerDto.CoverImageUrl, "cover");
+                if (url != null) registerDto.CoverImageUrl = url;
+            }
 
             var result = await _authService.Register(registerDto);
             
@@ -137,6 +189,18 @@ namespace backend.Controllers
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
+            // If images came as data-urls, save them and replace with absolute URLs
+            if (!string.IsNullOrEmpty(profileDto.ProfileImageUrl) && profileDto.ProfileImageUrl.StartsWith("data:"))
+            {
+                var url = SaveDataUrlToUploads(profileDto.ProfileImageUrl, "profile");
+                if (url != null) profileDto.ProfileImageUrl = url;
+            }
+            if (!string.IsNullOrEmpty(profileDto.CoverImageUrl) && profileDto.CoverImageUrl.StartsWith("data:"))
+            {
+                var url = SaveDataUrlToUploads(profileDto.CoverImageUrl, "cover");
+                if (url != null) profileDto.CoverImageUrl = url;
+            }
+
             var result = await _authService.UpdateProfile(userId, profileDto);
             
             if (!result.Success)
@@ -147,6 +211,37 @@ namespace backend.Controllers
                 message = "Profile updated successfully",
                 user = result.Data
             });
+        }
+
+        [Authorize]
+        [HttpPost("upload-image")]
+        public async Task<IActionResult> UploadImage([FromForm] IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest(new { success = false, message = "No image file provided" });
+
+            try
+            {
+                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads");
+                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
+
+                var ext = Path.GetExtension(image.FileName);
+                var fileName = Guid.NewGuid().ToString() + ext;
+                var filePath = Path.Combine(uploadsRoot, fileName);
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                var url = $"{Request.Scheme}://{Request.Host}/Uploads/{fileName}";
+
+                return Ok(new { success = true, url });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
         }
 
         [Authorize]

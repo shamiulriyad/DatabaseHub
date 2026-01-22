@@ -5,7 +5,18 @@ export const authService = {
     const response = await api.post('/auth/login', { email, password });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const sanitizeForStorage = (u) => {
+        if (!u || typeof u !== 'object') return u;
+        const copy = { ...u };
+        if (typeof copy.profileImageUrl === 'string' && copy.profileImageUrl.startsWith('data:')) delete copy.profileImageUrl;
+        if (typeof copy.coverImageUrl === 'string' && copy.coverImageUrl.startsWith('data:')) delete copy.coverImageUrl;
+        return copy;
+      };
+      try {
+        localStorage.setItem('user', JSON.stringify(sanitizeForStorage(response.data.user)));
+      } catch (e) {
+        console.warn('Could not save user to localStorage', e);
+      }
       // Keep a simple userId key for legacy components that read it directly
       try {
         if (response.data.user && response.data.user.id) {
