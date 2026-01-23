@@ -30,6 +30,7 @@ import ClanList from './pages/Clans/ClanList';
 import ClanDetail from './pages/Clans/ClanDetail';
 import ClanCreate from './pages/Clans/ClanCreate';
 import ClanMembers from './pages/Clans/ClanMembers';
+import ClanEdit from './pages/Clans/ClanEdit';
 
 // Competition Pages
 import CompetitionList from './pages/Competitions/CompetitionList';
@@ -122,6 +123,7 @@ function PublicLayout() {
           <Route path="/clans" element={<ClanList />} />
           <Route path="/clans/create" element={<ProtectedRoute><ClanCreate /></ProtectedRoute>} />
           <Route path="/clans/:clanId" element={<ClanDetail />} />
+          <Route path="/clans/:clanId/edit" element={<ProtectedRoute><ClanEdit /></ProtectedRoute>} />
           <Route path="/clans/:clanId/members" element={<ClanMembers />} />
 
           {/* Community Routes - Public */}
