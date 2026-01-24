@@ -24,11 +24,24 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            if (universityId.HasValue)
+            {
+                var uniResult = await _departmentService.GetDepartmentsByUniversity(universityId.Value);
+
+                if (!uniResult.Success)
+                    return BadRequest(new { success = false, message = uniResult.Message, errors = uniResult.Errors });
+
+                return Ok(new {
+                    success = true,
+                    departments = uniResult.Data
+                });
+            }
+
             var result = await _departmentService.GetAllDepartments(page, pageSize);
-            
+
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message, errors = result.Errors });
-            
+
             return Ok(new {
                 success = true,
                 departments = result.Data
@@ -87,58 +100,28 @@ namespace backend.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateDepartment([FromBody] CreateDepartmentDTO departmentDto)
+        public Task<IActionResult> CreateDepartment([FromBody] CreateDepartmentDTO departmentDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-            var result = await _departmentService.CreateDepartment(departmentDto, adminId);
-            
-            if (!result.Success)
-                return BadRequest(new { success = false, message = result.Message });
-
-            return CreatedAtAction(nameof(GetDepartment), new { id = result.Data.Id }, new {
-                success = true,
-                message = "Department created successfully",
-                department = result.Data
-            });
+            // Departments are centrally managed. New departments can only be created
+            // via the Department Request -> Admin Approve flow. Direct creation by
+            // Admin through this endpoint is intentionally disabled.
+            return Task.FromResult<IActionResult>(Forbid("Direct department creation is disabled. Submit a Department Add Request for admin approval."));
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateDepartment(int id, [FromBody] UpdateDepartmentDTO departmentDto)
+        public Task<IActionResult> UpdateDepartment(int id, [FromBody] UpdateDepartmentDTO departmentDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-            var result = await _departmentService.UpdateDepartment(id, adminId, departmentDto);
-            
-            if (!result.Success)
-                return BadRequest(new { success = false, message = result.Message });
-
-            return Ok(new {
-                success = true,
-                message = "Department updated successfully",
-                department = result.Data
-            });
+            // Editing departments directly is disabled; use the Department Requests approval flow.
+            return Task.FromResult<IActionResult>(Forbid("Direct department updates are disabled. Use the Department Request approval workflow."));
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDepartment(int id)
+        public Task<IActionResult> DeleteDepartment(int id)
         {
-            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-            var result = await _departmentService.DeleteDepartment(id, adminId);
-            
-            if (!result.Success)
-                return BadRequest(new { success = false, message = result.Message });
-
-            return Ok(new {
-                success = true,
-                message = "Department deleted successfully"
-            });
+            // Deletion of departments is centrally controlled. Prevent direct deletes.
+            return Task.FromResult<IActionResult>(Forbid("Direct department deletion is disabled. Use the admin workflows for deprecation/removal."));
         }
 
         [HttpGet("search")]

@@ -21,6 +21,7 @@ import {
   FaUser,
   FaPlus,
   FaGraduationCap,
+  FaUniversity,
   FaCheckSquare,
   FaCog,
   FaUsers,
@@ -143,6 +144,9 @@ const Sidebar = () => {
             <SidebarLink to="/admin/teachers" icon={FaChalkboardTeacher} label="Pending Teachers" badge="New" />
             <SidebarLink to="/admin/manage-teachers" icon={FaGraduationCap} label="All Applications" />
             <SidebarLink to="/admin/users" icon={FaUsers} label="Users" />
+            <SidebarLink to="/admin/universities" icon={FaUniversity} label="Universities" />
+            <SidebarLink to="/admin/university-requests" icon={FaClipboardList} label="University Requests" />
+            <SidebarLink to="/admin/department-requests" icon={FaClipboardList} label="Department Requests" />
             <SidebarLink to="/admin/courses" icon={FaBook} label="Courses" />
             <SidebarLink to="/admin/competitions" icon={FaTrophy} label="Competitions" />
             <SidebarLink to="/admin/payments" icon={FaFileInvoiceDollar} label="Payments" />
@@ -179,6 +183,7 @@ const Sidebar = () => {
             </Box>
             <SidebarLink to="/dashboard" icon={FaTachometerAlt} label="My Dashboard" />
             <SidebarLink to="/profile/enrollments" icon={FaBook} label="My Courses" />
+            <SidebarLink to="/universities" icon={FaUniversity} label="Universities" />
             <SidebarLink to="/profile/assignments" icon={FaClipboardList} label="Assignments" />
             <SidebarLink to="/quizzes" icon={FaQuestionCircle} label="Quizzes" />
             <Divider my={2} />

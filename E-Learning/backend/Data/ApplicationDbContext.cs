@@ -16,9 +16,12 @@ namespace backend.Data
         // University System
         public DbSet<University> Universities => Set<University>();
         public DbSet<Department> Departments => Set<Department>();
+        public DbSet<DepartmentRequest> DepartmentRequests => Set<DepartmentRequest>();
+        public DbSet<UniversityRequest> UniversityRequests => Set<UniversityRequest>();
 
         // Course System
         public DbSet<Course> Courses => Set<Course>();
+        public DbSet<CoursePart> CourseParts => Set<CoursePart>();
         public DbSet<Module> Modules => Set<Module>();
         public DbSet<Lesson> Lessons => Set<Lesson>();
 
@@ -142,6 +145,20 @@ namespace backend.Data
                     .WithMany(u => u.CreatedCourses)
                     .HasForeignKey(c => c.TeacherId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // CoursePart Configuration
+            modelBuilder.Entity<CoursePart>(entity =>
+            {
+                entity.HasIndex(p => p.CourseId);
+                entity.HasIndex(p => new { p.CourseId, p.Order });
+                entity.Property(p => p.Order).HasDefaultValue(0);
+                entity.Property(p => p.IsPreview).HasDefaultValue(false);
+
+                    entity.HasOne(p => p.Course)
+                        .WithMany(c => c.CourseParts)
+                        .HasForeignKey(p => p.CourseId)
+                        .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Enrollment Configuration

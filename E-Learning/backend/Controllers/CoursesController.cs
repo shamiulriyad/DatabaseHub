@@ -165,12 +165,15 @@ namespace backend.Controllers
             });
         }
 
-        [Authorize(Roles = "Teacher,Admin")]
+        [Authorize(Roles = "Teacher")]
         [HttpPost]
         public async Task<IActionResult> CreateCourse([FromBody] CourseCreateDTO courseDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (string.IsNullOrWhiteSpace(courseDto.PreviewVideoUrl))
+                return BadRequest(new { success = false, message = "Preview video or YouTube URL is required when creating a course." });
 
             var teacherId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
             var result = await _courseService.CreateCourse(courseDto, teacherId);

@@ -27,6 +27,7 @@ import {
   DrawerCloseButton,
   IconButton,
 } from '@chakra-ui/react';
+import ThemeToggle from './ThemeToggle';
 import { FaBars, FaTimes, FaUserCircle, FaBook } from 'react-icons/fa';
 import { normalizeAvatar } from '../utils/imageUtils';
 
@@ -114,6 +115,7 @@ const Navbar = () => {
             {user ? (
               <>
                 <NotificationBell />
+                <ThemeToggle />
                 {user.isAdmin ? (
                   <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>
                 ) : user.isTeacher ? (

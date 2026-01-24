@@ -28,6 +28,12 @@ import {
   Grid,
   GridItem,
   Divider,
+  Flex,
+  IconButton,
+  Tag,
+  useBreakpointValue,
+  AspectRatio,
+  Tooltip,
 } from '@chakra-ui/react';
 import {
   FaUsers,
@@ -37,7 +43,15 @@ import {
   FaFire,
   FaShieldAlt,
   FaCrown,
+  FaFilter,
+  FaGlobe,
+  FaLock,
+  FaStar,
+  FaChartLine,
+  FaHashtag,
 } from 'react-icons/fa';
+import { FiTrendingUp, FiUsers, FiAward } from 'react-icons/fi';
+import { MdPublic, MdLock } from 'react-icons/md';
 
 const fetchClans = async ({ queryKey }) => {
   const [, filters] = queryKey;
@@ -56,131 +70,189 @@ const fetchClans = async ({ queryKey }) => {
 };
 
 const ClanCard = ({ clan }) => {
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const border = useColorModeValue('gray.200', 'gray.600');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const textColor = useColorModeValue('gray.700', 'gray.200');
+  const secondaryTextColor = useColorModeValue('gray.500', 'gray.400');
+  const bannerBg = useColorModeValue('gray.100', 'gray.700');
+  const bannerIconColor = useColorModeValue('gray.400', 'gray.500');
+  const logoBg = useColorModeValue('gray.100', 'gray.700');
   const navigate = useNavigate();
 
   return (
-    <ScaleFade in initialScale={0.98}>
-      <Card
-        bg={cardBg}
-        borderColor={border}
-        borderWidth="1px"
-        shadow="sm"
-        _hover={{ shadow: 'xl', transform: 'translateY(-8px)', borderColor: 'purple.400' }}
-        transition="all 0.3s ease"
-        cursor="pointer"
-        overflow="hidden"
-        onClick={() => navigate(`/clans/${clan.id}`)}
-      >
-        {/* Banner */}
-        <Box position="relative" h="120px">
+    <Card
+      bg={cardBg}
+      border="1px solid"
+      borderColor={borderColor}
+      shadow="sm"
+      _hover={{ 
+        shadow: 'md', 
+        borderColor: useColorModeValue('purple.300', 'purple.500'),
+        transform: 'translateY(-2px)'
+      }}
+      transition="all 0.2s ease"
+      cursor="pointer"
+      overflow="hidden"
+      onClick={() => navigate(`/clans/${clan.id}`)}
+      h="100%"
+    >
+      {/* Banner */}
+      <AspectRatio ratio={16/9} position="relative" overflow="hidden">
+        <Box position="relative" w="100%" h="100%">
           {clan.bannerUrl ? (
             <Image
               src={clan.bannerUrl}
               alt={clan.name}
+              objectFit="cover"
               w="100%"
               h="100%"
             />
           ) : (
             <Box
+              bg={bannerBg}
               w="100%"
               h="100%"
-              bgGradient="linear(to-r, gray.300, gray.400)"
-            />
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Icon as={FaShieldAlt} boxSize={8} color={bannerIconColor} />
+            </Box>
           )}
+
           {/* Rank Badge */}
           {clan.rank && (
             <Badge
               position="absolute"
               top={2}
               right={2}
-              fontSize="sm"
+              colorScheme="yellow"
+              fontSize="xs"
               py={1}
-              borderRadius="full"
+              px={2}
+              borderRadius="md"
+              shadow="sm"
             >
               <HStack spacing={1}>
                 <Icon as={FaTrophy} />
-                <Text>{clan.rank}</Text>
+                <Text fontWeight="bold">#{clan.rank}</Text>
               </HStack>
             </Badge>
           )}
         </Box>
+      </AspectRatio>
 
-        <CardBody>
-          <Stack spacing={3}>
-            {/* Logo and Name */}
-            <HStack spacing={3}>
-              {clan.logoUrl ? (
-                <Image
-                  src={clan.logoUrl}
-                  alt={clan.name}
-                  boxSize="50px"
-                  borderRadius="md"
-                  border="2px solid"
-                  borderColor={border}
-                />
-              ) : (
-                <Box
-                  boxSize="50px"
-                  borderRadius="md"
-                  bgGradient="linear(to-r, purple.500, blue.500)"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Icon as={FaShieldAlt} boxSize={6} color="white" />
-                </Box>
-              )}
-              <VStack align="start" spacing={0} flex={1}>
-                <HStack>
-                  <Heading size="sm" noOfLines={1}>
-                    {clan.name}
-                  </Heading>
-                  {!clan.isPublic && (
-                    <Icon as={FaCrown} color="yellow.500" boxSize={3} />
-                  )}
-                </HStack>
-                <Badge colorScheme="purple" fontSize="xs">
-                  [{clan.tag}]
-                </Badge>
-              </VStack>
-            </HStack>
-
-            {/* Description */}
-            <Text fontSize="sm" color="gray.600" noOfLines={2} minH="40px">
-              {clan.description}
-            </Text>
-
-            {/* Stats */}
-            <HStack spacing={4} fontSize="sm">
-              <HStack spacing={1}>
-                <Icon as={FaUsers} color="purple.500" />
-                <Text fontWeight="bold">{clan.memberCount}</Text>
-                <Text color="gray.500">members</Text>
+      <CardBody p={4}>
+        <Stack spacing={3}>
+          {/* Logo and Name */}
+          <HStack spacing={3} align="start">
+            {clan.logoUrl ? (
+              <Image
+                src={clan.logoUrl}
+                alt={clan.name}
+                boxSize="48px"
+                borderRadius="md"
+                border="1px solid"
+                borderColor={borderColor}
+              />
+            ) : (
+              <Box
+                boxSize="48px"
+                borderRadius="md"
+                bg={logoBg}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <Icon as={FaShieldAlt} boxSize={5} color={secondaryTextColor} />
+              </Box>
+            )}
+            
+            <VStack align="start" spacing={1} flex={1}>
+              <HStack>
+                <Heading size="sm" fontWeight="semibold" color={textColor}>
+                  {clan.name}
+                </Heading>
+                {!clan.isPublic && (
+                  <Tooltip label="Private Clan">
+                    <Icon as={MdLock} color="yellow.500" boxSize={3} />
+                  </Tooltip>
+                )}
               </HStack>
+              <Badge
+                colorScheme="gray"
+                variant="subtle"
+                fontSize="xs"
+                fontWeight="normal"
+              >
+                [{clan.tag}]
+              </Badge>
+            </VStack>
+          </HStack>
+
+          {/* Description */}
+          <Text
+            fontSize="sm"
+            color={secondaryTextColor}
+            noOfLines={2}
+            lineHeight="short"
+          >
+            {clan.description || 'No description provided'}
+          </Text>
+
+          {/* Stats */}
+          <HStack spacing={4} fontSize="sm">
+            <HStack spacing={1.5}>
+              <Icon as={FiUsers} color="purple.500" boxSize={3.5} />
+              <Text fontWeight="medium" color={textColor}>
+                {clan.memberCount}
+              </Text>
+              <Text color={secondaryTextColor} fontSize="xs">
+                members
+              </Text>
+            </HStack>
+            <HStack spacing={1.5}>
+              <Icon as={FiAward} color="yellow.500" boxSize={3.5} />
+              <Text fontWeight="medium" color={textColor}>
+                {clan.totalPoints?.toLocaleString() || '0'}
+              </Text>
+              <Text color={secondaryTextColor} fontSize="xs">
+                pts
+              </Text>
+            </HStack>
+          </HStack>
+
+          <Divider borderColor={borderColor} />
+
+          {/* Type and Access */}
+          <Flex justify="space-between" fontSize="xs">
+            <Badge
+              colorScheme="gray"
+              variant="subtle"
+              borderRadius="sm"
+              px={2}
+              py={1}
+            >
+              {clan.clanType}
+            </Badge>
+            <Badge
+              colorScheme={clan.isPublic ? 'green' : 'orange'}
+              variant="subtle"
+              borderRadius="sm"
+              px={2}
+              py={1}
+            >
               <HStack spacing={1}>
-                <Icon as={FaTrophy} color="yellow.500" />
-                <Text fontWeight="bold">{clan.totalPoints}</Text>
-                <Text color="gray.500">pts</Text>
+                <Icon as={clan.isPublic ? MdPublic : MdLock} boxSize={2.5} />
+                <Text>{clan.isPublic ? 'Public' : 'Private'}</Text>
               </HStack>
-            </HStack>
-
-            <Divider />
-
-            {/* Type and Status */}
-            <HStack justify="space-between" fontSize="xs">
-              <Badge colorScheme="blue" variant="subtle">
-                {clan.clanType}
-              </Badge>
-              <Badge colorScheme={clan.isPublic ? 'green' : 'orange'}>
-                {clan.isPublic ? 'Public' : 'Private'}
-              </Badge>
-            </HStack>
-          </Stack>
-        </CardBody>
-      </Card>
-    </ScaleFade>
+            </Badge>
+          </Flex>
+        </Stack>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -190,78 +262,40 @@ const Hero = () => {
   return (
     <Box
       position="relative"
-      bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
-      color="white"
-      py={{ base: 16, md: 24 }}
-      overflow="hidden"
+      bg={useColorModeValue('gray.50', 'gray.900')}
+      borderBottom="1px solid"
+      borderColor={useColorModeValue('gray.200', 'gray.700')}
+      py={{ base: 12, md: 16 }}
     >
-      {/* Background Pattern */}
-      <Box
-        position="absolute"
-        top="0"
-        left="0"
-        right="0"
-        bottom="0"
-        opacity="0.1"
-        bgImage="url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
-      />
-
-      <Container maxW="7xl" position="relative" zIndex={1}>
+      <Container maxW="7xl">
         <VStack spacing={6} textAlign="center">
-          <Badge
-            colorScheme="purple"
-            bg="whiteAlpha.300"
-            color="white"
-            px={3}
-            py={1}
-            borderRadius="full"
-            fontSize="sm"
-          >
-            🏆 Join the Best Learning Clans
-          </Badge>
           <Heading
             as="h1"
             size="2xl"
-            fontWeight="black"
+            fontWeight="bold"
+            color={useColorModeValue('gray.800', 'white')}
             lineHeight="shorter"
           >
-            Find Your Clan. Learn Together.
+            Find Your Learning Clan
           </Heading>
           <Text
             fontSize={{ base: 'lg', md: 'xl' }}
-            color="whiteAlpha.900"
+            color={useColorModeValue('gray.600', 'gray.300')}
             maxW="2xl"
+            lineHeight="tall"
           >
-            Join academic clans, compete in challenges, earn points, and climb the leaderboards
-            with your team.
+            Join academic clans, collaborate with peers, and achieve learning goals together.
           </Text>
-          <HStack spacing={4}>
-            <Button
-              size="lg"
-              colorScheme="white"
-              variant="solid"
-              bg="white"
-              color="purple.600"
-              _hover={{ bg: 'gray.100', transform: 'translateY(-2px)' }}
-              _active={{ transform: 'translateY(0)' }}
-              transition="all 0.2s"
-              leftIcon={<FaPlus />}
-              onClick={() => navigate('/clans/create')}
-              shadow="xl"
-            >
-              Create Clan
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              borderColor="white"
-              color="white"
-              _hover={{ bg: 'whiteAlpha.200' }}
-              leftIcon={<FaSearch />}
-            >
-              Browse Clans
-            </Button>
-          </HStack>
+          <Button
+            size="lg"
+            colorScheme="purple"
+            leftIcon={<FaPlus />}
+            onClick={() => navigate('/clans/create')}
+            shadow="md"
+            _hover={{ shadow: 'lg' }}
+          >
+            Create Clan
+          </Button>
         </VStack>
       </Container>
     </Box>
@@ -269,7 +303,11 @@ const Hero = () => {
 };
 
 const ClanList = () => {
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const secondaryTextColor = useColorModeValue('gray.600', 'gray.300');
+  
   const [filters, setFilters] = useState({
     query: '',
     clanType: '',
@@ -299,104 +337,181 @@ const ClanList = () => {
     setFilters({ ...filters, sortBy: value, page: 1 });
   };
 
+  // Quick filter options
+  const quickFilters = [
+    { label: 'All', value: '', icon: FaGlobe },
+    { label: 'Top Rated', value: 'top', icon: FaStar },
+    { label: 'Most Active', value: 'active', icon: FaFire },
+    { label: 'Newest', value: 'new', icon: FaChartLine },
+  ];
+
   return (
-    <Box bg={bgColor} minH="100vh">
+    <Box minH="100vh" bg={useColorModeValue('white', 'gray.900')}>
       <Hero />
 
-      <Container maxW="7xl" py={10}>
-        {/* Filters */}
-        <Box
-          bg={useColorModeValue('white', 'gray.700')}
-          p={6}
-          borderRadius="lg"
-          shadow="sm"
-          mb={8}
-        >
-          <Grid
-            templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' }}
-            gap={4}
-          >
-            <GridItem colSpan={{ base: 1, md: 2, lg: 2 }}>
-              <InputGroup>
-                <InputLeftElement pointerEvents="none">
-                  <Icon as={FaSearch} color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  placeholder="Search clans..."
-                  value={filters.query}
-                  onChange={handleSearchChange}
-                />
-              </InputGroup>
-            </GridItem>
-
-            <Select
-              placeholder="All Types"
-              value={filters.clanType}
-              onChange={handleTypeChange}
-            >
-              <option value="Academic">Academic</option>
-              <option value="Competitive">Competitive</option>
-              <option value="Social">Social</option>
-              <option value="StudyGroup">Study Group</option>
-            </Select>
-
-            <Select
-              placeholder="All Access"
-              value={filters.isPublic}
-              onChange={handleAccessChange}
-            >
-              <option value="true">Public</option>
-              <option value="false">Private</option>
-            </Select>
-
-            <Select
-              placeholder="Sort By"
-              value={filters.sortBy}
-              onChange={(e) => handleSortChange(e.target.value)}
-            >
-              <option value="rank">Rank</option>
-              <option value="members">Members</option>
-              <option value="points">Points</option>
-              <option value="recent">Recent</option>
-            </Select>
-          </Grid>
-        </Box>
-
-        {/* Stats Bar */}
-        <HStack
-          spacing={6}
-          mb={8}
-          fontSize="sm"
-          color={useColorModeValue('gray.600', 'gray.400')}
-          flexWrap="wrap"
-        >
-          <HStack>
-            <Icon as={FaFire} color="orange.500" />
-            <Text>
-              <strong>{clans?.length || 0}</strong> clans found
+      <Container maxW="7xl" py={8}>
+        {/* Quick Filters */}
+        <Box mb={8}>
+          <HStack spacing={2} mb={4}>
+            <Icon as={FaFilter} color={secondaryTextColor} />
+            <Text fontSize="sm" color={secondaryTextColor} fontWeight="medium">
+              Quick Filters:
             </Text>
           </HStack>
-        </HStack>
+          <Flex gap={2} flexWrap="wrap">
+            {quickFilters.map((filter) => (
+              <Button
+                key={filter.value}
+                size="sm"
+                variant={filters.sortBy === filter.value ? 'solid' : 'outline'}
+                colorScheme="purple"
+                leftIcon={<Icon as={filter.icon} />}
+                onClick={() => handleSortChange(filter.value)}
+                borderRadius="md"
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </Flex>
+        </Box>
+
+        {/* Main Filters */}
+        <Box
+          bg={useColorModeValue('gray.50', 'gray.800')}
+          p={6}
+          borderRadius="lg"
+          border="1px solid"
+          borderColor={borderColor}
+          mb={8}
+        >
+          <VStack spacing={6} align="stretch">
+            <Heading size="md" color={textColor}>
+              Find Your Clan
+            </Heading>
+            
+            <Grid
+              templateColumns={{
+                base: '1fr',
+                md: '2fr 1fr 1fr 1fr',
+              }}
+              gap={4}
+            >
+              {/* Search */}
+              <GridItem>
+                <InputGroup>
+                  <InputLeftElement pointerEvents="none">
+                    <Icon as={FaSearch} color="gray.400" />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Search clans by name, tag, or description..."
+                    value={filters.query}
+                    onChange={handleSearchChange}
+                    bg="white"
+                    _dark={{ bg: 'gray.700' }}
+                  />
+                </InputGroup>
+              </GridItem>
+
+              {/* Type */}
+              <GridItem>
+                <Select
+                  placeholder="All Types"
+                  value={filters.clanType}
+                  onChange={handleTypeChange}
+                  bg="white"
+                  _dark={{ bg: 'gray.700' }}
+                >
+                  <option value="Academic">Academic</option>
+                  <option value="Competitive">Competitive</option>
+                  <option value="Social">Social</option>
+                  <option value="StudyGroup">Study Group</option>
+                </Select>
+              </GridItem>
+
+              {/* Access */}
+              <GridItem>
+                <Select
+                  placeholder="Access Type"
+                  value={filters.isPublic}
+                  onChange={handleAccessChange}
+                  bg="white"
+                  _dark={{ bg: 'gray.700' }}
+                >
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+                </Select>
+              </GridItem>
+
+              {/* Sort */}
+              <GridItem>
+                <Select
+                  placeholder="Sort By"
+                  value={filters.sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  bg="white"
+                  _dark={{ bg: 'gray.700' }}
+                >
+                  <option value="rank">Rank</option>
+                  <option value="members">Members</option>
+                  <option value="points">Points</option>
+                  <option value="recent">Recent</option>
+                </Select>
+              </GridItem>
+            </Grid>
+          </VStack>
+        </Box>
+
+        {/* Results Header */}
+        <Flex
+          justify="space-between"
+          align="center"
+          mb={6}
+        >
+          <VStack align="start" spacing={1}>
+            <Heading size="lg" color={textColor}>
+              Discover Clans
+            </Heading>
+            <Text color={secondaryTextColor} fontSize="sm">
+              Join a community that matches your learning goals
+            </Text>
+          </VStack>
+          
+          <Tag
+            colorScheme="purple"
+            size="lg"
+            borderRadius="md"
+            variant="subtle"
+          >
+            <HStack spacing={2}>
+              <Text fontWeight="medium">
+                {clans?.length || 0} CLANS AVAILABLE
+              </Text>
+            </HStack>
+          </Tag>
+        </Flex>
 
         {/* Clans Grid */}
         {isLoading ? (
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={6}>
             {[...Array(8)].map((_, i) => (
               <Card key={i}>
-                <Box position="relative" h="120px">
-                  <Skeleton height="120px" />
-                </Box>
-                <CardBody>
+                <AspectRatio ratio={16/9}>
+                  <Skeleton />
+                </AspectRatio>
+                <CardBody p={4}>
                   <Stack spacing={3}>
                     <HStack>
-                      <Skeleton boxSize="50px" borderRadius="md" />
-                      <VStack align="start" flex={1}>
-                        <SkeletonText noOfLines={1} width="100px" />
-                        <SkeletonText noOfLines={1} width="60px" />
+                      <Skeleton boxSize="48px" borderRadius="md" />
+                      <VStack align="start" flex={1} spacing={1}>
+                        <Skeleton height="20px" width="70%" />
+                        <Skeleton height="16px" width="40%" />
                       </VStack>
                     </HStack>
-                    <SkeletonText noOfLines={2} />
-                    <Skeleton height="20px" />
+                    <SkeletonText noOfLines={2} spacing={2} />
+                    <HStack spacing={3}>
+                      <Skeleton height="20px" width="60px" />
+                      <Skeleton height="20px" width="60px" />
+                    </HStack>
                   </Stack>
                 </CardBody>
               </Card>
@@ -409,21 +524,34 @@ const ClanList = () => {
             ))}
           </SimpleGrid>
         ) : (
-          <VStack spacing={4} py={20}>
-            <Icon as={FaUsers} boxSize={20} color="gray.400" />
-            <Heading size="lg" color="gray.600">
-              No clans found
-            </Heading>
-            <Text color="gray.500">Try adjusting your search filters</Text>
-            <Button
-              colorScheme="purple"
-              leftIcon={<FaPlus />}
-              as={Link}
-              to="/clans/create"
-            >
-              Create Your Clan
-            </Button>
-          </VStack>
+          <Box
+            textAlign="center"
+            py={12}
+            border="2px dashed"
+            borderColor={borderColor}
+            borderRadius="lg"
+          >
+            <VStack spacing={4}>
+              <Icon as={FaUsers} boxSize={12} color={secondaryTextColor} />
+              <VStack spacing={2}>
+                <Heading size="md" color={textColor}>
+                  No clans found
+                </Heading>
+                <Text color={secondaryTextColor} maxW="md">
+                  Try adjusting your search filters or create your own clan
+                </Text>
+              </VStack>
+              <Button
+                colorScheme="purple"
+                leftIcon={<FaPlus />}
+                as={Link}
+                to="/clans/create"
+                mt={4}
+              >
+                Create Your Clan
+              </Button>
+            </VStack>
+          </Box>
         )}
       </Container>
     </Box>

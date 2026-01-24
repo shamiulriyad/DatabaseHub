@@ -51,7 +51,10 @@ namespace backend.DTOs
 
         // Media
         public string? ThumbnailUrl { get; set; }
+        // Legacy single-preview support
         public string? PreviewVideoUrl { get; set; }
+        // Optional list of video parts for the course (part-wise content)
+        public List<CoursePartCreateDTO>? VideoParts { get; set; }
         public string? CourseMaterials { get; set; }
 
         // Schedule
@@ -87,7 +90,10 @@ namespace backend.DTOs
         public decimal? DiscountPrice { get; set; }
         public string? DifficultyLevel { get; set; }
         public string? ThumbnailUrl { get; set; }
+        // Legacy single-preview support
         public string? PreviewVideoUrl { get; set; }
+        // Provide the full set of parts to replace existing parts, or omit to leave parts unchanged
+        public List<CoursePartUpdateDTO>? VideoParts { get; set; }
         public string? Status { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
@@ -111,6 +117,7 @@ namespace backend.DTOs
     {
         public int Id { get; set; }
         public string Title { get; set; }
+        public string FullDescription { get; set; }
         public string ShortDescription { get; set; }
         public string? ThumbnailUrl { get; set; }
         public int UniversityId { get; set; }
@@ -139,12 +146,12 @@ namespace backend.DTOs
     // Course Detail
     public class CourseDetailDTO : CourseDTO
     {
-        public string FullDescription { get; set; }
         public string? ExamFocus { get; set; }
         public string? ExamPattern { get; set; }
         public string? ImportantTopics { get; set; }
         public string? PreviousQuestions { get; set; }
         public string? PreviewVideoUrl { get; set; }
+        public List<CoursePartDTO> VideoParts { get; set; } = new List<CoursePartDTO>();
         public string? CourseMaterials { get; set; }
         public TeacherDTO Teacher { get; set; }
         public UniversityDTO University { get; set; }
@@ -164,6 +171,33 @@ namespace backend.DTOs
         public List<string> TargetAudience { get; set; }
         public bool IsTeacher { get; set; }
         public bool CanEdit { get; set; }
+    }
+
+    // Course part DTOs
+    public class CoursePartCreateDTO
+    {
+        public string Title { get; set; }
+        public string? Description { get; set; }
+        public string? VideoUrl { get; set; }
+        public string? YouTubeUrl { get; set; }
+        public int Order { get; set; }
+        public bool IsPreview { get; set; }
+    }
+
+    public class CoursePartUpdateDTO : CoursePartCreateDTO
+    {
+        public int? Id { get; set; }
+    }
+
+    public class CoursePartDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string? Description { get; set; }
+        public string? VideoUrl { get; set; }
+        public string? YouTubeUrl { get; set; }
+        public int Order { get; set; }
+        public bool IsPreview { get; set; }
     }
 
     // Course Stats

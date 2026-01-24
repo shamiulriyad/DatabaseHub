@@ -38,6 +38,18 @@ import {
   StatLabel,
   StatNumber,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  Switch,
+  FormControl,
+  FormLabel,
+  Input,
 } from '@chakra-ui/react';
 import {
   FaUsers,
@@ -222,6 +234,10 @@ const ClanDetail = () => {
   const topMembersHoverBg = useColorModeValue('gray.50', 'gray.600');
   const [joinStatus, setJoinStatus] = React.useState('idle');
   const [userRole, setUserRole] = React.useState(null); // 'Leader', 'CoLeader', 'Elder', 'Member'
+  const { isOpen: isPrivacyOpen, onOpen: openPrivacy, onClose: closePrivacy } = useDisclosure();
+  const [privacyIsPublic, setPrivacyIsPublic] = React.useState(true);
+  const [privacyRequireApproval, setPrivacyRequireApproval] = React.useState(false);
+  const [privacyJoinCriteria, setPrivacyJoinCriteria] = React.useState('');
 
   const { data: clan, isLoading: clanLoading } = useQuery({
     queryKey: ['clan', clanId],
@@ -369,6 +385,27 @@ const ClanDetail = () => {
 
   const handleJoinRequestDecision = (requestId, action) => {
     decideJoinRequestMutation.mutate({ requestId, action });
+  };
+
+  const privacyMutation = useMutation({
+    mutationFn: (payload) => api.put(`/clans/${clanId}`, payload),
+    onSuccess: () => {
+      invalidateClanData();
+      toast({ title: 'Privacy settings updated', status: 'success', duration: 3000 });
+      closePrivacy();
+    },
+    onError: (error) => {
+      toast({ title: 'Failed to update privacy settings', description: error.response?.data?.message || 'Something went wrong', status: 'error', duration: 4000 });
+    },
+  });
+
+  const handleSavePrivacy = () => {
+    const payload = {
+      isPublic: privacyIsPublic,
+      requireApproval: privacyRequireApproval,
+      joinCriteria: privacyJoinCriteria,
+    };
+    privacyMutation.mutate(payload);
   };
 
   if (clanLoading) {
@@ -1129,9 +1166,12 @@ const ClanDetail = () => {
                             w="full"
                             variant="outline"
                             colorScheme="blue"
-                            onClick={() =>
-                              alert('Privacy settings coming soon')
-                            }
+                            onClick={() => {
+                              setPrivacyIsPublic(Boolean(clan?.isPublic));
+                              setPrivacyRequireApproval(Boolean(clan?.requireApproval));
+                              setPrivacyJoinCriteria(clan?.joinCriteria || '');
+                              openPrivacy();
+                            }}
                           >
                             Privacy Settings
                           </Button>
@@ -1170,6 +1210,36 @@ const ClanDetail = () => {
             )}
           </TabPanels>
         </Tabs>
+
+        <Modal isOpen={isPrivacyOpen} onClose={closePrivacy} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Privacy Settings</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <FormControl display="flex" alignItems="center" mb={4}>
+                <FormLabel htmlFor="isPublic" mb="0">Public Clan</FormLabel>
+                <Switch id="isPublic" isChecked={privacyIsPublic} onChange={(e) => setPrivacyIsPublic(e.target.checked)} />
+              </FormControl>
+
+              <FormControl display="flex" alignItems="center" mb={4}>
+                <FormLabel htmlFor="requireApproval" mb="0">Require Approval to Join</FormLabel>
+                <Switch id="requireApproval" isChecked={privacyRequireApproval} onChange={(e) => setPrivacyRequireApproval(e.target.checked)} />
+              </FormControl>
+
+              <FormControl mb={4}>
+                <FormLabel>Join Criteria (optional)</FormLabel>
+                <Input value={privacyJoinCriteria || ''} onChange={(e) => setPrivacyJoinCriteria(e.target.value)} placeholder="e.g. Min rank, points, etc." />
+              </FormControl>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={closePrivacy}>Cancel</Button>
+              <Button colorScheme="purple" onClick={handleSavePrivacy} isLoading={privacyMutation.isLoading}>Save</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
       </Container>
     </Box>
   );

@@ -25,6 +25,8 @@ namespace backend.DTOs
         public string? ContactPhone { get; set; }
         public string DepartmentType { get; set; } = "Engineering";
         public bool IsActive { get; set; } = true;
+        public string? BannerUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
     }
 
     // Department Update
@@ -52,6 +54,8 @@ namespace backend.DTOs
         public int UniversityId { get; set; }
         public string UniversityName { get; set; }
         public string? Description { get; set; }
+        public string? BannerUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
         public string? HeadOfDepartment { get; set; }
         public string? ContactEmail { get; set; }
         public string? ContactPhone { get; set; }

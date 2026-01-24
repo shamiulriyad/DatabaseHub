@@ -105,6 +105,8 @@ builder.Services.AddScoped<IRankingService, RankingService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
+builder.Services.AddScoped<IDepartmentRequestService, DepartmentRequestService>();
+builder.Services.AddScoped<IUniversityRequestService, UniversityRequestService>();
 
 
 // AutoMapper
@@ -140,5 +142,21 @@ app.MapControllers();
 
 // Map SignalR hubs (match frontend which prefixes API routes with `/api`)
 app.MapHub<backend.Hubs.CommunityHub>("/api/hubs/community");
+
+// Apply any pending EF Core migrations on startup (creates missing tables)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<backend.Data.ApplicationDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        // If migration fails, rethrow so the host doesn't start silently in a bad state
+        Console.WriteLine($"Database migration failed: {ex.Message}");
+        throw;
+    }
+}
 
 app.Run();

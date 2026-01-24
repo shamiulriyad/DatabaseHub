@@ -112,6 +112,7 @@ namespace backend.Models
         public virtual User? Approver { get; set; }
 
         public virtual ICollection<Module> Modules { get; set; } = new List<Module>();
+        public virtual ICollection<CoursePart> CourseParts { get; set; } = new List<CoursePart>();
         public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
         public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();

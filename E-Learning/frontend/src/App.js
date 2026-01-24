@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
+import theme from './theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './context/AuthContext';
@@ -24,6 +25,10 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 
 import CourseList from './pages/Courses/CourseList';
+import CourseBrowse from './pages/Courses/CourseBrowse';
+import CourseCreate from './pages/Courses/CourseCreate';
+import CourseDetail from './pages/Courses/CourseDetail';
+import CourseEdit from './pages/Courses/CourseEdit';
 
 // Clan Pages
 import ClanList from './pages/Clans/ClanList';
@@ -61,9 +66,18 @@ import TeacherReviews from './pages/Teacher/TeacherReviews';
 // Admin Pages
 import AdminPanel from './pages/Admin/AdminPanel';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminCourses from './pages/Admin/AdminCourses';
 import ManageTeachers from './pages/Admin/ManageTeachers';
 import PendingCompetitions from './pages/Admin/PendingCompetitions';
 import CompetitionManagement from './pages/Admin/CompetitionManagement';
+import UniversityManagement from './pages/Admin/UniversityManagement';
+import UniversityRequestsAdmin from './pages/Admin/UniversityRequestsAdmin';
+import DepartmentRequestsAdmin from './pages/Admin/DepartmentRequestsAdmin';
+import UniversityBrowse from './pages/Courses/UniversityBrowse';
+import UniversityDetails from './pages/Courses/UniversityDetails';
+import DepartmentCourses from './pages/Courses/DepartmentCourses';
+import DepertmentPage from './pages/Courses/DepertmentPage';
+import Checkout from './pages/Payments/Checkout';
 
 // Community Pages
 import CommunityPage from './pages/Community/CommunityPage';
@@ -107,7 +121,16 @@ function PublicLayout() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses" element={<UniversityBrowse />} />
+          <Route path="/courses/browse" element={<CourseBrowse />} />
+          <Route path="/universities" element={<UniversityBrowse />} />
+          <Route path="/departments" element={<DepertmentPage />} />
+          <Route path="/universities/:universityId" element={<UniversityDetails />} />
+          <Route path="/universities/:universityId/departments/:departmentId" element={<DepartmentCourses />} />
+          <Route path="/payment/checkout" element={<Checkout />} />
+          <Route path="/courses/create" element={<ProtectedRoute requiredTeacher><CourseCreate /></ProtectedRoute>} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
+          <Route path="/courses/:courseId/edit" element={<ProtectedRoute requiredTeacher><CourseEdit /></ProtectedRoute>} />
 
           <Route path="/competitions" element={<CompetitionList />} />
           <Route path="/competitions/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
@@ -180,6 +203,10 @@ function PrivateLayout() {
             {/* Admin */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/courses" element={<ProtectedRoute requiredAdmin><AdminCourses /></ProtectedRoute>} />
+            <Route path="/admin/universities" element={<ProtectedRoute requiredAdmin><UniversityManagement /></ProtectedRoute>} />
+            <Route path="/admin/university-requests" element={<ProtectedRoute requiredAdmin><UniversityRequestsAdmin /></ProtectedRoute>} />
+            <Route path="/admin/department-requests" element={<ProtectedRoute requiredAdmin><DepartmentRequestsAdmin /></ProtectedRoute>} />
             <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin><ManageTeachers /></ProtectedRoute>} />
             <Route path="/admin/pending-competitions" element={<ProtectedRoute requiredAdmin><PendingCompetitions /></ProtectedRoute>} />
             <Route path="/admin/competitions" element={<ProtectedRoute requiredAdmin><CompetitionManagement /></ProtectedRoute>} />
@@ -217,6 +244,7 @@ function AppRouter() {
     '/',
     '/home',
     '/about',
+    '/universities',
     '/login',
     '/register',
     '/forgot-password',
@@ -241,7 +269,7 @@ function AppRouter() {
 // =======================
 export default function App() {
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <NotificationProvider>

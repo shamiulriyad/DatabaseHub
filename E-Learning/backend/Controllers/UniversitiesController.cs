@@ -14,10 +14,12 @@ namespace backend.Controllers
     public class UniversitiesController : ControllerBase
     {
         private readonly IUniversityService _universityService;
+        private readonly backend.Services.Interfaces.IDepartmentService _departmentService;
 
-        public UniversitiesController(IUniversityService universityService)
+        public UniversitiesController(IUniversityService universityService, backend.Services.Interfaces.IDepartmentService departmentService)
         {
             _universityService = universityService;
+            _departmentService = departmentService;
         }
 
         [HttpGet]
@@ -75,6 +77,20 @@ namespace backend.Controllers
             return Ok(new {
                 success = true,
                 data = result.Data
+            });
+        }
+
+        [HttpGet("{id}/departments")]
+        public async Task<IActionResult> GetUniversityDepartments(int id)
+        {
+            var result = await _departmentService.GetDepartmentsByUniversity(id);
+
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                departments = result.Data
             });
         }
 

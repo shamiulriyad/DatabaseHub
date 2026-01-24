@@ -1,0 +1,123 @@
+% DBMS Lab Project Report Template
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{parskip}
+\geometry{margin=1in}
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+  \centering
+  {\scshape\LARGE Project Title \par}
+  \vspace{1.5cm}
+  {\huge\bfseries Subtitle (if any)\par}
+  \vspace{1.5cm}
+  {\Large Team Members:\par}
+  \vspace{0.5cm}
+  {Name 1 --- ID1\\
+   Name 2 --- ID2\\
+   Name 3 --- ID3\\}
+  \vfill
+  Video demo: \href{https://youtu.be/your-demo-link}{https://youtu.be/your-demo-link}\\
+  Code (GitHub): \href{https://github.com/your/repo}{https://github.com/your/repo}
+  \vfill
+  {\large Date: \today}\
+\end{titlepage}
+
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+% Main Sections (follow the requested structure)
+\chapter{Introduction / Overview}
+A brief overview of the project and its objectives. Replace this with your project's summary.
+
+\chapter{Motivation}
+Explain why you selected this project and its importance.
+
+\chapter{Related or Similar Projects}
+Discuss existing or comparable systems and cite them if needed.
+
+\chapter{Benchmark Analysis}
+Compare your implementation against existing solutions or explain benchmark methodology and results.
+
+\chapter{Complete Feature List}
+List and briefly describe every implemented feature.
+
+\chapter{Database Design Approach}
+Describe methodology (requirements analysis, normalization, indexing, transactions, backup/restore plan).
+
+\chapter{Entity–Relationship Diagram (ERD)}
+% Place your ERD image (PNG/PDF) in the folder and update the filename below.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/erd.png}
+  \caption{Entity–Relationship Diagram}
+  \label{fig:erd}
+\end{figure}
+
+\chapter{Schema Diagram}
+Include schema diagrams (tables, PK/FK, data types). Example:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/schema.png}
+  \caption{Database Schema Diagram}
+  \label{fig:schema}
+\end{figure}
+
+\chapter{Queries for Feature Implementation}
+Explain the queries you implemented for each feature. Provide grouped SQL examples.
+
+\section*{Example: User registration (SQL)}
+\begin{verbatim}
+-- Create table
+CREATE TABLE Users (
+  Id INT PRIMARY KEY IDENTITY(1,1),
+  Username VARCHAR(100) NOT NULL,
+  Email VARCHAR(255) NOT NULL UNIQUE,
+  PasswordHash VARCHAR(512) NOT NULL,
+  CreatedAt DATETIME DEFAULT GETUTCDATE()
+);
+
+-- Example feature query: get active competitions
+SELECT c.Id, c.Title, c.StartDate, c.EndDate
+FROM Competitions c
+WHERE c.IsApproved = 1
+  AND GETUTCDATE() BETWEEN c.StartDate AND c.EndDate;
+\end{verbatim}
+
+% Point to the separate SQL file with more queries
+More queries and examples are provided in the included file: \texttt{sql_queries.sql}.
+
+\chapter{Application Screenshots}
+Include screenshots of your app UI. Place images in `images/` and reference them here.
+
+\chapter{Limitations}
+List any known constraints or shortcomings.
+
+\chapter{Future Work}
+Possible improvements or extensions.
+
+\chapter{Conclusion}
+Summarize the project and key outcomes.
+
+\chapter*{Submission Instructions}
+\begin{itemize}
+  \item Only one team member should submit the final PDF.
+  \item The report must be prepared using LaTeX or MS Word and submitted as PDF.
+  \item Ensure video link and GitHub link are live.
+\end{itemize}
+
+\vfill
+\noindent{\small Generated template — replace placeholders with your content.}
+
+\end{document}

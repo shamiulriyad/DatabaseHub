@@ -21,6 +21,8 @@ namespace backend.Models
         public int UniversityId { get; set; }
 
         public string? Description { get; set; }
+        public string? BannerUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
         public string? HeadOfDepartment { get; set; }
         public string? ContactEmail { get; set; }
         public string? ContactPhone { get; set; }

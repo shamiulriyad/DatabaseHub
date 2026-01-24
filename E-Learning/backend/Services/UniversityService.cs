@@ -37,6 +37,19 @@ namespace backend.Services
                 _context.Universities.Add(university);
                 await _context.SaveChangesAsync();
 
+                // Seed default departments for this university so teachers see options immediately
+                var defaultDepartments = new List<Models.Department>
+                {
+                    new Models.Department { Name = "Computer Science and Engineering", Code = "CSE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
+                    new Models.Department { Name = "Electrical and Electronic Engineering", Code = "EEE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
+                    new Models.Department { Name = "Civil Engineering", Code = "CE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
+                    new Models.Department { Name = "Mechanical Engineering", Code = "ME", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
+                    new Models.Department { Name = "Business Administration", Code = "BBA", UniversityId = university.Id, DepartmentType = "Business", CreatedAt = DateTime.UtcNow }
+                };
+
+                _context.Departments.AddRange(defaultDepartments);
+                await _context.SaveChangesAsync();
+
                 var universityDto = MapToDTO(university);
                 return ServiceResult<UniversityDTO>.SuccessResult(universityDto, "University created successfully");
             }

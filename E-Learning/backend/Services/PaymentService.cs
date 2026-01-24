@@ -12,9 +12,104 @@ namespace backend.Services
         {
             _context = context;
         }
+        public async Task<ServiceResult<PaymentResponseDTO>> InitiateCoursePayment(int courseId, int userId, InitiatePaymentDTO paymentDto)
+        {
+            try
+            {
+                var course = await _context.Courses.FindAsync(courseId);
+                if (course == null) return ServiceResult<PaymentResponseDTO>.FailureResult("Course not found");
 
-        public Task<ServiceResult<PaymentResponseDTO>> InitiateCoursePayment(int courseId, int userId, InitiatePaymentDTO paymentDto)
-            => Task.FromResult(ServiceResult<PaymentResponseDTO>.FailureResult("Not implemented"));
+                if (course.IsFree) return ServiceResult<PaymentResponseDTO>.FailureResult("Course is free");
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null) return ServiceResult<PaymentResponseDTO>.FailureResult("User not found");
+
+                var amount = course.DiscountPrice ?? course.Price ?? 0m;
+                if (amount <= 0) return ServiceResult<PaymentResponseDTO>.FailureResult("Invalid course price");
+
+                var tx = Guid.NewGuid().ToString("N");
+
+                var payment = new Models.Payment
+                {
+                    UserId = userId,
+                    CourseId = courseId,
+                    PaymentFor = "Course",
+                    PaymentMethod = paymentDto.PaymentMethod ?? "Unknown",
+                    TransactionId = tx,
+                    Amount = amount,
+                    Currency = "BDT",
+                    Status = "Pending",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Payments.Add(payment);
+                await _context.SaveChangesAsync();
+
+                var courseDto = new CourseDTO
+                {
+                    Id = course.Id,
+                    Title = course.Title,
+                    ShortDescription = course.ShortDescription,
+                    ThumbnailUrl = course.ThumbnailUrl,
+                    UniversityId = course.UniversityId,
+                    UniversityName = course.University?.Name ?? string.Empty,
+                    DepartmentId = course.DepartmentId,
+                    DepartmentName = course.Department?.Name ?? string.Empty,
+                    TeacherId = course.TeacherId,
+                    TeacherName = ((course.Teacher?.FirstName ?? string.Empty) + " " + (course.Teacher?.LastName ?? string.Empty)).Trim(),
+                    CourseCode = course.CourseCode,
+                    CourseType = course.CourseType,
+                    IsFree = course.IsFree,
+                    Price = course.Price,
+                    DiscountPrice = course.DiscountPrice,
+                    DurationHours = course.DurationHours,
+                    DifficultyLevel = course.DifficultyLevel,
+                    EnrollmentCount = course.EnrollmentCount,
+                    AverageRating = course.AverageRating,
+                    TotalReviews = course.TotalReviews,
+                    Status = course.Status,
+                    CreatedAt = course.CreatedAt,
+                    PublishedAt = course.PublishedAt,
+                    IsEnrolled = false,
+                    ProgressPercentage = null
+                };
+
+                var userDto = new UserDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    ProfileImageUrl = user.ProfileImageUrl,
+                    IsStudent = user.IsStudent,
+                    IsTeacher = user.IsTeacher,
+                    IsAdmin = user.IsAdmin,
+                    TotalPoints = user.TotalPoints,
+                    CreatedAt = user.CreatedAt
+                };
+
+                var resp = new PaymentResponseDTO
+                {
+                    Id = payment.Id,
+                    TransactionId = payment.TransactionId,
+                    Amount = payment.Amount,
+                    Currency = payment.Currency,
+                    Status = payment.Status,
+                    PaymentMethod = payment.PaymentMethod,
+                    CreatedAt = payment.CreatedAt,
+                    Course = courseDto,
+                    User = userDto,
+                    InvoiceUrl = payment.InvoiceUrl ?? string.Empty
+                };
+
+                return ServiceResult<PaymentResponseDTO>.SuccessResult(resp);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<PaymentResponseDTO>.FailureResult($"Failed to initiate payment: {ex.Message}");
+            }
+        }
 
         public Task<ServiceResult<CheckoutDTO>> GetCourseCheckout(int courseId, int userId)
             => Task.FromResult(ServiceResult<CheckoutDTO>.FailureResult("Not implemented"));

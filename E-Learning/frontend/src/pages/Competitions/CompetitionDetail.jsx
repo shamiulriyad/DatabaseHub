@@ -47,6 +47,10 @@ const CompetitionDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isJoined, setIsJoined] = useState(false);
   const [joiningLoading, setJoiningLoading] = useState(false);
+  const [questions, setQuestions] = useState(null);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [questionsError, setQuestionsError] = useState(null);
+  const [tabIndex, setTabIndex] = useState(0);
 
   const statusLower = useMemo(() => competition?.status?.toLowerCase() || '', [competition]);
 
@@ -187,6 +191,50 @@ const CompetitionDetail = () => {
     }
   };
 
+  const fetchQuestions = async () => {
+    if (!competition) return;
+    setQuestionsLoading(true);
+    setQuestionsError(null);
+    try {
+      if (!user) {
+        setQuestionsError('Please login to view competition questions');
+        setQuestions([]);
+        return;
+      }
+
+      const isAdmin = user?.isAdmin;
+      const isCreator = competition && (competition.creatorId === user?.id || competition.creator?.id === user?.id);
+
+      let res = null;
+      if (isAdmin || isCreator) {
+        res = await competitionService.getAdminQuestions(id);
+        const payload = res?.data ?? res;
+        setQuestions(payload?.data ?? payload ?? []);
+      } else {
+        // participant endpoint will enforce status and registration
+        res = await competitionService.getParticipantQuestions(id);
+        const payload = res?.data ?? res;
+        if (!payload || payload.success === false) {
+          setQuestionsError(payload?.message || 'Questions are not available');
+          setQuestions([]);
+        } else {
+          setQuestions(payload.data ?? payload ?? []);
+        }
+      }
+    } catch (e) {
+      setQuestionsError(e.response?.data?.message || e.message || 'Failed to load questions');
+      setQuestions([]);
+    } finally {
+      setQuestionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tabIndex === 3 && competition) {
+      fetchQuestions();
+    }
+  }, [tabIndex, competition, user]);
+
   const getStatusColor = (status) => {
     const statusMap = {
       'upcoming': 'blue',
@@ -306,11 +354,12 @@ const CompetitionDetail = () => {
         </Card>
 
         {/* Tabs */}
-        <Tabs variant="soft-rounded" colorScheme="purple">
+        <Tabs variant="soft-rounded" colorScheme="purple" index={tabIndex} onChange={(i) => setTabIndex(i)}>
           <TabList bg="white" p={4} rounded="lg" mb={6}>
             <Tab>Overview</Tab>
             <Tab>Leaderboard</Tab>
             <Tab>Statistics</Tab>
+            <Tab>Questions</Tab>
           </TabList>
 
           <TabPanels>
@@ -440,6 +489,47 @@ const CompetitionDetail = () => {
                     </SimpleGrid>
                   ) : (
                     <Text color="gray.500">Statistics not available</Text>
+                  )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+            {/* Questions Tab */}
+            <TabPanel>
+              <Card bg="white" shadow="md">
+                <CardBody>
+                  {questionsLoading ? (
+                    <Box display="flex" justifyContent="center" py={8}>
+                      <Spinner />
+                    </Box>
+                  ) : questionsError ? (
+                    <Text color="red.500">{questionsError}</Text>
+                  ) : questions && questions.length > 0 ? (
+                    <VStack align="stretch" spacing={4}>
+                      {questions.map((q, idx) => (
+                        <Card key={q.id || idx} borderWidth="1px" borderColor="gray.100">
+                          <CardBody>
+                            <HStack justify="space-between">
+                              <Heading size="sm">Question {idx + 1} — {q.points ?? q.Points} pts</Heading>
+                              <Badge colorScheme="purple">Order: {q.order ?? q.Order}</Badge>
+                            </HStack>
+                            <Text mt={3} color="gray.700">{q.questionText ?? q.QuestionText}</Text>
+
+                            <VStack align="start" mt={3} spacing={2}>
+                              <Text>A. {q.optionA ?? q.OptionA}</Text>
+                              <Text>B. {q.optionB ?? q.OptionB}</Text>
+                              <Text>C. {q.optionC ?? q.OptionC}</Text>
+                              <Text>D. {q.optionD ?? q.OptionD}</Text>
+                            </VStack>
+
+                            {(user?.isAdmin || (competition && (competition.creatorId === user?.id || competition.creator?.id === user?.id))) && (
+                              <Text mt={3} color="green.600" fontWeight="semibold">Correct: {q.correctAnswer ?? q.CorrectAnswer}</Text>
+                            )}
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </VStack>
+                  ) : (
+                    <Text color="gray.500">No questions available</Text>
                   )}
                 </CardBody>
               </Card>

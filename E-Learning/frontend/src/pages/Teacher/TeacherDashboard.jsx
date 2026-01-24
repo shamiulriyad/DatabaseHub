@@ -279,7 +279,7 @@ const TeacherDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => navigate(`/teacher/edit-course/${course.id}`)}
+                              onClick={() => navigate(`/courses/${course.id}/edit`)}
                             >
                               Edit
                             </Button>
