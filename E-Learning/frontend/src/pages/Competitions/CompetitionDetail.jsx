@@ -28,6 +28,9 @@ import {
   StatLabel,
   StatNumber,
   SimpleGrid,
+  Radio,
+  RadioGroup,
+  Stack,
 } from '@chakra-ui/react';
 import { FaUsers, FaTrophy, FaFire, FaClock, FaArrowRight } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -43,6 +46,8 @@ const CompetitionDetail = () => {
 
   const [competition, setCompetition] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
+  const [userScore, setUserScore] = useState(null);
+  const [userRank, setUserRank] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isJoined, setIsJoined] = useState(false);
@@ -50,6 +55,10 @@ const CompetitionDetail = () => {
   const [questions, setQuestions] = useState(null);
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [questionsError, setQuestionsError] = useState(null);
+  const [answersMap, setAnswersMap] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [questionFeedback, setQuestionFeedback] = useState({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [tabIndex, setTabIndex] = useState(0);
 
   const statusLower = useMemo(() => competition?.status?.toLowerCase() || '', [competition]);
@@ -72,7 +81,26 @@ const CompetitionDetail = () => {
       try {
         const leaderRes = await competitionApi.get(`/competitions/${id}/leaderboard`);
         if (leaderRes.data.success) {
-          setLeaderboard(leaderRes.data.data);
+          const lb = leaderRes.data.data;
+          setLeaderboard(lb);
+          // set current user's rank/score if present
+          if (user && lb?.participants && Array.isArray(lb.participants)) {
+            const idx = lb.participants.findIndex(p => {
+              const pid = p.participantId ?? p.ParticipantId ?? p.participantId;
+              return Number(pid) === Number(user.id);
+            });
+            if (idx >= 0) {
+              setUserRank(idx + 1);
+              const s = lb.participants[idx].score ?? lb.participants[idx].Score ?? 0;
+              setUserScore(s);
+            } else {
+              setUserRank(null);
+              setUserScore(null);
+            }
+          } else {
+            setUserRank(null);
+            setUserScore(null);
+          }
         }
       } catch (e) {
         console.warn('Failed to fetch leaderboard:', e.message);
@@ -127,6 +155,8 @@ const CompetitionDetail = () => {
       
       if (response.data.success) {
         setIsJoined(true);
+        // reflect new participant locally to avoid full refresh delay
+        setCompetition(prev => prev ? ({ ...prev, participantCount: (prev.participantCount || 0) + 1 }) : prev);
         toast({
           title: 'Success',
           description: 'You have joined the competition!',
@@ -214,11 +244,22 @@ const CompetitionDetail = () => {
         // participant endpoint will enforce status and registration
         res = await competitionService.getParticipantQuestions(id);
         const payload = res?.data ?? res;
-        if (!payload || payload.success === false) {
+          if (!payload || payload.success === false) {
           setQuestionsError(payload?.message || 'Questions are not available');
           setQuestions([]);
         } else {
-          setQuestions(payload.data ?? payload ?? []);
+          const qList = payload.data ?? payload ?? [];
+          setQuestions(qList);
+          // reset answers for this question set
+          const map = {};
+          (qList || []).forEach(q => {
+            const qid = q.id ?? q.Id;
+            map[qid] = map[qid] ?? '';
+          });
+          setAnswersMap(map);
+            // reset feedback/submission state when loading questions
+            setQuestionFeedback({});
+            setHasSubmitted(false);
         }
       }
     } catch (e) {
@@ -252,6 +293,18 @@ const CompetitionDetail = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Return style object for an option based on submission feedback
+  const getOptionStyle = (qid, optKey) => {
+    const fb = questionFeedback[qid];
+    if (!hasSubmitted || !fb) return {};
+    const sel = (fb.submittedAnswer || '').toString().toUpperCase();
+    const corr = (fb.correctAnswer || '').toString().toUpperCase();
+
+    if (optKey === corr) return { color: 'green.600', fontWeight: 'semibold' };
+    if (optKey === sel && sel !== corr) return { color: 'red.600', fontWeight: 'semibold' };
+    return {};
   };
 
   if (loading) {
@@ -298,7 +351,7 @@ const CompetitionDetail = () => {
                     )}
                   </HStack>
                 </VStack>
-                {user && (
+                      {user && (
                   <>
                     {competition.isPublic || (competition.allowedMemberIds && competition.allowedMemberIds.includes(user.id)) ? (
                       <Button
@@ -308,7 +361,7 @@ const CompetitionDetail = () => {
                         onClick={isJoined && statusLower === 'upcoming' ? handleLeaveCompetition : handleJoinCompetition}
                         isDisabled={isJoined && statusLower !== 'upcoming'}
                       >
-                        {isJoined ? (statusLower === 'upcoming' ? 'Leave' : 'Joined') : 'Join Competition'}
+                     {isJoined ? (statusLower === 'upcoming' ? 'Leave' : 'Participated') : 'Join Competition'}
                       </Button>
                     ) : (
                       <VStack align="end">
@@ -334,6 +387,18 @@ const CompetitionDetail = () => {
                   <StatLabel fontSize="sm">Participants</StatLabel>
                   <StatNumber color="purple.500">{competition.participantCount}</StatNumber>
                 </Stat>
+                  {user && (
+                    <Stat>
+                      <StatLabel fontSize="sm">Score</StatLabel>
+                      <StatNumber color="purple.500">{userScore ?? 0}</StatNumber>
+                    </Stat>
+                  )}
+                  {user && (
+                    <Stat>
+                      <StatLabel fontSize="sm">Rank</StatLabel>
+                      <StatNumber color="purple.500">{userRank && userRank > 0 ? userRank : 'Pending'}</StatNumber>
+                    </Stat>
+                  )}
                 <Stat>
                   <StatLabel fontSize="sm">Prize Pool</StatLabel>
                   <StatNumber color="orange.500">
@@ -515,11 +580,49 @@ const CompetitionDetail = () => {
                             <Text mt={3} color="gray.700">{q.questionText ?? q.QuestionText}</Text>
 
                             <VStack align="start" mt={3} spacing={2}>
-                              <Text>A. {q.optionA ?? q.OptionA}</Text>
-                              <Text>B. {q.optionB ?? q.OptionB}</Text>
-                              <Text>C. {q.optionC ?? q.OptionC}</Text>
-                              <Text>D. {q.optionD ?? q.OptionD}</Text>
+                              <RadioGroup
+                                onChange={(val) => {
+                                  const qid = q.id ?? q.Id;
+                                  setAnswersMap(prev => ({ ...prev, [qid]: val }));
+                                }}
+                                value={answersMap[q.id ?? q.Id] ?? ''}
+                                isDisabled={hasSubmitted}
+                              >
+                                <Stack direction="column">
+                                  <Radio value="A">
+                                    <Box as="span" sx={getOptionStyle(q.id ?? q.Id, 'A')}>A. {q.optionA ?? q.OptionA}</Box>
+                                  </Radio>
+                                  <Radio value="B">
+                                    <Box as="span" sx={getOptionStyle(q.id ?? q.Id, 'B')}>B. {q.optionB ?? q.OptionB}</Box>
+                                  </Radio>
+                                  <Radio value="C">
+                                    <Box as="span" sx={getOptionStyle(q.id ?? q.Id, 'C')}>C. {q.optionC ?? q.OptionC}</Box>
+                                  </Radio>
+                                  <Radio value="D">
+                                    <Box as="span" sx={getOptionStyle(q.id ?? q.Id, 'D')}>D. {q.optionD ?? q.OptionD}</Box>
+                                  </Radio>
+                                </Stack>
+                              </RadioGroup>
                             </VStack>
+
+                            {/* Participant feedback after submission */}
+                            {questionFeedback[q.id ?? q.Id] && (
+                              <Box mt={3}>
+                                {
+                                  // drive feedback message from the same comparison used for styles
+                                  (() => {
+                                    const fb = questionFeedback[q.id ?? q.Id];
+                                    const sel = (fb.submittedAnswer || '').toString().toUpperCase();
+                                    const corr = (fb.correctAnswer || '').toString().toUpperCase();
+                                    const isCorrectLocal = sel && corr && sel === corr;
+                                    if (isCorrectLocal) {
+                                      return <Text color="green.600" fontWeight="semibold">Correct — +{fb.pointsAwarded ?? 0} pts</Text>;
+                                    }
+                                    return <Text color="red.600" fontWeight="semibold">Incorrect — Correct: {fb.correctAnswer}</Text>;
+                                  })()
+                                }
+                              </Box>
+                            )}
 
                             {(user?.isAdmin || (competition && (competition.creatorId === user?.id || competition.creator?.id === user?.id))) && (
                               <Text mt={3} color="green.600" fontWeight="semibold">Correct: {q.correctAnswer ?? q.CorrectAnswer}</Text>
@@ -527,6 +630,116 @@ const CompetitionDetail = () => {
                           </CardBody>
                         </Card>
                       ))}
+                      {/* Submit answers button for participants */}
+                      {!user?.isAdmin && competition && statusLower === 'ongoing' && user && (
+                        <Button
+                          colorScheme="purple"
+                          alignSelf="end"
+                          mt={4}
+                          isLoading={submitting}
+                          onClick={async () => {
+                            if (!user) {
+                              navigate('/login');
+                              return;
+                            }
+                            // build payload from answersMap (only include answered)
+                            const answers = Object.entries(answersMap)
+                              .filter(([, val]) => val && val !== '')
+                              .map(([qid, val]) => ({ questionId: Number(qid), answer: val }));
+
+                            if (answers.length === 0) {
+                              toast({ title: 'No answers', description: 'Please select at least one answer before submitting', status: 'warning', duration: 3000, isClosable: true });
+                              return;
+                            }
+
+                            try {
+                              setSubmitting(true);
+
+                              // If the user hasn't joined yet, attempt to join automatically
+                              if (!isJoined) {
+                                try {
+                                  const joinRes = await competitionApi.post(`/competitions/${id}/join`);
+                                  if (joinRes.data?.success) {
+                                    setIsJoined(true);
+                                  } else {
+                                    const msg = (joinRes.data?.message || '').toString().toLowerCase();
+                                    // If backend says user is already a participant, treat as joined and continue
+                                    if (msg.includes('already a participant')) {
+                                      setIsJoined(true);
+                                    } else {
+                                      toast({ title: 'Not Registered', description: joinRes.data?.message || 'You must join the competition before submitting', status: 'error', duration: 3000, isClosable: true });
+                                      setSubmitting(false);
+                                      return;
+                                    }
+                                  }
+                                } catch (je) {
+                                  const jmsg = (je.response?.data?.message || je.message || '').toString().toLowerCase();
+                                  if (jmsg.includes('already a participant')) {
+                                    setIsJoined(true);
+                                  } else {
+                                    toast({ title: 'Join Failed', description: je.response?.data?.message || je.message || 'Failed to join competition', status: 'error', duration: 3000, isClosable: true });
+                                    setSubmitting(false);
+                                    return;
+                                  }
+                                }
+                              }
+
+                              const payload = { answers };
+                              const resp = await competitionService.submitAnswers(id, payload);
+                              if (resp && resp.success) {
+                                toast({ title: 'Submitted', description: resp.message || 'Answers submitted successfully', status: 'success', duration: 3000, isClosable: true });
+                                // show per-question feedback if available
+                                const result = resp.data ?? resp.Data ?? resp.data;
+                                const qr = result?.questionResults ?? result?.QuestionResults ?? result?.questionresults ?? null;
+                                if (qr && Array.isArray(qr)) {
+                                  const map = {};
+                                  qr.forEach(r => {
+                                    const qid = r.questionId ?? r.QuestionId ?? r.questionId;
+                                    map[qid] = {
+                                      isCorrect: r.isCorrect ?? r.IsCorrect,
+                                      correctAnswer: r.correctAnswer ?? r.CorrectAnswer,
+                                      submittedAnswer: r.submittedAnswer ?? r.SubmittedAnswer,
+                                      pointsAwarded: r.pointsAwarded ?? r.PointsAwarded ?? 0
+                                    };
+                                  });
+                                  setQuestionFeedback(map);
+                                  setHasSubmitted(true);
+                                }
+                                // refresh summary/leaderboard
+                                fetchCompetitionDetails();
+                                try {
+                                  const leaderRes = await competitionApi.get(`/competitions/${id}/leaderboard`);
+                                  if (leaderRes.data.success) {
+                                    const lb = leaderRes.data.data;
+                                    setLeaderboard(lb);
+                                    if (user && lb?.participants && Array.isArray(lb.participants)) {
+                                      const idx = lb.participants.findIndex(p => {
+                                      const pid = p.participantId ?? p.ParticipantId ?? p.participantId;
+                                      return Number(pid) === Number(user.id);
+                                    });
+                                      if (idx >= 0) {
+                                        setUserRank(idx + 1);
+                                        setUserScore(lb.participants[idx].score ?? 0);
+                                      } else {
+                                        setUserRank(null);
+                                        setUserScore(null);
+                                      }
+                                    }
+                                  }
+                                } catch (e) { /* ignore */ }
+                              } else {
+                                toast({ title: 'Error', description: resp?.message || 'Submission failed', status: 'error', duration: 3000, isClosable: true });
+                              }
+                            } catch (e) {
+                              toast({ title: 'Error', description: e.response?.data?.message || e.message || 'Submission failed', status: 'error', duration: 3000, isClosable: true });
+                            } finally {
+                              setSubmitting(false);
+                            }
+                          }}
+                        >
+                          Submit Answers
+                        </Button>
+                      )}
                     </VStack>
                   ) : (
                     <Text color="gray.500">No questions available</Text>

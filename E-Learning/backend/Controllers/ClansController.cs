@@ -372,6 +372,117 @@ namespace backend.Controllers
             return Ok(new { success = true, posts = result.Data, page, pageSize, total = result.Data?.Count ?? 0 });
         }
 
+        [Authorize]
+        [HttpPost("{clanId}/posts")]
+        public async Task<IActionResult> CreateClanPost(int clanId, [FromBody] CreateClanPostDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null)
+                return Forbid();
+
+            var result = await _clanService.CreateClanPost(clanId, userId, dto);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return CreatedAtAction(nameof(GetClanPosts), new { clanId = clanId }, new { success = true, post = result.Data });
+        }
+
+        [Authorize]
+        [HttpPost("{clanId}/posts/{postId}/react")]
+        public async Task<IActionResult> ReactToPost(int clanId, int postId, [FromBody] AddReactionDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null)
+                return Forbid();
+
+            var result = await _clanService.ReactToPost(postId, userId, dto.Emoji);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true });
+        }
+
+        [Authorize]
+        [HttpPost("{clanId}/posts/{postId}/vote")]
+        public async Task<IActionResult> VoteOnPost(int clanId, int postId, [FromQuery] int vote)
+        {
+            if (vote != 1 && vote != -1)
+                return BadRequest(new { success = false, message = "Vote must be 1 (upvote) or -1 (downvote)" });
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null)
+                return Forbid();
+
+            var result = await _clanService.VoteOnPost(postId, userId, vote);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true });
+        }
+
+        // ANNOUNCEMENTS
+
+        [HttpGet("{clanId}/announcements")]
+        public async Task<IActionResult> GetClanAnnouncements(int clanId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var currentUserId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst("userId")?.Value ?? "0")
+                : (int?)null;
+
+            var result = await _clanService.GetClanAnnouncements(clanId, currentUserId, page, pageSize);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, announcements = result.Data, page, pageSize, total = result.Data?.Count ?? 0 });
+        }
+
+        [Authorize]
+        [HttpPost("{clanId}/announcements")]
+        public async Task<IActionResult> CreateAnnouncement(int clanId, [FromBody] CreateAnnouncementDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            // Only Leaders or CoLeaders can create announcements (service enforces too)
+            var membership = await _clanService.GetUserClanMembership(clanId, userId);
+            if (membership == null || (membership.Role != "Leader" && membership.Role != "CoLeader"))
+                return Forbid();
+
+            var result = await _clanService.CreateAnnouncement(clanId, userId, dto);
+            if (!result.Success)
+            {
+                if (result.Message != null && result.Message.Contains("Only Leaders", StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
+                return BadRequest(new { success = false, message = result.Message });
+            }
+
+            return CreatedAtAction(nameof(GetClanAnnouncements), new { clanId = clanId }, new { success = true, announcement = result.Data });
+        }
+
         // CLAN STATS & RANKING
 
         [HttpGet("{clanId}/stats")]
@@ -454,7 +565,28 @@ namespace backend.Controllers
             var result = await _clanService.GetClanInvitations(userId);
             return Ok(new { success = true, invitations = result.Data });
         }
+        [Authorize]
+[HttpPost("{clanId}/announcements/{announcementId}/react")]
+public async Task<IActionResult> ReactToAnnouncement(int clanId, int announcementId, [FromBody] AddReactionDTO dto)
+{
+    if (!ModelState.IsValid)
+        return BadRequest(ModelState);
 
+    var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+    if (userId == 0)
+        return Unauthorized(new { success = false, message = "Invalid token" });
+
+    var membership = await _clanService.GetUserClanMembership(clanId, userId);
+    if (membership == null)
+        return Forbid();
+
+    var result = await _clanService.ReactToAnnouncement(announcementId, userId, dto.Emoji);
+    if (!result.Success)
+        return BadRequest(new { success = false, message = result.Message });
+
+    return Ok(new { success = true });
+}
+    
         [Authorize]
         [HttpPost("invitations/{invitationId}/accept")]
         public async Task<IActionResult> AcceptInvitation(int invitationId)

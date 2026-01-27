@@ -142,6 +142,8 @@ app.MapControllers();
 
 // Map SignalR hubs (match frontend which prefixes API routes with `/api`)
 app.MapHub<backend.Hubs.CommunityHub>("/api/hubs/community");
+// Course hub for live course/teacher updates
+app.MapHub<backend.Hubs.CourseHub>("/api/hubs/courses");
 
 // Apply any pending EF Core migrations on startup (creates missing tables)
 using (var scope = app.Services.CreateScope())

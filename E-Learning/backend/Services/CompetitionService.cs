@@ -2,16 +2,19 @@ using backend.Data;
 using backend.DTOs;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace backend.Services
 {
     public class CompetitionService : ICompetitionService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHostEnvironment _env;
 
-        public CompetitionService(ApplicationDbContext context)
+        public CompetitionService(ApplicationDbContext context, IHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         /// <summary>
@@ -427,6 +430,123 @@ namespace backend.Services
         }
 
         /// <summary>
+        /// Submit participant answers for a competition (bulk submit).
+        /// Calculates score, updates CompetitionScore and participant Score/Status.
+        /// </summary>
+        public async Task<ServiceResult<CompetitionResultWithFeedbackDTO>> SubmitCompetitionAnswers(int competitionId, int userId, SubmitCompetitionAnswersDTO dto)
+        {
+            try
+            {
+                var competition = await _context.Competitions
+                    .Include(c => c.Questions)
+                    .FirstOrDefaultAsync(c => c.Id == competitionId);
+
+                if (competition == null)
+                    return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("Competition not found");
+
+                // Only allow during Ongoing
+                var currentStatus = CalculateStatus(competition.StartDate, competition.EndDate, competition.IsApproved);
+                if (currentStatus != "Ongoing")
+                    return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("Competition is not accepting answers at this time");
+
+                // Participant must be registered
+                var participant = await _context.CompetitionParticipants
+                    .FirstOrDefaultAsync(p => p.CompetitionId == competitionId && p.UserId == userId);
+
+                if (participant == null)
+                    return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("You are not a registered participant");
+
+                if (dto == null || dto.Answers == null || dto.Answers.Count == 0)
+                    return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("No answers submitted");
+
+                // Evaluate answers and build per-question feedback
+                int totalScore = 0;
+                int correct = 0;
+                int wrong = 0;
+                var feedbacks = new List<DTOs.CompetitionQuestionFeedbackDTO>();
+
+                foreach (var a in dto.Answers)
+                {
+                    var q = competition.Questions.FirstOrDefault(x => x.Id == a.QuestionId);
+                    if (q == null) continue; // ignore unknown question id
+
+                    var submitted = (a.Answer ?? string.Empty).Trim().ToUpper();
+                    var correctAns = (q.CorrectAnswer ?? string.Empty).Trim().ToUpper();
+
+                    var isCorrect = submitted == correctAns;
+                    var pointsAwarded = isCorrect ? q.Points : 0;
+
+                    if (isCorrect)
+                    {
+                        totalScore += q.Points;
+                        correct++;
+                    }
+                    else
+                    {
+                        wrong++;
+                    }
+
+                    feedbacks.Add(new DTOs.CompetitionQuestionFeedbackDTO
+                    {
+                        QuestionId = q.Id,
+                        SubmittedAnswer = submitted,
+                        CorrectAnswer = correctAns,
+                        IsCorrect = isCorrect,
+                        PointsAwarded = pointsAwarded
+                    });
+                }
+
+                // Update or create CompetitionScore
+                var score = await _context.CompetitionScores
+                    .FirstOrDefaultAsync(s => s.CompetitionId == competitionId && s.UserId == userId);
+
+                if (score == null)
+                {
+                    score = new Models.CompetitionScore
+                    {
+                        CompetitionId = competitionId,
+                        UserId = userId,
+                        Score = totalScore,
+                        Rank = 0,
+                        SubmittedAt = DateTime.UtcNow
+                    };
+                    _context.CompetitionScores.Add(score);
+                }
+                else
+                {
+                    score.Score = totalScore;
+                    score.SubmittedAt = DateTime.UtcNow;
+                }
+
+                // Update participant
+                participant.Score = totalScore;
+                participant.Status = "Completed";
+                participant.CompletedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                var resultDto = new CompetitionResultWithFeedbackDTO
+                {
+                    CompetitionId = competitionId,
+                    ParticipantId = participant.Id,
+                    FinalScore = totalScore,
+                    FinalRank = score.Rank,
+                    Result = "Submitted",
+                    SubmittedAt = score.SubmittedAt
+                };
+
+                // attach feedback
+                resultDto.QuestionResults = feedbacks;
+
+                return ServiceResult<CompetitionResultWithFeedbackDTO>.SuccessResult(resultDto, "Answers submitted successfully");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult($"Failed to submit answers: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Get all APPROVED competitions with pagination (public listing)
         /// </summary>
         public async Task<ServiceResult<List<CompetitionDTO>>> GetAllCompetitions(int page, int pageSize)
@@ -722,12 +842,12 @@ namespace backend.Services
                 if (user != null && user.IsAdmin)
                     return ServiceResult<bool>.FailureResult("Admins cannot participate in competitions");
 
-                // Check if competition is approved
-                if (!competition.IsApproved)
+                // Check if competition is approved (skip in Development for easier testing)
+                if (!competition.IsApproved && !_env.IsDevelopment())
                     return ServiceResult<bool>.FailureResult("This competition is awaiting admin approval");
 
-                // If private, ensure user is allowed
-                if (!competition.IsPublic)
+                // If private, ensure user is allowed (skip in Development for easier testing)
+                if (!competition.IsPublic && !_env.IsDevelopment())
                 {
                     var allowedIds = (competition.AllowedMemberIds ?? string.Empty)
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -863,23 +983,63 @@ namespace backend.Services
         /// <summary>
         /// Get competitions that a user has joined
         /// </summary>
-        public async Task<ServiceResult<List<CompetitionDTO>>> GetUserCompetitions(int userId)
+        public async Task<ServiceResult<List<UserCompetitionDTO>>> GetUserCompetitions(int userId)
         {
             try
             {
-                var competitions = await _context.CompetitionParticipants
+                var participantEntries = await _context.CompetitionParticipants
                     .Where(p => p.UserId == userId)
-                    .Select(p => p.Competition)
-                    .Distinct()
-                    .OrderByDescending(c => c.CreatedAt)
+                    .Include(p => p.Competition)
+                    .ThenInclude(c => c.Questions)
+                    .Include(p => p.User)
                     .ToListAsync();
 
-                var dtos = competitions.Select(MapToCompetitionDTO).ToList();
-                return ServiceResult<List<CompetitionDTO>>.SuccessResult(dtos);
+                var userCompetitions = new List<UserCompetitionDTO>();
+
+                foreach (var p in participantEntries)
+                {
+                    var dto = new UserCompetitionDTO
+                    {
+                        Competition = MapToCompetitionDTO(p.Competition),
+                        ParticipantScore = p.Score.HasValue ? (int?)p.Score.Value : null,
+                        ParticipantRank = p.Rank,
+                        JoinedAt = p.JoinedAt,
+                        ParticipantStatus = p.Status
+                    };
+
+                    // If rank is not set on participant row, try to compute from scores table
+                    if (!dto.ParticipantRank.HasValue || dto.ParticipantRank.Value <= 0)
+                    {
+                        try
+                        {
+                            var rankedUserIds = await _context.CompetitionParticipants
+                                .Where(x => x.CompetitionId == p.CompetitionId && x.Score.HasValue)
+                                .OrderByDescending(x => x.Score)
+                                .Select(x => x.UserId)
+                                .ToListAsync();
+
+                            var idx = rankedUserIds.IndexOf(userId);
+                            if (idx >= 0)
+                                dto.ParticipantRank = idx + 1;
+                        }
+                        catch
+                        {
+                            // ignore failures to compute rank and leave as null
+                        }
+                    }
+
+                    userCompetitions.Add(dto);
+                }
+
+                userCompetitions = userCompetitions
+                    .OrderByDescending(uc => uc.Competition.CreatedAt)
+                    .ToList();
+
+                return ServiceResult<List<UserCompetitionDTO>>.SuccessResult(userCompetitions);
             }
             catch (Exception ex)
             {
-                return ServiceResult<List<CompetitionDTO>>.FailureResult($"Failed to get user competitions: {ex.Message}");
+                return ServiceResult<List<UserCompetitionDTO>>.FailureResult($"Failed to get user competitions: {ex.Message}");
             }
         }
 

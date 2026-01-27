@@ -190,7 +190,6 @@ const PostCard = ({ post, onReact, onVote }) => {
 };
 
 const CreatePostModal = ({ isOpen, onClose, clanId }) => {
-  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -205,7 +204,6 @@ const CreatePostModal = ({ isOpen, onClose, clanId }) => {
         duration: 3000,
       });
       onClose();
-      setTitle('');
       setContent('');
     },
     onError: (error) => {
@@ -219,7 +217,7 @@ const CreatePostModal = ({ isOpen, onClose, clanId }) => {
   });
 
   const handleSubmit = () => {
-    if (!title.trim() || !content.trim()) {
+    if (!content.trim()) {
       toast({
         title: 'Please fill all fields',
         status: 'warning',
@@ -228,7 +226,8 @@ const CreatePostModal = ({ isOpen, onClose, clanId }) => {
       return;
     }
 
-    createMutation.mutate({ title, content });
+    // Send only content for clan posts (title is optional)
+    createMutation.mutate({ content });
   };
 
   return (
@@ -240,15 +239,7 @@ const CreatePostModal = ({ isOpen, onClose, clanId }) => {
         <ModalBody pb={6}>
           <VStack spacing={4}>
             <Box w="100%">
-              <Text fontWeight="bold" mb={2}>
-                Title
-              </Text>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Post title..."
-                maxLength={200}
-              />
+              {/* Title removed for clan posts; only content is required */}
             </Box>
 
             <Box w="100%">

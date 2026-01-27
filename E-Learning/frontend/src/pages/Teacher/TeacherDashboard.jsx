@@ -34,6 +34,7 @@ import {
 import { FiBook, FiUsers, FiStar, FiDollarSign, FiPlus, FiTrendingUp } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import * as signalR from '@microsoft/signalr';
 
 const TeacherDashboard = () => {
   const [teacher, setTeacher] = useState(null);
@@ -68,15 +69,19 @@ const TeacherDashboard = () => {
         setCourses(coursesRes.data.courses || []);
 
         // Calculate stats
-        const totalStudents = coursesRes.data.courses?.reduce((sum, course) => sum + (course.totalEnrolled || 0), 0) || 0;
+        const totalStudents = coursesRes.data.courses?.reduce((sum, course) => {
+          return sum + (course.enrollmentCount ?? course.totalEnrolled ?? course.EnrollmentCount ?? 0);
+        }, 0) || 0;
         const avgRating = coursesRes.data.courses?.length > 0 
-          ? (coursesRes.data.courses.reduce((sum, course) => sum + (course.averageRating || 0), 0) / coursesRes.data.courses.length).toFixed(2)
+          ? (coursesRes.data.courses.reduce((sum, course) => sum + (course.averageRating || course.AverageRating || 0), 0) / coursesRes.data.courses.length).toFixed(2)
           : 0;
+
+        const totalReviews = coursesRes.data.courses?.reduce((sum, course) => sum + (course.totalReviews ?? course.TotalReviews ?? 0), 0) || 0;
 
         setStats({
           totalCourses: coursesRes.data.courses?.length || 0,
           totalStudents: totalStudents,
-          totalReviews: 0,
+          totalReviews: totalReviews,
           averageRating: parseFloat(avgRating),
           totalEarnings: 0
         });
@@ -98,6 +103,73 @@ const TeacherDashboard = () => {
 
     fetchDashboardData();
   }, [toast]);
+
+  // Recompute aggregated stats when courses update (e.g., via SignalR)
+  useEffect(() => {
+    const totalStudents = courses?.reduce((sum, course) => sum + (course.enrollmentCount ?? course.totalEnrolled ?? course.EnrollmentCount ?? 0), 0) || 0;
+    const totalReviews = courses?.reduce((sum, course) => sum + (course.totalReviews ?? course.TotalReviews ?? 0), 0) || 0;
+    const avgRating = courses?.length > 0 ? (courses.reduce((sum, course) => sum + (course.averageRating ?? course.AverageRating ?? 0), 0) / courses.length).toFixed(2) : 0;
+    setStats((prev) => ({ ...prev, totalStudents, totalReviews, averageRating: parseFloat(avgRating) }));
+  }, [courses]);
+
+  // SignalR: subscribe to course enrollment events so teacher UI updates live
+  useEffect(() => {
+    if (!teacher) return;
+    const start = async () => {
+      try {
+        const base = process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL : '';
+        const hubUrl = base + '/hubs/courses';
+        const connection = new signalR.HubConnectionBuilder()
+          .withUrl(hubUrl, {
+            skipNegotiation: true,
+            transport: signalR.HttpTransportType.WebSockets,
+            accessTokenFactory: () => localStorage.getItem('token') || ''
+          })
+          .withAutomaticReconnect()
+          .build();
+
+            connection.on('StudentEnrolled', (enrollment) => {
+          try {
+            const cid = enrollment?.courseId || enrollment?.CourseId;
+            if (!cid) return;
+            setCourses((prev) => {
+              const updated = prev.map(c => {
+                    if (String(c.id) === String(cid)) {
+                      return {
+                        ...c,
+                        enrollmentCount: (c.enrollmentCount ?? c.totalEnrolled ?? c.EnrollmentCount ?? 0) + 1
+                      };
+                    }
+                return c;
+              });
+              return updated;
+            });
+            // Optionally show a toast notification
+            toast({ title: 'New Enrollment', description: `A student enrolled in course #${cid}`, status: 'info', duration: 4000 });
+          } catch (e) {
+            console.warn('Failed to handle StudentEnrolled', e);
+          }
+        });
+
+        await connection.start();
+
+        // Join teacher user group so server can push teacher-specific events
+        await connection.invoke('JoinUserGroup', `user-${teacher.id}`);
+
+        // Join course groups currently displayed so course-specific updates arrive
+        for (const c of courses) {
+          try { await connection.invoke('JoinCourseGroup', `course-${c.id}`); } catch { }
+        }
+
+        return () => connection.stop().catch(() => {});
+      } catch (err) {
+        console.warn('SignalR (courses) connection failed', err);
+      }
+    };
+
+    const p = start();
+    return () => { p.catch(() => {}); };
+  }, [teacher, courses, toast]);
 
   if (loading) {
     return (
@@ -267,7 +339,7 @@ const TeacherDashboard = () => {
                             {course.status}
                           </Badge>
                         </Td>
-                        <Td>{course.totalEnrolled || 0}</Td>
+                        <Td>{course.enrollmentCount ?? course.totalEnrolled ?? course.EnrollmentCount ?? 0}</Td>
                         <Td>
                           <Flex align="center" gap={1}>
                             <Icon as={FiStar} color="yellow.500" />
@@ -283,14 +355,7 @@ const TeacherDashboard = () => {
                             >
                               Edit
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              colorScheme="blue"
-                              onClick={() => navigate(`/teacher/course/${course.id}/submissions`)}
-                            >
-                              Submissions
-                            </Button>
+                            
                           </HStack>
                         </Td>
                       </Tr>
@@ -322,14 +387,7 @@ const TeacherDashboard = () => {
             </CardBody>
           </Card>
 
-          <Card cursor="pointer" _hover={{ shadow: 'md' }} onClick={() => navigate('/teacher/submissions')}>
-            <CardBody>
-              <VStack spacing={3}>
-                <Icon as={FiUsers} fontSize="32px" color="orange.500" />
-                <Text fontWeight="bold" textAlign="center">Submissions</Text>
-              </VStack>
-            </CardBody>
-          </Card>
+          {/* Submissions quick-link removed */}
 
           <Card cursor="pointer" _hover={{ shadow: 'md' }} onClick={() => navigate('/teacher/reviews')}>
             <CardBody>

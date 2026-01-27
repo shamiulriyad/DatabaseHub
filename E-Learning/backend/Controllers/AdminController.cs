@@ -118,7 +118,6 @@ namespace backend.Controllers
         // EXISTING ADMIN ENDPOINTS
 
         [HttpGet("stats")]
-        [AllowAnonymous]  // Temporarily allow to debug
         public async Task<IActionResult> GetPlatformStats()
         {
             // Don't require admin role for now - debug endpoint
@@ -131,6 +130,40 @@ namespace backend.Controllers
                 success = true,
                 stats = result.Data
             });
+        }
+
+        /// <summary>
+        /// Get recent activities for admin dashboard
+        /// </summary>
+        [HttpGet("activities")]
+        public async Task<IActionResult> GetRecentActivities([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (adminId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _adminService.GetRecentActivities(page, pageSize);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, activities = result.Data, page, pageSize });
+        }
+
+        /// <summary>
+        /// Get top performing courses for admin dashboard
+        /// </summary>
+        [HttpGet("courses/top")]
+        public async Task<IActionResult> GetTopCourses([FromQuery] int count = 5)
+        {
+            var adminId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (adminId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _adminService.GetTopCourses(count);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, topCourses = result.Data });
         }
 
         [HttpGet("users")]

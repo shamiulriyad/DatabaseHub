@@ -17,6 +17,7 @@ namespace backend.Services.Interfaces
         Task<ServiceResult<LessonDTO>> UpdateLesson(int lessonId, UpdateLessonDTO dto);
         Task<ServiceResult<bool>> DeleteLesson(int lessonId);
         Task<ServiceResult<bool>> MarkLessonComplete(int lessonId, int userId, int enrollmentId);
+        Task<ServiceResult<bool>> UpdateLessonWatch(int lessonId, int userId, int enrollmentId, int watchedSeconds);
         Task<ServiceResult<bool>> BookmarkLesson(int lessonId, int userId);
         Task<ServiceResult<List<LessonDTO>>> GetBookmarks(int userId);
         

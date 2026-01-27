@@ -48,7 +48,25 @@ export default function DepartmentCourses() {
         else if (res.data?.items) data = res.data.items;
         else data = [];
 
-        if (mounted) setCourses(Array.isArray(data) ? data : []);
+        if (mounted) {
+          const courseList = Array.isArray(data) ? data : [];
+          setCourses(courseList);
+
+          // Derive instructor list from courses when backend teacher endpoint is missing
+          const uniqueInstructors = [];
+          const seen = new Set();
+          courseList.forEach(c => {
+            const t = c.teacher || (c.teacherId ? { id: c.teacherId, name: c.teacherName || c.instructorName || '' } : null);
+            if (t) {
+              const key = t.id || t.name;
+              if (!seen.has(key)) {
+                seen.add(key);
+                uniqueInstructors.push({ id: t.id, name: t.name || t.fullName || t.username || '' });
+              }
+            }
+          });
+          if (uniqueInstructors.length > 0) setInstructors(uniqueInstructors);
+        }
       })
       .catch((err) => { 
         console.error('Failed to load courses', err); 
@@ -78,16 +96,8 @@ export default function DepartmentCourses() {
     return () => mounted = false;
   }, [departmentId, toast]);
 
-  useEffect(() => {
-    let mounted = true;
-    api.get(`/teachers?departmentId=${departmentId}`)
-      .then(res => {
-        const d = res.data?.data || res.data || [];
-        if (mounted) setInstructors(Array.isArray(d) ? d : d.items || []);
-      })
-      .catch(() => setInstructors([]));
-    return () => mounted = false;
-  }, [departmentId]);
+  // Note: backend currently doesn't provide a teachers-by-department endpoint
+  // Instructors are derived from the fetched courses above.
 
   const filtered = courses.filter(c => {
     if (query && !((c.title || c.name || '').toLowerCase().includes(query.toLowerCase()) || 

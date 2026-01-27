@@ -39,7 +39,7 @@ const CourseDetail = () => {
   const handleBuy = async () => {
     const price = course?.price ?? 0;
     if (price > 0) {
-      navigate(`/payment/checkout?courseId=${courseId}`);
+      navigate(`/payment?courseId=${courseId}`);
       return;
     }
 
@@ -140,6 +140,11 @@ const CourseDetail = () => {
   const isEnrolled = (course.isEnrolled ?? course.IsEnrolled) ?? false;
   const previewUrl = course.previewVideoUrl ?? course.PreviewVideoUrl ?? course.youtubeUrl ?? course.YouTubeUrl ?? '';
   const parts = (course.videoParts || course.VideoParts) || [];
+  // Filter out parts that have no usable video URL to avoid rendering empty players
+  const validParts = parts.filter(p => {
+    const url = (p?.videoUrl || p?.VideoUrl || p?.youTubeUrl || p?.YouTubeUrl || '').toString().trim();
+    return url.length > 0;
+  });
   const avgRating = course.averageRating || 0;
   const totalRatings = course.totalRatings || 0;
 
@@ -196,35 +201,22 @@ const CourseDetail = () => {
                     )}
                   </Heading>
                   
-                  { (isEnrolled && parts.length > 0) ? (
-                    // Show parts player for enrolled students
+                  { (isEnrolled && validParts.length > 0) ? (
+                    // Show lessons list for enrolled students; navigate to lesson page to open player
                     <Box>
-                      <AspectRatio ratio={16 / 9} borderRadius="lg" overflow="hidden">
-                        {(() => {
-                          const part = parts[selectedPartIndex];
-                          const url = (part?.videoUrl || part?.VideoUrl) || (part?.youTubeUrl || part?.YouTubeUrl) || '';
-                          if (/(youtube\.com|youtu\.be)/i.test(url)) {
-                            try {
-                              const u = new URL(url);
-                              let id = '';
-                              if (u.hostname.includes('youtu.be')) id = u.pathname.slice(1);
-                              else id = u.searchParams.get('v') || '';
-                              return <Box as="iframe" title="part-player" src={id ? `https://www.youtube.com/embed/${id}` : url} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />;
-                            } catch { return <Box as="video" src={url} controls />; }
-                          }
-                          return <Box as="video" src={url} controls />;
-                        })()}
-                      </AspectRatio>
-                      <Box mt={4}>
-                        <Heading size="sm" mb={2}>Parts</Heading>
-                        <VStack align="stretch">
-                          {parts.map((p, i) => (
-                            <Button key={i} variant={i===selectedPartIndex? 'solid' : 'ghost'} onClick={() => setSelectedPartIndex(i)} justifyContent="flex-start">
-                              {p.order ? `${p.order}. ` : ''}{p.title}
-                            </Button>
-                          ))}
-                        </VStack>
-                      </Box>
+                      <Heading size="sm" mb={2}>Lessons</Heading>
+                      <VStack align="stretch">
+                        {validParts.map((p, i) => (
+                          <Button
+                            key={p.id || p.videoUrl || p.youTubeUrl || `${p.title}-${i}`}
+                            variant="ghost"
+                            justifyContent="flex-start"
+                            onClick={() => navigate(`/lesson/${p.id}`)}
+                          >
+                            {p.order ? `${p.order}. ` : ''}{p.title}
+                          </Button>
+                        ))}
+                      </VStack>
                     </Box>
                   ) : isEnrolled && previewUrl ? (
                     <AspectRatio ratio={16 / 9} borderRadius="lg" overflow="hidden">

@@ -66,6 +66,21 @@ public class CompetitionResultDTO
     public DateTime? SubmittedAt { get; set; }
 }
 
+public class CompetitionQuestionFeedbackDTO
+{
+    public int QuestionId { get; set; }
+    public required string SubmittedAnswer { get; set; }
+    public required string CorrectAnswer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int PointsAwarded { get; set; }
+}
+
+// Extend competition result to include per-question feedback
+public class CompetitionResultWithFeedbackDTO : CompetitionResultDTO
+{
+    public List<CompetitionQuestionFeedbackDTO>? QuestionResults { get; set; }
+}
+
 public class CompetitionLeaderboardDTO
 {
     public required List<CompetitionParticipantDTO> Participants { get; set; }
@@ -78,6 +93,21 @@ public class SubmitCompetitionDTO
     public required string Submission { get; set; }
 
     public List<IFormFile>? Attachments { get; set; }
+}
+
+public class SubmitCompetitionAnswerDTO
+{
+    [Required]
+    public int QuestionId { get; set; }
+
+    [Required]
+    public required string Answer { get; set; } // "A"|"B"|"C"|"D"
+}
+
+public class SubmitCompetitionAnswersDTO
+{
+    [Required]
+    public required List<SubmitCompetitionAnswerDTO> Answers { get; set; }
 }
 
 public class CompetitionStatsDTO

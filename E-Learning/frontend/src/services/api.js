@@ -24,13 +24,18 @@ api.interceptors.response.use(
   (error) => {
     // Log detailed error info for debugging
     if (error.response?.status === 400) {
-      console.error('400 Bad Request:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        params: error.config?.params,
-        data: error.config?.data,
-        message: error.response?.data?.message,
-      });
+      // Log full response body to aid debugging (stringify to avoid collapsed [Object])
+      try {
+        console.error('400 Bad Request:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          params: error.config?.params,
+          requestData: error.config?.data,
+          responseData: JSON.stringify(error.response?.data)
+        });
+      } catch (logEx) {
+        console.error('400 Bad Request (failed to stringify):', error.response?.data);
+      }
     }
     
     if (error.response?.status === 401) {

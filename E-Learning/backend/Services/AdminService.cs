@@ -146,13 +146,15 @@ namespace backend.Services
                 IsTeacher = user.IsTeacher,
                 IsCompetitor = user.IsCompetitor,
                 IsAdmin = user.IsAdmin,
-                TotalPoints = user.TotalPoints,
+                // TotalPoints removed
                 CurrentRank = user.CurrentRank,
                 TotalCoursesEnrolled = user.TotalCoursesEnrolled,
                 TotalCoursesCompleted = user.TotalCoursesCompleted,
-                AverageGrade = user.AverageGrade,
-                CreatedAt = user.CreatedAt,
-                LastLogin = user.LastLogin
+                // AverageGrade removed
+                    // If the user submitted a teacher application, expose that timestamp
+                    TeacherRequestDate = user.TeacherRequestDate,
+                    CreatedAt = user.CreatedAt,
+                    LastLogin = user.LastLogin
             };
         }
 
@@ -198,6 +200,9 @@ namespace backend.Services
                     .Where(p => p.Status == "Completed")
                     .SumAsync(p => p.Amount);
 
+                // Get total departments
+                var totalDepartments = await _context.Departments.CountAsync();
+
                 // Get active users (logged in last 30 days)
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
                 var activeUsers = await _context.Users
@@ -205,7 +210,7 @@ namespace backend.Services
                     .CountAsync();
 
                 // Get new users this month
-                var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
                 var newUsersThisMonth = await _context.Users
                     .Where(u => u.CreatedAt >= firstDayOfMonth)
                     .CountAsync();
@@ -216,6 +221,7 @@ namespace backend.Services
                     TotalTeachers = totalTeachers,
                     TotalStudents = totalStudents,
                     TotalCourses = totalCourses,
+                    TotalDepartments = totalDepartments,
                     PendingTeachers = pendingTeachers,
                     ActiveCourses = activeCourses,
                     TotalRevenue = totalRevenue,
@@ -228,45 +234,191 @@ namespace backend.Services
             }
             catch (Exception ex)
             {
-                // Fallback to zeroed stats to prevent admin dashboard from breaking
-                var fallbackStats = new PlatformStatsDTO
-                {
-                    TotalUsers = 0,
-                    TotalTeachers = 0,
-                    TotalStudents = 0,
-                    TotalCourses = 0,
-                    PendingTeachers = 0,
-                    ActiveCourses = 0,
-                    TotalRevenue = 0,
-                    ActiveUsers = 0,
-                    NewUsersThisMonth = 0,
-                    CourseCompletionRate = 0,
-                    // Legacy fields
-                    TotalUniversities = 0,
-                    TotalDepartments = 0,
-                    TotalEnrollments = 0,
-                    TotalPosts = 0,
-                    TotalComments = 0,
-                    TotalClans = 0,
-                    TotalCompetitions = 0,
-                    ActiveUsersToday = 0,
-                    NewUsersToday = 0,
-                    NewCoursesToday = 0,
-                    PendingCourses = 0,
-                    PendingWithdrawals = 0,
-                    TodayRevenue = 0,
-                    PlatformBalance = 0
-                };
-
-                return ServiceResult<PlatformStatsDTO>.SuccessResult(
-                    fallbackStats,
-                    $"Platform stats fallback due to error: {ex.Message}"
-                );
+                // Return failure so callers see the error instead of silent zeros
+                return ServiceResult<PlatformStatsDTO>.FailureResult($"Failed to retrieve platform stats: {ex.Message}");
             }
         }
 
-        public Task<ServiceResult<List<UserDTO>>> GetAllUsers(UserFilterDTO filterDto)
-            => Task.FromResult(ServiceResult<List<UserDTO>>.FailureResult("Not implemented"));
+        /// <summary>
+        /// Get recent activities across users, courses and payments for admin dashboard
+        /// </summary>
+        public async Task<ServiceResult<List<RecentActivityDTO>>> GetRecentActivities(int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                var activities = new List<RecentActivityDTO>();
+
+                // New users
+                var newUsers = await _context.Users
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Take(10)
+                    .Select(u => new RecentActivityDTO
+                    {
+                        Action = "New user registered",
+                        User = (u.FirstName + " " + u.LastName).Trim(),
+                        Time = u.CreatedAt,
+                        Meta = u.Email
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(newUsers);
+
+                // Recently published/approved courses
+                var recentCourses = await _context.Courses
+                    .Where(c => c.PublishedAt != null || c.Status == "Published" || c.Status == "Approved")
+                    .OrderByDescending(c => c.PublishedAt ?? c.CreatedAt)
+                    .Take(10)
+                    .Select(c => new RecentActivityDTO
+                    {
+                        Action = "Course published",
+                        User = c.Teacher != null ? (c.Teacher.FirstName + " " + c.Teacher.LastName) : "",
+                        Time = c.PublishedAt ?? c.CreatedAt,
+                        Meta = c.Title
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(recentCourses);
+
+                // Recent completed payments
+                var payments = await _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(10)
+                    .Select(p => new RecentActivityDTO
+                    {
+                        Action = "Payment received",
+                        User = p.User != null ? (p.User.FirstName + " " + p.User.LastName) : "",
+                        Time = p.CreatedAt,
+                        Meta = $"{p.Amount} {p.Currency}"
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(payments);
+
+                // Merge and sort by time desc, apply paging
+                var merged = activities
+                    .OrderByDescending(a => a.Time)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                return ServiceResult<List<RecentActivityDTO>>.SuccessResult(merged, "Recent activities retrieved");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<RecentActivityDTO>>.FailureResult($"Failed to retrieve recent activities: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get top performing courses by enrollment count (with ratings/completion)
+        /// </summary>
+        public async Task<ServiceResult<List<TopCourseDTO>>> GetTopCourses(int count = 5)
+        {
+            try
+            {
+                var q = _context.Courses
+                    .Where(c => c.Status == "Published" || c.Status == "Approved");
+
+                var projected = q.Select(c => new
+                {
+                    Course = c,
+                    EnrollmentCount = _context.Enrollments.Count(e => e.CourseId == c.Id),
+                    AvgRating = _context.Reviews.Where(r => r.CourseId == c.Id).Select(r => (double?)r.Rating).Average() ?? 0.0,
+                    Completed = _context.Enrollments.Count(e => e.CourseId == c.Id && e.Status == "Completed")
+                })
+                .OrderByDescending(x => x.EnrollmentCount)
+                .Take(count);
+
+                var list = await projected.ToListAsync();
+
+                var result = list.Select(x => new TopCourseDTO
+                {
+                    Course = new CourseDTO
+                    {
+                        Id = x.Course.Id,
+                        Title = x.Course.Title,
+                        ShortDescription = x.Course.ShortDescription,
+                        ThumbnailUrl = x.Course.ThumbnailUrl,
+                        UniversityId = x.Course.UniversityId,
+                        UniversityName = x.Course.University != null ? x.Course.University.Name : "",
+                        DepartmentId = x.Course.DepartmentId,
+                        DepartmentName = x.Course.Department != null ? x.Course.Department.Name : "",
+                        TeacherId = x.Course.TeacherId,
+                        TeacherName = x.Course.Teacher != null ? (x.Course.Teacher.FirstName + " " + x.Course.Teacher.LastName) : "",
+                        CourseCode = x.Course.CourseCode,
+                        CourseType = x.Course.CourseType,
+                        IsFree = x.Course.IsFree,
+                        Price = x.Course.Price,
+                        EnrollmentCount = x.EnrollmentCount,
+                        AverageRating = x.AvgRating,
+                        TotalReviews = _context.Reviews.Count(r => r.CourseId == x.Course.Id),
+                        Status = x.Course.Status,
+                        CreatedAt = x.Course.CreatedAt,
+                        PublishedAt = x.Course.PublishedAt
+                    },
+                    EnrollmentCount = x.EnrollmentCount,
+                    AverageRating = (decimal)x.AvgRating,
+                    CompletionRate = x.EnrollmentCount > 0 ? (decimal)x.Completed / x.EnrollmentCount * 100m : 0m
+                }).ToList();
+
+                return ServiceResult<List<TopCourseDTO>>.SuccessResult(result, "Top courses retrieved");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<TopCourseDTO>>.FailureResult($"Failed to get top courses: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<List<UserDTO>>> GetAllUsers(UserFilterDTO filterDto)
+        {
+            try
+            {
+                var query = _context.Users.AsNoTracking().AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(filterDto?.Search))
+                {
+                    var s = filterDto.Search.Trim().ToLower();
+                    query = query.Where(u => u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s) || u.Email.ToLower().Contains(s) || u.Username.ToLower().Contains(s));
+                }
+
+                if (!string.IsNullOrWhiteSpace(filterDto?.Role))
+                {
+                    var role = (filterDto.Role ?? "").ToLower();
+                    if (role == "student") query = query.Where(u => u.IsStudent);
+                    else if (role == "teacher") query = query.Where(u => u.IsTeacher);
+                    else if (role == "admin") query = query.Where(u => u.IsAdmin);
+                }
+
+                if (filterDto?.IsActive != null)
+                {
+                    // Assuming Active means not soft-deleted; placeholder if an IsActive flag exists later
+                }
+
+                // Sorting
+                if (!string.IsNullOrWhiteSpace(filterDto?.SortBy))
+                {
+                    if (filterDto.SortBy == "newest") query = query.OrderByDescending(u => u.CreatedAt);
+                    else if (filterDto.SortBy == "oldest") query = query.OrderBy(u => u.CreatedAt);
+                    else query = query.OrderByDescending(u => u.CreatedAt);
+                }
+                else
+                {
+                    query = query.OrderByDescending(u => u.CreatedAt);
+                }
+
+                // Apply a sensible limit to avoid returning extremely large lists
+                var users = await query.Take(1000).ToListAsync();
+
+                var dtos = users.Select(MapUserToDTO).ToList();
+
+                return ServiceResult<List<UserDTO>>.SuccessResult(dtos, $"Retrieved {dtos.Count} users");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<List<UserDTO>>.FailureResult($"Failed to get users: {ex.Message}");
+            }
+        }
 
         public Task<ServiceResult<UserDTO>> UpdateUserStatus(int userId, UpdateUserStatusDTO dto)
             => Task.FromResult(ServiceResult<UserDTO>.FailureResult("Not implemented"));

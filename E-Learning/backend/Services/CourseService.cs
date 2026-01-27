@@ -164,10 +164,40 @@ namespace backend.Services
                 // Determine enrollment for the requesting user (if any)
                 if (userId.HasValue)
                 {
-                    var enrolled = await _context.Enrollments
+                    var enrollment = await _context.Enrollments
                         .AsNoTracking()
-                        .AnyAsync(e => e.CourseId == id && e.UserId == userId.Value);
-                    c.IsEnrolled = enrolled;
+                        .FirstOrDefaultAsync(e => e.CourseId == id && e.UserId == userId.Value);
+                    c.IsEnrolled = enrollment != null;
+                    if (enrollment != null)
+                    {
+                     
+                        var partsCount = await _context.CourseParts
+                            .AsNoTracking()
+                            .Where(p => p.CourseId == id)
+                            .CountAsync();
+
+                        c.TotalLessons = enrollment.TotalLessons > 0 ? enrollment.TotalLessons : partsCount;
+                        c.TotalCompleted = enrollment.CompletedLessons;
+                        c.ProgressPercentage = enrollment.ProgressPercentage;
+                        c.EnrollmentId = enrollment.Id;
+                    }
+                    else
+                    {
+                       
+                        var partsCount = await _context.CourseParts
+                            .AsNoTracking()
+                            .Where(p => p.CourseId == id)
+                            .CountAsync();
+                        c.TotalLessons = partsCount;
+                    }
+                }
+                else
+                {
+                    var partsCount = await _context.CourseParts
+                        .AsNoTracking()
+                        .Where(p => p.CourseId == id)
+                        .CountAsync();
+                    c.TotalLessons = partsCount;
                 }
 
                 return ServiceResult<CourseDetailDTO>.SuccessResult(c);

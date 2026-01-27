@@ -112,15 +112,18 @@ const ManageCourses = () => {
       _hover={{ shadow: 'lg' }}
       transition="all 0.3s"
     >
-      {course.courseImageUrl && (
-        <Image
-          src={course.courseImageUrl}
-          alt={course.title}
-          h="200px"
-          w="100%"
-          objectFit="cover"
-        />
-      )}
+      {(() => {
+        const imgSrc = course.courseImageUrl || course.thumbnailUrl || course.bannerUrl || course.imageUrl || course.courseImage || course.thumbnail || course.coverImageUrl || course.coverImage || course.CourseImageUrl || course.ThumbnailUrl || null;
+        return imgSrc ? (
+          <Image
+            src={imgSrc}
+            alt={course.title}
+            h="200px"
+            w="100%"
+            objectFit="cover"
+          />
+        ) : null;
+      })()}
       <CardBody>
         <VStack align="start" spacing={3}>
           <HStack justify="space-between" w="100%">
@@ -148,7 +151,17 @@ const ManageCourses = () => {
           <HStack spacing={4} w="100%" fontSize="sm" color="gray.600">
             <HStack spacing={1}>
               <Icon as={FiUsers} />
-              <Text>{course.totalEnrolled || 0} students</Text>
+              <Text>{(
+                course.enrollmentCount ??
+                course.totalEnrolled ??
+                course.EnrollmentCount ??
+                course.totalStudents ??
+                course.total_enrolled ??
+                course.studentsCount ??
+                course.enrolledCount ??
+                course.enrolled ??
+                0
+              )} students</Text>
             </HStack>
             <HStack spacing={1}>
               <Icon as={FiStar} color="yellow.500" />

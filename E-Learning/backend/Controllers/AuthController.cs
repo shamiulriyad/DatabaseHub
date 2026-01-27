@@ -137,7 +137,6 @@ namespace backend.Controllers
                     isTeacher = result.Data.User.IsTeacher,
                     isCompetitor = result.Data.User.IsCompetitor,
                     isAdmin = result.Data.User.IsAdmin,
-                    totalPoints = result.Data.User.TotalPoints,
                     currentRank = result.Data.User.CurrentRank
                 }
             });

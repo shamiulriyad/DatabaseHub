@@ -17,7 +17,6 @@ import {
   FaTachometerAlt,
   FaBook,
   FaClipboardList,
-  FaQuestionCircle,
   FaUser,
   FaPlus,
   FaGraduationCap,
@@ -141,15 +140,14 @@ const Sidebar = () => {
               </Text>
             </Box>
             <SidebarLink to="/admin/dashboard" icon={FaTachometerAlt} label="Dashboard" />
-            <SidebarLink to="/admin/teachers" icon={FaChalkboardTeacher} label="Pending Teachers" badge="New" />
+            
             <SidebarLink to="/admin/manage-teachers" icon={FaGraduationCap} label="All Applications" />
             <SidebarLink to="/admin/users" icon={FaUsers} label="Users" />
-            <SidebarLink to="/admin/universities" icon={FaUniversity} label="Universities" />
             <SidebarLink to="/admin/university-requests" icon={FaClipboardList} label="University Requests" />
             <SidebarLink to="/admin/department-requests" icon={FaClipboardList} label="Department Requests" />
             <SidebarLink to="/admin/courses" icon={FaBook} label="Courses" />
             <SidebarLink to="/admin/competitions" icon={FaTrophy} label="Competitions" />
-            <SidebarLink to="/admin/payments" icon={FaFileInvoiceDollar} label="Payments" />
+            {/* Payments link removed per user request */}
             <Divider my={2} />
             <SidebarLink to="/admin/settings" icon={FaCog} label="Settings" />
           </>
@@ -166,7 +164,6 @@ const Sidebar = () => {
             <SidebarLink to="/teacher" icon={FaTachometerAlt} label="Dashboard" />
             <SidebarLink to="/teacher/create-course" icon={FaPlus} label="Create Course" />
             <SidebarLink to="/teacher/manage-courses" icon={FaBook} label="My Courses" />
-            <SidebarLink to="/teacher/submissions" icon={FaCheckSquare} label="Submissions" />
             <SidebarLink to="/teacher/reviews" icon={FaStar} label="Course Reviews" />
             <Divider my={2} />
             <SidebarLink to="/profile" icon={FaUser} label="My Profile" />
@@ -181,20 +178,11 @@ const Sidebar = () => {
                 Learning
               </Text>
             </Box>
-            <SidebarLink to="/dashboard" icon={FaTachometerAlt} label="My Dashboard" />
-            <SidebarLink to="/profile/enrollments" icon={FaBook} label="My Courses" />
-            <SidebarLink to="/universities" icon={FaUniversity} label="Universities" />
-            <SidebarLink to="/profile/assignments" icon={FaClipboardList} label="Assignments" />
-            <SidebarLink to="/quizzes" icon={FaQuestionCircle} label="Quizzes" />
-            <Divider my={2} />
-            <Box px={4} py={2}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
-                Community
-              </Text>
-            </Box>
-            <SidebarLink to="/clans" icon={FaShieldAlt} label="Clans" />
-            <Divider my={2} />
-            <SidebarLink to="/profile" icon={FaUser} label="My Profile" />
+              <SidebarLink to="/dashboard" icon={FaTachometerAlt} label="My Dashboard" />
+              <SidebarLink to="/profile/enrollments" icon={FaBook} label="My Courses" />
+              <SidebarLink to="/my-competitions" icon={FaTrophy} label="My Competitions" />
+              <SidebarLink to="/universities" icon={FaUniversity} label="Universities" />
+              
           </>
         )}
 
@@ -209,7 +197,6 @@ const Sidebar = () => {
             <SidebarLink to="/teacher" icon={FaTachometerAlt} label="Dashboard" />
             <SidebarLink to="/teacher/create-course" icon={FaPlus} label="Create Course" />
             <SidebarLink to="/teacher/manage-courses" icon={FaBook} label="My Courses" />
-            <SidebarLink to="/teacher/submissions" icon={FaCheckSquare} label="Submissions" />
             <SidebarLink to="/teacher/reviews" icon={FaStar} label="Course Reviews" />
             <Divider my={2} />
             <SidebarLink to="/profile" icon={FaUser} label="My Profile" />

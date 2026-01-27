@@ -2,6 +2,7 @@ using backend.Data;
 using backend.DTOs;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace backend.Services
 {
@@ -59,19 +60,20 @@ namespace backend.Services
             return ServiceResult<List<UniversityRequestAdminDTO>>.SuccessResult(items);
         }
 
-        public async Task<ServiceResult<bool>> ApproveRequest(int requestId, int adminId)
+        public async Task<ServiceResult<UniversityDTO>> ApproveRequest(int requestId, int adminId)
         {
             var req = await _db.Set<UniversityRequest>().FindAsync(requestId);
-            if (req == null) return ServiceResult<bool>.FailureResult("Request not found");
-            if (req.Status != "Pending") return ServiceResult<bool>.FailureResult("Request already reviewed");
+            if (req == null) return ServiceResult<UniversityDTO>.FailureResult("Request not found");
+            if (req.Status != "Pending") return ServiceResult<UniversityDTO>.FailureResult("Request already reviewed");
 
             // duplicate check
             var exists = await _db.Universities.AnyAsync(u => u.Name.ToLower() == req.Name.ToLower());
-            if (exists) return ServiceResult<bool>.FailureResult("A university with same name already exists");
+            if (exists) return ServiceResult<UniversityDTO>.FailureResult("A university with same name already exists");
 
             var uni = new Models.University
             {
                 Name = req.Name,
+                Code = await GenerateUniqueCodeAsync(req.Name),
                 Description = req.Description,
                 Website = req.Website,
                 IsActive = true,
@@ -81,10 +83,23 @@ namespace backend.Services
 
             req.Status = "Approved";
             req.ReviewedAt = DateTime.UtcNow;
-            _db.Set<UniversityRequest>().Update(req);
 
             await _db.SaveChangesAsync();
-            return ServiceResult<bool>.SuccessResult(true);
+            var dto = new UniversityDTO
+            {
+                Id = uni.Id,
+                Name = uni.Name,
+                Description = uni.Description,
+                Website = uni.Website,
+                LogoUrl = uni.LogoUrl,
+                BannerUrl = uni.BannerUrl,
+                Location = uni.Location,
+                EstablishedYear = uni.EstablishedYear,
+                IsActive = uni.IsActive,
+                CreatedAt = uni.CreatedAt
+            };
+
+            return ServiceResult<UniversityDTO>.SuccessResult(dto, "University created and approved");
         }
 
         public async Task<ServiceResult<bool>> RejectRequest(int requestId, int adminId, string? note = null)
@@ -96,9 +111,32 @@ namespace backend.Services
             req.Status = "Rejected";
             req.Note = note ?? req.Note;
             req.ReviewedAt = DateTime.UtcNow;
-            _db.Set<UniversityRequest>().Update(req);
+            // Do not call Update(req) to avoid marking all properties modified
+            // (prevents sending unspecified DateTime kinds back to the DB).
             await _db.SaveChangesAsync();
             return ServiceResult<bool>.SuccessResult(true);
+        }
+
+        private async Task<string> GenerateUniqueCodeAsync(string name)
+        {
+            // create a slug-like code from the name
+            var baseCode = Regex.Replace(name?.Trim().ToLower() ?? string.Empty, "[^a-z0-9]+", "-").Trim('-');
+            if (string.IsNullOrEmpty(baseCode)) baseCode = "university";
+            // limit to 50 chars (DTO max)
+            if (baseCode.Length > 50) baseCode = baseCode.Substring(0, 50);
+
+            var code = baseCode;
+            var suffix = 0;
+            while (await _db.Universities.AnyAsync(u => u.Code == code))
+            {
+                suffix++;
+                var suffixStr = $"-{suffix}";
+                var maxBaseLen = 50 - suffixStr.Length;
+                var truncated = baseCode.Length > maxBaseLen ? baseCode.Substring(0, maxBaseLen) : baseCode;
+                code = truncated + suffixStr;
+            }
+
+            return code;
         }
     }
 }

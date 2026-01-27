@@ -280,7 +280,18 @@ export default function UniversityBrowse() {
                     <Text fontSize="sm" fontWeight="medium">
                       View details
                     </Text>
-                    <ChevronRightIcon boxSize={5} />
+                    <Flex align="center" gap={3}>
+                      {u.canEdit && (
+                        <Button
+                          size="sm"
+                          colorScheme="teal"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/universities/${u.id}/edit`); }}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      <ChevronRightIcon boxSize={5} />
+                    </Flex>
                   </Flex>
                 </CardFooter>
               </Card>

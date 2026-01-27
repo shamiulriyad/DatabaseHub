@@ -12,13 +12,31 @@ export const learningService = {
   },
 
   async completeLesson(enrollmentId, lessonId) {
-    const response = await api.post(`/learning/lesson/${enrollmentId}/${lessonId}/complete`);
+    // Endpoint expects lessonId in path and enrollmentId as query
+    try {
+      const response = await api.post(`/learning/lesson/${lessonId}/complete`, null, { params: { enrollmentId } });
+      return response.data;
+    } catch (err) {
+      // fallback: some clients call enrollments complete-lesson endpoint — try that as a fallback
+      try {
+        const fallback = await api.post(`/enrollments/${enrollmentId}/complete-lesson/${lessonId}`);
+        return fallback.data;
+      } catch (err2) {
+        throw err; // prefer original error
+      }
+    }
+  },
+
+  async watchLesson(lessonId, enrollmentId, watchedSeconds) {
+    const response = await api.post(`/learning/lesson/${lessonId}/watch`, { watchedSeconds }, { params: { enrollmentId } });
     return response.data;
   },
 
   async getLesson(lessonId) {
     const response = await api.get(`/learning/lesson/${lessonId}`);
-    return response.data.data;
+    // Backend sometimes returns { success: true, lesson: {...} }
+    // some older clients expect response.data.data — support both
+    return response.data?.lesson ?? response.data?.data ?? response.data;
   },
 
   async getQuiz(quizId) {

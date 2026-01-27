@@ -1339,7 +1339,7 @@ namespace backend.Services
 
                 var post = new Models.Post
                 {
-                    Title = dto.Title,
+                    Title = string.IsNullOrWhiteSpace(dto.Title) ? (dto.Content?.Length > 100 ? dto.Content.Substring(0, 100) : dto.Content) : dto.Title,
                     Content = dto.Content,
                     UserId = userId,
                     ClanId = clanId,

@@ -32,7 +32,7 @@ namespace backend.Controllers.Admin
             int userId = 0; int.TryParse(userIdStr, out userId);
             var res = await _service.ApproveRequest(id, userId);
             if (!res.Success) return BadRequest(new { message = res.Message });
-            return Ok(new { success = true });
+            return Ok(new { success = true, university = res.Data });
         }
 
         [HttpPost("{id}/reject")]

@@ -46,22 +46,23 @@ import ClanVsClansCompetitionDetail from './pages/Competitions/ClanVsClansCompet
 import ClanVsClansCompetitionList from './pages/Competitions/ClanVsClansCompetitionList';
 import Leaderboard from './pages/Competitions/Leaderboard';
 import Rankings from './pages/Competitions/Rankings';
+import MyCompetitions from './pages/Competitions/MyCompetitions';
 
 // Profile Pages
 import UserProfile from './pages/Profile/UserProfile';
 import EditProfile from './pages/Profile/EditProfile';
 import ChangePassword from './pages/Profile/ChangePassword';
 import MyEnrollments from './pages/Profile/MyEnrollments';
-import Certificates from './pages/Profile/Certificates';
-import MyAssignments from './pages/Profile/MyAssignments';
 import PublicUserProfile from './pages/Profile/PublicUserProfile';
 
 // Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard';
 import CreateCourse from './pages/Teacher/CreateCourse';
 import ManageCourses from './pages/Teacher/ManageCourses';
-import StudentSubmissions from './pages/Teacher/StudentSubmissions';
 import TeacherReviews from './pages/Teacher/TeacherReviews';
+
+// Learning Pages
+import LessonPlayer from './pages/Learning/LessonPlayer';
 
 // Admin Pages
 import AdminPanel from './pages/Admin/AdminPanel';
@@ -73,8 +74,11 @@ import CompetitionManagement from './pages/Admin/CompetitionManagement';
 import UniversityManagement from './pages/Admin/UniversityManagement';
 import UniversityRequestsAdmin from './pages/Admin/UniversityRequestsAdmin';
 import DepartmentRequestsAdmin from './pages/Admin/DepartmentRequestsAdmin';
+import UserManagement from './pages/Admin/UserManagement';
 import UniversityBrowse from './pages/Courses/UniversityBrowse';
 import UniversityDetails from './pages/Courses/UniversityDetails';
+import UniversityEdit from './pages/Courses/UniversityEdit';
+import UniversityManage from './pages/Courses/UniversityManage';
 import DepartmentCourses from './pages/Courses/DepartmentCourses';
 import DepertmentPage from './pages/Courses/DepertmentPage';
 import Checkout from './pages/Payments/Checkout';
@@ -127,7 +131,9 @@ function PublicLayout() {
           <Route path="/departments" element={<DepertmentPage />} />
           <Route path="/universities/:universityId" element={<UniversityDetails />} />
           <Route path="/universities/:universityId/departments/:departmentId" element={<DepartmentCourses />} />
-          <Route path="/payment/checkout" element={<Checkout />} />
+          <Route path="/universities/:universityId/edit" element={<ProtectedRoute><UniversityEdit /></ProtectedRoute>} />
+          <Route path="/universities/:universityId/manage" element={<ProtectedRoute requiredAdmin><UniversityManage /></ProtectedRoute>} />
+          <Route path="/payment" element={<Checkout />} />
           <Route path="/courses/create" element={<ProtectedRoute requiredTeacher><CourseCreate /></ProtectedRoute>} />
           <Route path="/courses/:courseId" element={<CourseDetail />} />
           <Route path="/courses/:courseId/edit" element={<ProtectedRoute requiredTeacher><CourseEdit /></ProtectedRoute>} />
@@ -190,19 +196,17 @@ function PrivateLayout() {
             <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/profile/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
             <Route path="/profile/enrollments" element={<ProtectedRoute requiredStudent><MyEnrollments /></ProtectedRoute>} />
-            <Route path="/profile/certificates" element={<ProtectedRoute requiredStudent><Certificates /></ProtectedRoute>} />
-            <Route path="/profile/assignments" element={<ProtectedRoute requiredStudent><MyAssignments /></ProtectedRoute>} />
 
             {/* Teacher */}
             <Route path="/teacher" element={<ProtectedRoute requiredTeacher><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/teacher/create-course" element={<ProtectedRoute requiredTeacher><CreateCourse /></ProtectedRoute>} />
             <Route path="/teacher/manage-courses" element={<ProtectedRoute requiredTeacher><ManageCourses /></ProtectedRoute>} />
-            <Route path="/teacher/course/:courseId/submissions" element={<ProtectedRoute requiredTeacher><StudentSubmissions /></ProtectedRoute>} />
+            {/* Submissions page removed for teachers */}
             <Route path="/teacher/reviews" element={<ProtectedRoute requiredTeacher><TeacherReviews /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/teachers" element={<ProtectedRoute requiredAdmin><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute requiredAdmin><UserManagement /></ProtectedRoute>} />
             <Route path="/admin/courses" element={<ProtectedRoute requiredAdmin><AdminCourses /></ProtectedRoute>} />
             <Route path="/admin/universities" element={<ProtectedRoute requiredAdmin><UniversityManagement /></ProtectedRoute>} />
             <Route path="/admin/university-requests" element={<ProtectedRoute requiredAdmin><UniversityRequestsAdmin /></ProtectedRoute>} />
@@ -220,6 +224,12 @@ function PrivateLayout() {
 
             {/* Public user profile (view other users) */}
             <Route path="/user/:userId" element={<PublicUserProfile />} />
+
+            {/* My competitions */}
+            <Route path="/my-competitions" element={<ProtectedRoute><MyCompetitions /></ProtectedRoute>} />
+
+            {/* Lesson player (watch) */}
+            <Route path="/lesson/:lessonId" element={<ProtectedRoute requiredStudent><LessonPlayer /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -244,6 +254,7 @@ function AppRouter() {
     '/',
     '/home',
     '/about',
+    '/payment',
     '/universities',
     '/login',
     '/register',

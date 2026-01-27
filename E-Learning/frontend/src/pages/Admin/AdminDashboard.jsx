@@ -34,6 +34,16 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure
+} from '@chakra-ui/react';
+import {
   FiUsers,
   FiBook,
   FiDollarSign,
@@ -45,6 +55,7 @@ import {
   FiBarChart2,
   FiActivity
 } from 'react-icons/fi';
+import { FaUniversity } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -64,6 +75,8 @@ const AdminDashboard = () => {
   const [recentActivities, setRecentActivities] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [topCourses, setTopCourses] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const { isOpen: isDeptOpen, onOpen: openDeptModal, onClose: closeDeptModal } = useDisclosure();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const toast = useToast();
@@ -105,6 +118,7 @@ const AdminDashboard = () => {
           totalTeachers: apiStats.totalTeachers ?? apiStats.TotalTeachers ?? 0,
           totalStudents: apiStats.totalStudents ?? apiStats.TotalStudents ?? 0,
           totalCourses: apiStats.totalCourses ?? apiStats.TotalCourses ?? 0,
+          totalDepartments: apiStats.totalDepartments ?? apiStats.TotalDepartments ?? 0,
           pendingTeachers: apiStats.pendingTeachers ?? apiStats.PendingTeachers ?? 0,
           activeCourses: apiStats.activeCourses ?? apiStats.ActiveCourses ?? 0,
           totalRevenue: apiStats.totalRevenue ?? apiStats.TotalRevenue ?? 0,
@@ -136,19 +150,55 @@ const AdminDashboard = () => {
         console.warn('Failed to fetch teacher approvals:', teacherError);
       }
 
-      // Mock recent activities (to be replaced with real API)
-      setRecentActivities([
-        { action: 'New user registered', user: 'John Doe', time: '5 mins ago' },
-        { action: 'Course published', user: 'Teacher Jane', time: '1 hour ago' },
-        { action: 'Payment received', user: 'Student Mike', time: '2 hours ago' }
-      ]);
+      // Fetch recent activities from backend; fallback to mock if endpoint unavailable
+      try {
+        const activitiesRes = await api.get('/admin/activities?page=1&pageSize=5');
+        if (activitiesRes.data && activitiesRes.data.success) {
+          const items = (activitiesRes.data.activities || []).map(a => ({
+            action: a.action || a.Action,
+            user: a.user || a.User,
+            time: a.time || a.Time,
+            meta: a.meta || a.Meta
+          }));
+          setRecentActivities(items);
+        } else {
+          setRecentActivities([
+            { action: 'New user registered', user: 'John Doe', time: '5 mins ago' },
+            { action: 'Course published', user: 'Teacher Jane', time: '1 hour ago' },
+            { action: 'Payment received', user: 'Student Mike', time: '2 hours ago' }
+          ]);
+        }
+      } catch (actErr) {
+        console.warn('Failed to fetch recent activities, using fallback mock', actErr);
+        setRecentActivities([
+          { action: 'New user registered', user: 'John Doe', time: '5 mins ago' },
+          { action: 'Course published', user: 'Teacher Jane', time: '1 hour ago' },
+          { action: 'Payment received', user: 'Student Mike', time: '2 hours ago' }
+        ]);
+      }
 
-      // Mock top courses (to be replaced with real API)
-      setTopCourses([
-        { title: 'Web Development Bootcamp', students: 245, rating: 4.8 },
-        { title: 'Data Science Fundamentals', students: 198, rating: 4.7 },
-        { title: 'Mobile App Development', students: 167, rating: 4.6 }
-      ]);
+      // Fetch top performing courses from backend
+      try {
+        const topRes = await api.get('/admin/courses/top?count=5');
+        if (topRes.data && topRes.data.success) {
+          const items = (topRes.data.topCourses || []).map(tc => {
+            const course = tc.course || tc.Course || {};
+            return {
+              title: course.title || course.Title || 'Untitled',
+              students: tc.enrollmentCount || tc.EnrollmentCount || course.enrollmentCount || course.EnrollmentCount || 0,
+              rating: tc.averageRating || tc.AverageRating || course.averageRating || course.AverageRating || 0
+            };
+          });
+          setTopCourses(items);
+        } else {
+          setTopCourses([]);
+        }
+      } catch (topErr) {
+        console.warn('Failed to fetch top courses, using empty list', topErr);
+        setTopCourses([]);
+      }
+
+        // Do not auto-fetch departments here; fetch on-demand when user opens the departments modal
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -203,7 +253,7 @@ const AdminDashboard = () => {
           </Flex>
 
           {/* Main Stats */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 5 }} spacing={6}>
             <Card bg={cardBg} shadow="md">
               <CardBody>
                 <Stat>
@@ -217,6 +267,36 @@ const AdminDashboard = () => {
                       </StatHelpText>
                     </VStack>
                     <Icon as={FiUsers} fontSize="40px" color="blue.500" />
+                  </Flex>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card bg={cardBg} shadow="md">
+              <CardBody>
+                <Stat>
+                  <Flex align="center" justify="space-between">
+                    <VStack align="start" spacing={1}>
+                      <StatLabel fontSize="sm" color="gray.600">Total Departments</StatLabel>
+                      <StatNumber fontSize="3xl">{stats.totalDepartments ?? stats.TotalDepartments ?? 0}</StatNumber>
+                      <StatHelpText mb={0}>
+                        <Text fontSize="sm" color="gray.500">View all departments</Text>
+                      </StatHelpText>
+                    </VStack>
+                    <Button variant="ghost" onClick={async () => {
+                      // load departments then open modal
+                      try {
+                        const res = await api.get('/departments', { params: { page: 1, pageSize: 200 } });
+                        const list = res.data?.departments ?? res.data?.data ?? res.data ?? [];
+                        setDepartments(Array.isArray(list) ? list : []);
+                      } catch (e) {
+                        console.error('Failed to load departments', e);
+                        setDepartments([]);
+                      }
+                      openDeptModal();
+                    }}>
+                      <Icon as={FaUniversity} fontSize="30px" color="teal.500" />
+                    </Button>
                   </Flex>
                 </Stat>
               </CardBody>
@@ -331,7 +411,7 @@ const AdminDashboard = () => {
                   <Button
                     size="sm"
                     colorScheme="purple"
-                    onClick={() => navigate('/admin/teachers')}
+                    onClick={() => navigate('/admin/manage-teachers')}
                   >
                     View All
                   </Button>
@@ -358,15 +438,17 @@ const AdminDashboard = () => {
                         {pendingRequests.slice(0, 5).map((request) => (
                           <Tr key={request.id}>
                             <Td fontWeight="medium">{request.firstName} {request.lastName}</Td>
-                            <Td fontSize="sm">{request.userEmail}</Td>
+                            <Td fontSize="sm">{request.email || request.userEmail || request.Email || '-'}</Td>
                             <Td fontSize="sm">
-                              {new Date(request.applicationDate).toLocaleDateString()}
+                              {(
+                                request.teacherRequestDate || request.createdAt || request.applicationDate
+                              ) ? new Date(request.teacherRequestDate || request.createdAt || request.applicationDate).toLocaleDateString() : '-'}
                             </Td>
                             <Td>
                               <Button
                                 size="xs"
                                 colorScheme="purple"
-                                onClick={() => navigate('/admin/teachers')}
+                                onClick={() => navigate('/admin/manage-teachers')}
                               >
                                 Review
                               </Button>
@@ -433,7 +515,7 @@ const AdminDashboard = () => {
                       <VStack align="start" spacing={0}>
                         <Text fontWeight="bold">{course.title}</Text>
                         <Text fontSize="sm" color="gray.600">
-                          {course.students} students • {course.rating} ⭐
+                          {course.students} students • {Number(course.rating || 0).toFixed(1)} ⭐
                         </Text>
                       </VStack>
                       <Badge colorScheme="green">#{index + 1}</Badge>
@@ -444,6 +526,44 @@ const AdminDashboard = () => {
               </VStack>
             </CardBody>
           </Card>
+
+          {/* Departments Modal */}
+          <Modal isOpen={isDeptOpen} onClose={closeDeptModal} size="xl">
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>All Departments</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                {departments.length === 0 ? (
+                  <Text color="gray.500">No departments found.</Text>
+                ) : (
+                  <TableContainer>
+                    <Table size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th>Name</Th>
+                          <Th>Code</Th>
+                          <Th>University</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {departments.map(d => (
+                          <Tr key={d.id ?? d.departmentId ?? d.code}>
+                            <Td>{d.name ?? d.Name}</Td>
+                            <Td>{d.code ?? d.Code}</Td>
+                            <Td>{d.universityName ?? d.university?.name ?? d.UniversityName ?? '-'}</Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button onClick={closeDeptModal}>Close</Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
 
           {/* Quick Actions */}
           <Card bg={cardBg} shadow="md">
@@ -457,7 +577,7 @@ const AdminDashboard = () => {
                   h="100px"
                   flexDirection="column"
                   gap={2}
-                  onClick={() => navigate('/admin/teachers')}
+                  onClick={() => navigate('/admin/manage-teachers')}
                   colorScheme="purple"
                   variant="outline"
                 >

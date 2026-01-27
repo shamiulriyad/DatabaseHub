@@ -15,6 +15,9 @@ export default function DepartmentCard({ department, universityId }) {
       onClick={() => navigate(`/universities/${universityId}/departments/${department.id}`)}
       transition="transform 0.14s ease, box-shadow 0.14s ease"
       _hover={{ transform: 'translateY(-4px)', boxShadow: 'md' }}
+      h="100%"
+      display="flex"
+      flexDirection="column"
     >
       { (department.bannerUrl || department.thumbnailUrl || department.banner) ? (
         <Box h="120px" bg="gray.100" overflow="hidden">
@@ -22,14 +25,14 @@ export default function DepartmentCard({ department, universityId }) {
         </Box>
       ) : null }
 
-      <Box p={4}>
-        <Flex align="center" justify="space-between">
-          <VStack align="start" spacing={0}>
-            <Heading size="sm">{department.name}</Heading>
-            <Text fontSize="sm" color="gray.600">{department.code || ''}</Text>
-          </VStack>
+      <Box p={4} flex="1" display="flex" alignItems="center" justifyContent="space-between">
+        <VStack align="start" spacing={0} flex="1" alignItems="flex-start">
+          <Heading size="sm" noOfLines={2}>{department.name}</Heading>
+          <Text fontSize="sm" color="gray.600">{department.code || ''}</Text>
+        </VStack>
+        <Box ml={3} flexShrink={0}>
           <Badge colorScheme="blue">{department.type || 'Department'}</Badge>
-        </Flex>
+        </Box>
       </Box>
     </Box>
   );

@@ -11,11 +11,13 @@ namespace backend.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly ICourseService _courseService;
+            private readonly Services.Interfaces.IReviewService _reviewService;
 
-        public CoursesController(ICourseService courseService)
-        {
-            _courseService = courseService;
-        }
+            public CoursesController(ICourseService courseService, Services.Interfaces.IReviewService reviewService)
+            {
+                _courseService = courseService;
+                _reviewService = reviewService;
+            }
 
         [HttpGet]
         public async Task<IActionResult> GetAllCourses(
@@ -326,6 +328,29 @@ namespace backend.Controllers
                 pageSize = result.Data.PageSize,
                 totalPages = result.Data.TotalPages
             });
+        }
+
+        [Authorize]
+        [HttpPost("{courseId}/ratings")]
+        public async Task<IActionResult> SubmitRating(int courseId, [FromBody] DTOs.SubmitRatingDTO payload)
+        {
+            if (payload == null) return BadRequest(new { success = false, message = "Invalid payload" });
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0) return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var createDto = new DTOs.CreateReviewDTO
+            {
+                Rating = payload.Rating,
+                Comment = payload.Review ?? string.Empty
+            };
+
+            var result = await _reviewService.CreateReviewForCourse(courseId, createDto, userId);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return CreatedAtAction(nameof(GetCourse), new { id = courseId }, new { success = true, message = "Rating submitted", data = result.Data });
         }
 
         [HttpGet("search")]

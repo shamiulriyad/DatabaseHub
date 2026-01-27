@@ -120,7 +120,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CourseId", "ModuleId", "LessonId");
 
-                    b.ToTable("Assignments");
+                    b.ToTable("Assignments", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.AssignmentSubmission", b =>
@@ -238,7 +238,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId", "AssignmentId");
 
-                    b.ToTable("AssignmentSubmissions");
+                    b.ToTable("AssignmentSubmissions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Clan", b =>
@@ -366,7 +366,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UniversityId");
 
-                    b.ToTable("Clans");
+                    b.ToTable("Clans", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanAnnouncement", b =>
@@ -414,7 +414,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ClanAnnouncements");
+                    b.ToTable("ClanAnnouncements", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanAnnouncementReaction", b =>
@@ -445,7 +445,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ClanAnnouncementReactions");
+                    b.ToTable("ClanAnnouncementReactions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanJoinRequest", b =>
@@ -490,7 +490,7 @@ namespace backend.Migrations
 
                     b.HasIndex("ClanId", "UserId", "Status");
 
-                    b.ToTable("ClanJoinRequests");
+                    b.ToTable("ClanJoinRequests", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanMember", b =>
@@ -557,7 +557,7 @@ namespace backend.Migrations
                     b.HasIndex("UserId", "ClanId")
                         .IsUnique();
 
-                    b.ToTable("ClanMembers");
+                    b.ToTable("ClanMembers", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanVsClansCompetition", b =>
@@ -681,7 +681,7 @@ namespace backend.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("ClanVsClansCompetitions");
+                    b.ToTable("ClanVsClansCompetitions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanVsClansCompetitionParticipant", b =>
@@ -763,7 +763,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CompetitionId", "UserId");
 
-                    b.ToTable("ClanVsClansCompetitionParticipants");
+                    b.ToTable("ClanVsClansCompetitionParticipants", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanVsClansCompetitionQuestion", b =>
@@ -832,7 +832,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CompetitionId");
 
-                    b.ToTable("ClanVsClansCompetitionQuestions");
+                    b.ToTable("ClanVsClansCompetitionQuestions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.ClanVsClansCompetitionScore", b =>
@@ -880,7 +880,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ClanVsClansCompetitionScores");
+                    b.ToTable("ClanVsClansCompetitionScores", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Comment", b =>
@@ -945,7 +945,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comments", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.CommentVote", b =>
@@ -974,7 +974,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CommentVotes");
+                    b.ToTable("CommentVotes", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Competition", b =>
@@ -1170,7 +1170,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UniversityId", "DepartmentId", "CourseId");
 
-                    b.ToTable("Competitions");
+                    b.ToTable("Competitions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.CompetitionParticipant", b =>
@@ -1236,7 +1236,7 @@ namespace backend.Migrations
                     b.HasIndex("CompetitionId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("CompetitionParticipants");
+                    b.ToTable("CompetitionParticipants", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.CompetitionQuestion", b =>
@@ -1288,7 +1288,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CompetitionId");
 
-                    b.ToTable("CompetitionQuestions");
+                    b.ToTable("CompetitionQuestions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.CompetitionScore", b =>
@@ -1320,7 +1320,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CompetitionScores");
+                    b.ToTable("CompetitionScores", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Course", b =>
@@ -1512,7 +1512,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UniversityId", "DepartmentId");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.CoursePart", b =>
@@ -1556,7 +1556,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CourseId", "Order");
 
-                    b.ToTable("CourseParts");
+                    b.ToTable("CourseParts", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Department", b =>
@@ -1632,7 +1632,7 @@ namespace backend.Migrations
                     b.HasIndex("UniversityId", "Code")
                         .IsUnique();
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.DepartmentRequest", b =>
@@ -1675,7 +1675,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DepartmentRequests");
+                    b.ToTable("DepartmentRequests", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Enrollment", b =>
@@ -1789,7 +1789,7 @@ namespace backend.Migrations
                     b.HasIndex("UserId", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Enrollments");
+                    b.ToTable("Enrollments", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Leaderboard", b =>
@@ -1825,7 +1825,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Leaderboards");
+                    b.ToTable("Leaderboards", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Lesson", b =>
@@ -1910,7 +1910,7 @@ namespace backend.Migrations
 
                     b.HasIndex("ModuleId");
 
-                    b.ToTable("Lessons");
+                    b.ToTable("Lessons", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.LessonProgress", b =>
@@ -1945,7 +1945,7 @@ namespace backend.Migrations
 
                     b.HasIndex("LessonId");
 
-                    b.ToTable("LessonProgresses");
+                    b.ToTable("LessonProgresses", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Module", b =>
@@ -2007,7 +2007,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("Modules");
+                    b.ToTable("Modules", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Notification", b =>
@@ -2070,7 +2070,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Payment", b =>
@@ -2183,7 +2183,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Post", b =>
@@ -2311,7 +2311,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Posts");
+                    b.ToTable("Posts", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.PostReaction", b =>
@@ -2342,7 +2342,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PostReactions");
+                    b.ToTable("PostReactions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.PostVote", b =>
@@ -2371,7 +2371,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PostVotes");
+                    b.ToTable("PostVotes", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Quiz", b =>
@@ -2481,7 +2481,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CourseId", "ModuleId", "LessonId");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.QuizQuestion", b =>
@@ -2548,7 +2548,7 @@ namespace backend.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizQuestions");
+                    b.ToTable("QuizQuestions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.QuizSubmission", b =>
@@ -2624,7 +2624,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QuizSubmissions");
+                    b.ToTable("QuizSubmissions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Ranking", b =>
@@ -2666,7 +2666,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Rankings");
+                    b.ToTable("Rankings", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Review", b =>
@@ -2754,7 +2754,7 @@ namespace backend.Migrations
                     b.HasIndex("UserId", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.TeacherApplication", b =>
@@ -2809,7 +2809,7 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TeacherApplications");
+                    b.ToTable("TeacherApplications", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.University", b =>
@@ -2892,7 +2892,7 @@ namespace backend.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Universities");
+                    b.ToTable("Universities", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.UniversityRequest", b =>
@@ -2936,7 +2936,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UniversityRequests");
+                    b.ToTable("UniversityRequests", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.User", b =>
@@ -3066,7 +3066,7 @@ namespace backend.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("backend.Models.Assignment", b =>

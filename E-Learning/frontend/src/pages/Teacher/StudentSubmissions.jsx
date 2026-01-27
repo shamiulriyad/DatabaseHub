@@ -75,46 +75,18 @@ const StudentSubmissions = () => {
       });
       setCourse(courseRes.data.course);
 
-      // Fetch submissions (mock - would be from actual API)
-      // In real implementation, use: /api/courses/{courseId}/submissions
-      const mockSubmissions = [
-        {
-          id: 1,
-          studentName: 'John Doe',
-          studentEmail: 'john@example.com',
-          assignmentTitle: 'Module 1 Assignment',
-          submittedAt: '2026-01-08T10:30:00',
-          status: 'Submitted',
-          score: null,
-          comment: null
-        },
-        {
-          id: 2,
-          studentName: 'Jane Smith',
-          studentEmail: 'jane@example.com',
-          assignmentTitle: 'Module 1 Assignment',
-          submittedAt: '2026-01-08T14:20:00',
-          status: 'Graded',
-          score: 85,
-          comment: 'Good work!'
-        },
-        {
-          id: 3,
-          studentName: 'Bob Johnson',
-          studentEmail: 'bob@example.com',
-          assignmentTitle: 'Module 2 Assignment',
-          submittedAt: '2026-01-09T09:15:00',
-          status: 'Submitted',
-          score: null,
-          comment: null
-        }
-      ];
-
-      setSubmissions(
-        filterStatus === 'All' 
-          ? mockSubmissions 
-          : mockSubmissions.filter(s => s.status === filterStatus)
-      );
+      // Fetch submissions from API
+      try {
+        const submissionsRes = await axios.get(`/api/courses/${courseId}/submissions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = submissionsRes.data.submissions || submissionsRes.data || [];
+        setSubmissions(filterStatus === 'All' ? data : data.filter(s => s.status === filterStatus));
+      } catch (err) {
+        console.error('Failed to fetch submissions:', err);
+        setSubmissions([]);
+        toast({ title: 'Error', description: 'Unable to load submissions', status: 'error', duration: 3000 });
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -145,12 +117,12 @@ const StudentSubmissions = () => {
       const token = localStorage.getItem('token');
 
       // API call to submit grade
-      // await axios.post(`/api/courses/submissions/${selectedSubmission.id}/grade`, 
-      //   { score: parseFloat(gradeScore), comment: gradeComment },
-      //   { headers: { Authorization: `Bearer ${token}` } }
-      // );
+      await axios.post(`/api/courses/submissions/${selectedSubmission.id}/grade`, 
+        { score: parseFloat(gradeScore), comment: gradeComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      // Update local state (mock)
+      // Optimistically update local state
       setSubmissions(submissions.map(s => 
         s.id === selectedSubmission.id 
           ? { ...s, score: parseFloat(gradeScore), comment: gradeComment, status: 'Graded' }

@@ -36,6 +36,12 @@ namespace backend.Models
         public int? VideoDuration { get; set; } // in seconds
         public string? VideoProvider { get; set; } // YouTube, Vimeo, Local
 
+        // New fields to support explicit video type + duration naming
+        // VideoType: expected values e.g. "YOUTUBE" or "MP4"
+        public string? VideoType { get; set; }
+        // Duration in seconds (alias for VideoDuration; kept separate for clarity)
+        public int? Duration { get; set; }
+
         // Lesson Settings
         public bool IsPreview { get; set; } = false; // Free preview lesson
         public bool IsRequired { get; set; } = true;

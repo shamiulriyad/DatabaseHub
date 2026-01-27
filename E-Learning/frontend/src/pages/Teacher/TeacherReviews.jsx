@@ -57,66 +57,16 @@ const TeacherReviews = () => {
           params: { sortBy },
           headers: { Authorization: `Bearer ${token}` }
         });
-        setReviews(response.data.reviews || []);
-      } catch (error) {
-        // Fallback to mock data
-        const mockReviews = [
-          {
-            id: 1,
-            courseTitle: 'Web Development Fundamentals',
-            studentName: 'Alice Johnson',
-            studentAvatar: 'https://api.realworld.io/images/avatars/alice.jpg',
-            rating: 5,
-            comment: 'Excellent course! The instructor explains everything clearly and the projects are very practical.',
-            createdAt: '2026-01-08T10:30:00'
-          },
-          {
-            id: 2,
-            courseTitle: 'Web Development Fundamentals',
-            studentName: 'Bob Smith',
-            studentAvatar: 'https://api.realworld.io/images/avatars/bob.jpg',
-            rating: 4,
-            comment: 'Good content, but could use more advanced topics in later modules.',
-            createdAt: '2026-01-07T14:20:00'
-          },
-          {
-            id: 3,
-            courseTitle: 'Web Development Fundamentals',
-            studentName: 'Carol White',
-            studentAvatar: 'https://api.realworld.io/images/avatars/carol.jpg',
-            rating: 5,
-            comment: 'Best course I\'ve taken. Highly recommended!',
-            createdAt: '2026-01-06T09:15:00'
-          },
-          {
-            id: 4,
-            courseTitle: 'Advanced JavaScript',
-            studentName: 'David Brown',
-            studentAvatar: 'https://api.realworld.io/images/avatars/david.jpg',
-            rating: 4,
-            comment: 'Great course, but the pace is quite fast.',
-            createdAt: '2026-01-05T16:45:00'
-          },
-          {
-            id: 5,
-            courseTitle: 'Advanced JavaScript',
-            studentName: 'Emma Wilson',
-            studentAvatar: 'https://api.realworld.io/images/avatars/emma.jpg',
-            rating: 3,
-            comment: 'Decent course, some parts could be clearer.',
-            createdAt: '2026-01-04T11:30:00'
-          }
-        ];
+        const dataReviews = response.data.reviews ?? response.data.data ?? response.data ?? [];
 
-        let filteredReviews = mockReviews;
-
-        // Filter by rating
+        // Filter by rating server-side if API doesn't support it
+        let filteredReviews = dataReviews;
         if (filterRating !== 'All') {
           const rating = parseInt(filterRating);
           filteredReviews = filteredReviews.filter(r => r.rating === rating);
         }
 
-        // Sort
+        // Sort client-side only if API doesn't provide sorting
         if (sortBy === 'rating-high') {
           filteredReviews.sort((a, b) => b.rating - a.rating);
         } else if (sortBy === 'rating-low') {
@@ -126,22 +76,37 @@ const TeacherReviews = () => {
         }
 
         setReviews(filteredReviews);
-      }
 
-      // Calculate stats
-      if (reviews.length > 0) {
-        const avgRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(2);
-        const positiveCount = reviews.filter(r => r.rating >= 4).length;
-        const negativeCount = reviews.filter(r => r.rating < 3).length;
+        // Compute stats from filteredReviews
+        const total = filteredReviews.length;
+        const avg = total > 0 ? (filteredReviews.reduce((s, r) => s + (r.rating || r.Rating || 0), 0) / total) : 0;
+        const positive = filteredReviews.filter(r => (r.rating || r.Rating || 0) >= 4).length;
+        const negative = filteredReviews.filter(r => (r.rating || r.Rating || 0) <= 2).length;
+        const coursesReviewed = Array.from(new Set(filteredReviews.map(r => r.courseId || r.CourseId))).length;
 
         setStats({
-          totalReviews: reviews.length,
-          averageRating: parseFloat(avgRating),
-          totalCourses: [...new Set(reviews.map(r => r.courseTitle))].length,
-          positiveReviews: positiveCount,
-          negativeReviews: negativeCount
+          totalReviews: total,
+          averageRating: parseFloat(avg.toFixed(2)),
+          totalCourses: coursesReviewed,
+          positiveReviews: positive,
+          negativeReviews: negative
+        });
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+        setReviews([]);
+        toast({
+          title: 'Error',
+          description: 'Unable to load reviews from server',
+          status: 'error',
+          duration: 4000
         });
       }
+
+      // Calculate stats from the reviews state after updating
+      // We'll compute from the currently-known reviews
+      // (setReviews is async but we can compute from the filteredReviews used above)
+      // Recompute from state in next render if necessary
+      
 
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -282,20 +247,28 @@ const TeacherReviews = () => {
         ) : (
           <VStack spacing={4}>
             {reviews.map(review => (
-              <Card key={review.id} w="100%">
+              <Card key={review.id || review.Id || `${review.courseId}-${review.studentId}` } w="100%">
                 <CardBody>
                   <VStack align="stretch" spacing={4}>
                     <HStack justify="space-between" align="start">
                       <HStack spacing={3} align="start">
-                        <Avatar
-                          name={review.studentName}
-                          src={review.studentAvatar}
-                          size="md"
-                        />
-                        <VStack align="start" spacing={1}>
-                          <Heading size="sm">{review.studentName}</Heading>
-                          <Text fontSize="sm" color="gray.600">{review.courseTitle}</Text>
-                        </VStack>
+                        {(() => {
+                          const reviewerName = review.studentName || review.student?.name || review.userName || review.user?.fullName || review.name || review.reviewerName || review.StudentName || '';
+                          const avatarSrc = review.studentAvatar || review.studentAvatarUrl || review.student?.avatarUrl || review.student?.profileImageUrl || review.avatarUrl || review.profileImageUrl || review.user?.profileImageUrl || review.user?.avatar || review.profilePhoto || review.Student?.ProfileImageUrl || null;
+                          return (
+                            <>
+                              <Avatar
+                                name={reviewerName}
+                                src={avatarSrc}
+                                size="md"
+                              />
+                              <VStack align="start" spacing={1}>
+                                <Heading size="sm">{reviewerName || 'Anonymous'}</Heading>
+                                <Text fontSize="sm" color="gray.600">{review.courseTitle || review.courseName || review.CourseTitle}</Text>
+                              </VStack>
+                            </>
+                          );
+                        })()}
                       </HStack>
                       <HStack>
                         {renderStars(review.rating)}

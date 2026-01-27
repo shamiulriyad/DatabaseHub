@@ -102,3 +102,8 @@ public class FileDTO
     public string FileUrl { get; set; }
     public long FileSizeBytes { get; set; }
 }
+
+public class WatchDTO
+{
+    public int WatchedSeconds { get; set; }
+}

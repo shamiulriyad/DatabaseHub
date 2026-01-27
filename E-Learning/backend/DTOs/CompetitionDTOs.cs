@@ -9,6 +9,9 @@ namespace backend.DTOs
         public string Title { get; set; }
         public string? Description { get; set; }
         public string? CompetitionType { get; set; }
+        // Scope fields (added to match Competition model)
+        public int? UniversityId { get; set; }
+        public int? DepartmentId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string Status { get; set; } = "upcoming"; // upcoming, ongoing, completed, pendinnapproval
@@ -17,6 +20,8 @@ namespace backend.DTOs
         public int TeamSize { get; set; }
         public int? ClanId { get; set; }
         public int? CourseId { get; set; }
+        public int DurationMinutes { get; set; }
+        public bool IsLive { get; set; }
         public int CreatorId { get; set; }
         public string CreatorRole { get; set; } // Student, Teacher, Admin, ClanLeader
         public bool IsApproved { get; set; }
@@ -41,5 +46,15 @@ namespace backend.DTOs
         public DateTime EndDate { get; set; }
         public int ParticipantCount { get; set; }
         public bool IsRegistered { get; set; }
+    }
+
+    // DTO representing a competition along with the current user's participation details
+    public class UserCompetitionDTO
+    {
+        public CompetitionDTO Competition { get; set; } = new CompetitionDTO();
+        public int? ParticipantScore { get; set; }
+        public int? ParticipantRank { get; set; }
+        public DateTime? JoinedAt { get; set; }
+        public string? ParticipantStatus { get; set; }
     }
 }

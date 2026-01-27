@@ -17,11 +17,12 @@ namespace backend.Services.Interfaces
         Task<ServiceResult<bool>> JoinCompetition(int competitionId, int userId);
         Task<ServiceResult<bool>> LeaveCompetition(int competitionId, int userId);
         Task<ServiceResult<CompetitionLeaderboardDTO>> GetCompetitionLeaderboard(int competitionId, int page, int pageSize);
-        Task<ServiceResult<List<CompetitionDTO>>> GetUserCompetitions(int userId);
+        Task<ServiceResult<List<UserCompetitionDTO>>> GetUserCompetitions(int userId);
         Task<ServiceResult<CompetitionStatsDTO>> GetCompetitionStats(int competitionId);
         Task<ServiceResult<List<PendingCompetitionDTO>>> GetPendingCompetitions(int page, int pageSize);
         Task<ServiceResult<List<CompetitionDTO>>> GetAllCompetitionsForAdmin(int page, int pageSize);
         Task<ServiceResult<CompetitionDTO>> ApproveCompetition(int competitionId, int adminId);
         Task<ServiceResult<bool>> RejectCompetition(int competitionId, int adminId);
+        Task<ServiceResult<CompetitionResultWithFeedbackDTO>> SubmitCompetitionAnswers(int competitionId, int userId, SubmitCompetitionAnswersDTO dto);
     }
 }

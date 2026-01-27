@@ -146,6 +146,7 @@ namespace backend.DTOs
     // Course Detail
     public class CourseDetailDTO : CourseDTO
     {
+        public int? EnrollmentId { get; set; }
         public string? ExamFocus { get; set; }
         public string? ExamPattern { get; set; }
         public string? ImportantTopics { get; set; }

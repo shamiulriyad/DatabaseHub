@@ -66,6 +66,8 @@ namespace backend.DTOs
         public bool IsActive { get; set; }
         public bool IsVerified { get; set; }
         public DateTime CreatedAt { get; set; }
+        // Indicates whether the current caller can edit this university
+        public bool CanEdit { get; set; } = false;
     }
 
     // University Detail

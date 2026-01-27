@@ -36,6 +36,11 @@ namespace backend.DTOs
         public int CourseId { get; set; }
         public string CourseTitle { get; set; }
         public string CourseThumbnail { get; set; }
+        // Banner image for course cards
+        public string? CourseBannerUrl { get; set; }
+        // Instructor info for frontend display
+        public string? Instructor { get; set; }
+        public string? InstructorAvatar { get; set; }
         public string EnrollmentType { get; set; }
         public DateTime EnrolledAt { get; set; }
         public DateTime? CompletedAt { get; set; }
@@ -43,6 +48,8 @@ namespace backend.DTOs
         public DateTime? ExpiryDate { get; set; }
         public int CompletedLessons { get; set; }
         public int TotalLessons { get; set; }
+        // Backup source from Course in case enrollment record missing totals
+        public int CourseTotalLessons { get; set; }
         public int CompletedModules { get; set; }
         public int TotalModules { get; set; }
         public decimal ProgressPercentage { get; set; }
@@ -75,6 +82,9 @@ namespace backend.DTOs
         public int Id { get; set; }
         public int CourseId { get; set; }
         public string CourseTitle { get; set; }
+        public string? CourseBannerUrl { get; set; }
+        public string? Instructor { get; set; }
+        public string? InstructorAvatar { get; set; }
         public string? UniversityName { get; set; }
         public string? DepartmentName { get; set; }
         public DateTime EnrolledAt { get; set; }

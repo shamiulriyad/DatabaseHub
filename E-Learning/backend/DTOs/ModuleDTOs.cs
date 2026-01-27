@@ -151,5 +151,9 @@ namespace backend.DTOs
         public int? PreviousLessonId { get; set; }
         public string? NextLessonTitle { get; set; }
         public string? PreviousLessonTitle { get; set; }
+        // Enrollment context for the current user (populated when fetching lesson in LearningService)
+        public int? EnrollmentId { get; set; }
+        // Overall course progress for the enrollment (percentage)
+        public double? CourseProgress { get; set; }
     }
 }

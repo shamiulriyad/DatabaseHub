@@ -96,6 +96,24 @@ namespace backend.Controllers
             });
         }
 
+        [HttpPost("lesson/{lessonId}/watch")]
+        public async Task<IActionResult> WatchLesson(int lessonId, [FromQuery] int enrollmentId, [FromBody] WatchDTO watch)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            if (watch == null)
+                return BadRequest(new { success = false, message = "Missing watch payload" });
+
+            var result = await _learningService.UpdateLessonWatch(lessonId, userId, enrollmentId, watch.WatchedSeconds);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Watch progress saved" });
+        }
+
         // QUIZ ENDPOINTS
 
         [HttpGet("quiz/{quizId}")]
@@ -223,48 +241,7 @@ namespace backend.Controllers
             });
         }
 
-        [HttpGet("assignment/{assignmentId}/submissions")]
-        public async Task<IActionResult> GetAssignmentSubmissions(int assignmentId)
-        {
-            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-            
-            if (userId == 0)
-                return Unauthorized(new { success = false, message = "Invalid token" });
-
-            var result = await _learningService.GetAssignmentSubmissions(assignmentId, userId);
-            
-            if (!result.Success)
-                return NotFound(new { success = false, message = result.Message });
-
-            return Ok(new {
-                success = true,
-                submissions = result.Data
-            });
-        }
-
-        [Authorize(Roles = "Teacher,Admin")]
-        [HttpPost("assignment/submission/{submissionId}/grade")]
-        public async Task<IActionResult> GradeAssignment(int submissionId, [FromBody] GradeAssignmentDTO gradeDto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var teacherId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-            
-            if (teacherId == 0)
-                return Unauthorized(new { success = false, message = "Invalid token" });
-
-            var result = await _learningService.GradeAssignment(submissionId, teacherId, gradeDto);
-            
-            if (!result.Success)
-                return BadRequest(new { success = false, message = result.Message });
-
-            return Ok(new {
-                success = true,
-                message = "Assignment graded successfully",
-                submission = result.Data
-            });
-        }
+        // Teacher-facing submission endpoints removed.
 
         // NOTES & BOOKMARKS
 

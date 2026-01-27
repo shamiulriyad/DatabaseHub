@@ -6,6 +6,7 @@ namespace backend.Services.Interfaces
     public interface IReviewService
     {
         Task<ServiceResult<ReviewDTO>> CreateReview(CreateReviewDTO dto, int userId);
+        Task<ServiceResult<ReviewDTO>> CreateReviewForCourse(int courseId, CreateReviewDTO dto, int userId);
         Task<ServiceResult<ReviewDTO>> GetReviewById(int reviewId);
         Task<ServiceResult<List<ReviewDTO>>> GetCourseReviews(int courseId, int page, int pageSize);
         Task<ServiceResult<List<ReviewDTO>>> GetTeacherReviews(int teacherId, string? sortBy, int page, int pageSize);

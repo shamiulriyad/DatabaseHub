@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Heading, Table, Thead, Tbody, Tr, Th, Td, Button, Spinner, useToast,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
@@ -31,11 +32,19 @@ const UniversityRequestsAdmin = () => {
 
   useEffect(() => { fetchRequests(); }, []);
 
+  const navigate = useNavigate();
+
   const handleApprove = async (id) => {
     setActionLoading(id);
     try {
-      await api.post(`/admin/university-requests/${id}/approve`);
+      const res = await api.post(`/admin/university-requests/${id}/approve`);
+      const uni = res.data?.university || res.data?.data || null;
       toast({ title: 'Approved', status: 'success' });
+      // If API returned created university, navigate to its details page
+      if (uni && (uni.id || uni.Id)) {
+        navigate(`/universities/${uni.id ?? uni.Id}`);
+        return;
+      }
       setRequests(prev => prev.filter(r => r.id !== id && r.Id !== id));
     } catch (err) {
       console.error(err);

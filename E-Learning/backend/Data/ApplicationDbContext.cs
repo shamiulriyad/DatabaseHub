@@ -24,6 +24,10 @@ namespace backend.Data
         public DbSet<CoursePart> CourseParts => Set<CoursePart>();
         public DbSet<Module> Modules => Set<Module>();
         public DbSet<Lesson> Lessons => Set<Lesson>();
+        public DbSet<CoursePartProgress> CoursePartProgresses => Set<CoursePartProgress>();
+
+        // Student lesson-level progress (time-based)
+        public DbSet<StudentLessonProgress> StudentLessonProgresses => Set<StudentLessonProgress>();
 
         // Learning System
         public DbSet<Enrollment> Enrollments => Set<Enrollment>();

@@ -22,6 +22,11 @@ import {
   SkeletonText,
   Divider,
   Icon,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  IconButton,
   useColorModeValue,
   Fade,
   ScaleFade,
@@ -43,6 +48,7 @@ import {
   FaPlayCircle,
   FaCertificate,
 } from 'react-icons/fa';
+import { FiMoreVertical } from 'react-icons/fi';
 
 const fetchPopularCourses = async () => {
   try {
@@ -306,14 +312,28 @@ const CourseCard = ({ course }) => {
 const UniversityCard = ({ uni }) => {
   const cardBg = useColorModeValue('white', 'gray.700');
   const border = useColorModeValue('gray.200', 'gray.600');
+  const navigate = useNavigate();
   return (
     <ScaleFade in initialScale={0.98}>
       <Card bg={cardBg} borderColor={border} borderWidth="1px" shadow="sm" _hover={{ shadow: 'md', transform: 'translateY(-4px)' }} transition="all 0.2s ease">
-        {uni?.bannerUrl ? (
-          <Image src={uni.bannerUrl} alt={uni?.name} objectFit="cover" w="100%" h="120px" borderTopRadius="md" />
-        ) : (
-          <Box w="100%" h="120px" borderTopRadius="md" bgGradient="linear(to-r, teal.500, green.500)" />
-        )}
+        <Box position="relative">
+          {uni?.bannerUrl ? (
+            <Image src={uni.bannerUrl} alt={uni?.name} objectFit="cover" w="100%" h="120px" borderTopRadius="md" />
+          ) : (
+            <Box w="100%" h="120px" borderTopRadius="md" bgGradient="linear(to-r, teal.500, green.500)" />
+          )}
+
+          <Box position="absolute" top={2} right={2}>
+            <Menu>
+              <MenuButton as={IconButton} aria-label="Options" icon={<FiMoreVertical />} size="sm" variant="ghost" />
+              <MenuList>
+                <MenuItem onClick={() => navigate(`/universities/${uni?.id}`)}>View Profile</MenuItem>
+                <MenuItem onClick={() => navigate(`/universities/${uni?.id}/edit`)}>Edit Details</MenuItem>
+                <MenuItem onClick={() => navigate(`/universities/${uni?.id}/manage`)}>Manage</MenuItem>
+              </MenuList>
+            </Menu>
+          </Box>
+        </Box>
         <CardBody>
           <Stack spacing={2}>
             <HStack spacing={3} align="center">

@@ -154,6 +154,8 @@ namespace backend.DTOs
         public decimal AverageGrade { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
+        // Date when the user applied to become a teacher (if any)
+        public DateTime? TeacherRequestDate { get; set; }
         
         // Clan Info
         public UserClanDTO? CurrentClan { get; set; }

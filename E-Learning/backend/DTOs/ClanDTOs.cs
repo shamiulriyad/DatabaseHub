@@ -330,9 +330,9 @@ namespace backend.DTOs
     // Community Posts (extends Post but clan-specific)
     public class CreateClanPostDTO
     {
-        [Required]
+        // Title is optional for clan posts; frontend will send only Content
         [MaxLength(200)]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [Required]
         public string Content { get; set; }

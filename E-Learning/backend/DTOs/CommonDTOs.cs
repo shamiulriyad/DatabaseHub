@@ -76,12 +76,19 @@ namespace backend.DTOs
 
     public class CourseProgressDTO
     {
+        // Backwards-compatible progress summary
         public Dictionary<string, float> ModuleProgress { get; set; } = new Dictionary<string, float>();
         public float OverallProgress { get; set; }
         public List<DateTime> ActivityDates { get; set; } = new List<DateTime>();
         public decimal AverageScore { get; set; }
         public DateTime? StartedAt { get; set; }
         public DateTime? EstimatedCompletion { get; set; }
+
+        // Fields used by frontend: total/completed/percentage/lastWatched
+        public int TotalLessons { get; set; }
+        public int CompletedLessons { get; set; }
+        public float Percentage { get; set; }
+        public DateTime? LastWatched { get; set; }
     }
 
     // Payment Related DTOs

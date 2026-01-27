@@ -31,5 +31,7 @@ namespace backend.Services.Interfaces
         Task<ServiceResult<List<DashboardCardDTO>>> GetAdminDashboardCards();
         Task<ServiceResult<SiteConfigDTO>> GetSiteConfig();
         Task<ServiceResult<SiteConfigDTO>> UpdateSiteConfig(SiteConfigDTO dto);
+        Task<ServiceResult<List<RecentActivityDTO>>> GetRecentActivities(int page = 1, int pageSize = 10);
+        Task<ServiceResult<List<TopCourseDTO>>> GetTopCourses(int count = 5);
     }
 }

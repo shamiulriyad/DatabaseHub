@@ -1,0 +1,42 @@
+// docs/schema/high_level_er.dot
+digraph ER {
+  rankdir=LR;
+  node [shape=record, fontname=Helvetica];
+
+  User [label="{User|PK Id\lUserName\lEmail\lIsTeacher\lPoints\lRank\l}" ];
+  Course [label="{Course|PK Id\lTitle\lPrice\lCategory\lCreatorId\l}" ];
+  Module [label="{Module|PK Id\lCourseId (FK)\lTitle\l}" ];
+  Lesson [label="{Lesson|PK Id\lModuleId (FK)\lTitle\l}" ];
+  Enrollment [label="{Enrollment|PK Id\lUserId (FK)\lCourseId (FK)\lProgress\lStatus\l}" ];
+  Payment [label="{Payment|PK Id\lUserId (FK)\lEnrollmentId (FK)\lAmount\lStatus\l}" ];
+
+  Post [label="{Post|PK Id\lAuthorId (FK)\lTitle\lContent\l}" ];
+  Comment [label="{Comment|PK Id\lPostId (FK)\lAuthorId (FK)\lContent\l}" ];
+  PostVote [label="{PostVote|PK Id\lPostId (FK)\lUserId (FK)\lValue\l}" ];
+
+  Clan [label="{Clan|PK Id\lName\lLeaderId\lFocusSubjects\l}" ];
+  ClanMember [label="{ClanMember|PK Id\lClanId (FK)\lUserId (FK)\lRole\l}" ];
+
+  Competition [label="{Competition|PK Id\lTitle\lStartAt\lEndAt\l}" ];
+  CompetitionParticipant [label="{CompetitionParticipant|PK Id\lCompetitionId (FK)\lUserId (FK)\lScore\l}" ];
+
+  // relationships
+  User -> Enrollment [label="1..*", dir=both];
+  Course -> Enrollment [label="1..*", dir=both];
+  Course -> Module [label="1..*", dir=both];
+  Module -> Lesson [label="1..*", dir=both];
+
+  User -> Payment [label="1..*"];
+  Enrollment -> Payment [label="0..1"];
+
+  User -> Post [label="1..*"];
+  Post -> Comment [label="1..*"];
+  User -> Comment [label="1..*"];
+  Post -> PostVote [label="0..*"];
+
+  Clan -> ClanMember [label="1..*"];
+  User -> ClanMember [label="1..*"];
+
+  Competition -> CompetitionParticipant [label="1..*"];
+  User -> CompetitionParticipant [label="1..*"];
+}

@@ -27,7 +27,11 @@ namespace backend.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var result = await _universityService.GetAllUniversities(page, pageSize);
+            int? callerUserId = null;
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var parsedId)) callerUserId = parsedId;
+
+            var result = await _universityService.GetAllUniversities(page, pageSize, callerUserId);
             
             return Ok(new {
                 success = result.Success,
@@ -39,7 +43,11 @@ namespace backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUniversity(int id)
         {
-            var result = await _universityService.GetUniversityById(id);
+            int? callerUserId = null;
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var parsedId)) callerUserId = parsedId;
+
+            var result = await _universityService.GetUniversityById(id, callerUserId);
             
             if (!result.Success)
                 return NotFound(new { success = false, message = result.Message });
@@ -53,7 +61,11 @@ namespace backend.Controllers
         [HttpGet("{id}/details")]
         public async Task<IActionResult> GetUniversityDetails(int id)
         {
-            var result = await _universityService.GetUniversityDetails(id);
+            int? callerUserId = null;
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var parsedId)) callerUserId = parsedId;
+
+            var result = await _universityService.GetUniversityDetails(id, callerUserId);
             
             if (!result.Success)
                 return NotFound(new { success = false, message = result.Message });
@@ -145,14 +157,21 @@ namespace backend.Controllers
             });
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUniversity(int id, [FromBody] UpdateUniversityDTO universityDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _universityService.UpdateUniversity(id, universityDto);
+            var userIdClaim = User.FindFirst("userId");
+            var callerUserId = (int?)null;
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var parsed)) callerUserId = parsed;
+
+            if (callerUserId == null)
+                return Unauthorized(new { success = false, message = "Authentication required" });
+
+            var result = await _universityService.UpdateUniversity(id, universityDto, callerUserId);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });

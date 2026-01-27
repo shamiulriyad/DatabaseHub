@@ -30,13 +30,13 @@ import {
 import {
   FaBook,
   FaTrophy,
-  FaFire,
   FaStar,
   FaChartLine,
   FaUsers,
   FaShieldAlt,
   FaArrowLeft,
   FaMedal,
+  FaFire,
 } from 'react-icons/fa';
 
 const fetchUserProfile = async (userId) => {
@@ -178,28 +178,8 @@ const PublicUserProfile = () => {
           </CardBody>
         </Card>
 
-        {/* Stats Grid */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={6}>
-          <Card bg={cardBg} borderColor={borderColor} borderWidth="1px">
-            <CardBody>
-              <Stat>
-                <HStack spacing={3}>
-                  <Box
-                    p={3}
-                    borderRadius="lg"
-                    bg="purple.100"
-                    color="purple.600"
-                  >
-                    <Icon as={FaTrophy} boxSize={6} />
-                  </Box>
-                  <Box>
-                    <StatLabel>Total Points</StatLabel>
-                    <StatNumber>{profile.totalPoints || 0}</StatNumber>
-                  </Box>
-                </HStack>
-              </Stat>
-            </CardBody>
-          </Card>
+        {/* Stats Grid (removed Streak card) */}
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} mb={6}>
 
           <Card bg={cardBg} borderColor={borderColor} borderWidth="1px">
             <CardBody>
@@ -293,12 +273,7 @@ const PublicUserProfile = () => {
                       <Badge colorScheme="green">{profile.completedCourses}</Badge>
                     </HStack>
                   )}
-                  {profile.certificates > 0 && (
-                    <HStack justify="space-between">
-                      <Text color="gray.600">Certificates</Text>
-                      <Badge colorScheme="purple">{profile.certificates}</Badge>
-                    </HStack>
-                  )}
+                  {/* Certificates removed */}
                   {!profile.enrolledCourses && !profile.completedCourses && (
                     <Text color="gray.500" textAlign="center" py={4}>
                       No activity to display
@@ -325,19 +300,14 @@ const PublicUserProfile = () => {
                       <Text fontSize="sm">Points Master</Text>
                     </HStack>
                   )}
-                  {profile.streakDays >= 7 && (
-                    <HStack>
-                      <Icon as={FaFire} color="orange.400" />
-                      <Text fontSize="sm">7 Day Streak</Text>
-                    </HStack>
-                  )}
+                  {/* Streak achievements removed */}
                   {profile.completedCourses >= 5 && (
                     <HStack>
                       <Icon as={FaBook} color="blue.400" />
                       <Text fontSize="sm">Course Enthusiast</Text>
                     </HStack>
                   )}
-                  {!profile.totalPoints && !profile.streakDays && (
+                  {!profile.totalPoints && !profile.completedCourses && (
                     <Text color="gray.500" textAlign="center" py={4}>
                       No achievements yet
                     </Text>

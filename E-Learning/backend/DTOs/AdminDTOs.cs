@@ -272,6 +272,15 @@ namespace backend.DTOs
         public decimal AverageTimeToComplete { get; set; }
     }
 
+    // Recent activity item for admin dashboard
+    public class RecentActivityDTO
+    {
+        public string Action { get; set; } = null!; // e.g., "New user registered"
+        public string User { get; set; } = null!; // display name
+        public DateTime Time { get; set; }
+        public string? Meta { get; set; } // optional extra info (course title, amount)
+    }
+
     // System Settings
     public class SystemSettingsDTO
     {

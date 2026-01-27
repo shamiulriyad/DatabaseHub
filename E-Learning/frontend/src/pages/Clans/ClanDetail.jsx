@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ClanAnnouncements from './ClanAnnouncements';
 import ClanCommunity from './ClanCommunity';
-
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 import {
@@ -50,6 +49,8 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Flex,
+  AvatarBadge,
 } from '@chakra-ui/react';
 import {
   FaUsers,
@@ -63,6 +64,9 @@ import {
   FaChartLine,
   FaCalendar,
   FaMedal,
+  FaFire,
+  FaBolt,
+  FaAward,
 } from 'react-icons/fa';
 
 const fetchClanDetails = async (clanId) => {
@@ -91,28 +95,52 @@ const fetchPendingJoinRequests = async (clanId) => {
 };
 
 const StatCard = ({ icon, label, value, color }) => {
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const border = useColorModeValue('gray.200', 'gray.600');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const iconBg = useColorModeValue(`${color}.50`, `${color}.900`);
+  const iconColor = useColorModeValue(`${color}.500`, `${color}.300`);
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
 
   return (
-    <Card bg={cardBg} borderColor={border} borderWidth="1px">
-      <CardBody>
-        <HStack spacing={4}>
+    <Card 
+      bg={cardBg} 
+      shadow="sm" 
+      borderWidth="1px" 
+      borderColor={borderColor}
+      _hover={{ 
+        shadow: 'md', 
+        borderColor: `${color}.300`,
+        transform: 'translateY(-2px)'
+      }}
+      transition="all 0.2s ease"
+    >
+      <CardBody p={3}>
+        <VStack spacing={2} align="center">
           <Box
-            p={3}
+            p={2}
             borderRadius="lg"
-            bg={`${color}.100`}
-            color={`${color}.600`}
+            bg={iconBg}
+            color={iconColor}
           >
-            <Icon as={icon} boxSize={6} />
+            <Icon as={icon} boxSize={4} />
           </Box>
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm" color="gray.600">
+          <VStack spacing={0} align="center">
+            <Text 
+              fontSize="xs" 
+              color="gray.500" 
+              fontWeight="600"
+              textTransform="uppercase"
+            >
               {label}
             </Text>
-            <Heading size="md">{value}</Heading>
+            <Heading 
+              size="md" 
+              fontWeight="800"
+              color={`${color}.600`}
+            >
+              {value}
+            </Heading>
           </VStack>
-        </HStack>
+        </VStack>
       </CardBody>
     </Card>
   );
@@ -120,54 +148,112 @@ const StatCard = ({ icon, label, value, color }) => {
 
 const MemberCard = ({ member }) => {
   const navigate = useNavigate();
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const border = useColorModeValue('gray.200', 'gray.600');
-  const hoverBg = useColorModeValue('gray.50', 'gray.600');
-
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const hoverBg = useColorModeValue('purple.50', 'gray.700');
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
+  
   const roleColor = {
     Leader: 'yellow',
     CoLeader: 'orange',
     Elder: 'purple',
-    Member: 'gray',
+    Member: 'blue',
+  };
+
+  const roleIcon = {
+    Leader: FaCrown,
+    CoLeader: FaAward,
+    Elder: FaStar,
+    Member: null,
   };
 
   return (
     <Card 
       bg={cardBg} 
-      borderColor={border} 
-      borderWidth="1px" 
-      size="sm"
+      shadow="md"
+      borderWidth="1px"
+      borderColor={borderColor}
       cursor="pointer"
       onClick={() => navigate(`/profile/${member.userId}`)}
-      _hover={{ bg: hoverBg, transform: 'translateY(-2px)', shadow: 'md' }}
-      transition="all 0.2s"
+      _hover={{ 
+        bg: hoverBg, 
+        transform: 'translateY(-4px)', 
+        shadow: 'xl',
+        borderColor: `${roleColor[member.role]}.300`
+      }}
+      transition="all 0.3s ease"
+      position="relative"
+      overflow="hidden"
     >
-      <CardBody>
-        <HStack spacing={3}>
-          <Avatar
-            name={member.userName}
-            src={member.profileImageUrl}
-            size="md"
-          />
-          <VStack align="start" spacing={0} flex={1}>
-            <HStack>
-              <Text fontWeight="bold" fontSize="sm">
+      <Box
+        position="absolute"
+        top={0}
+        right={0}
+        w="80px"
+        h="80px"
+        bgGradient={`linear(to-br, ${roleColor[member.role]}.100, transparent)`}
+        opacity={0.3}
+        borderRadius="0 0 0 100%"
+      />
+      <CardBody p={5} position="relative">
+        <HStack spacing={4} align="start">
+          <Box position="relative">
+            <Avatar
+              name={member.userName}
+              src={member.profileImageUrl}
+              size="lg"
+              borderWidth="3px"
+              borderColor={`${roleColor[member.role]}.400`}
+              shadow="md"
+            >
+              {member.role === 'Leader' && (
+                <AvatarBadge 
+                  boxSize="1.25em" 
+                  bg="yellow.400"
+                  borderColor="white"
+                  borderWidth="2px"
+                >
+                  <Icon as={FaCrown} boxSize={3} color="white" />
+                </AvatarBadge>
+              )}
+            </Avatar>
+          </Box>
+          <VStack align="start" spacing={2} flex={1}>
+            <HStack spacing={2} align="center">
+              <Text fontWeight="700" fontSize="md" lineHeight="1">
                 {member.userName}
               </Text>
-              {member.role === 'Leader' && (
-                <Icon as={FaCrown} color="yellow.500" boxSize={3} />
+              {roleIcon[member.role] && (
+                <Icon 
+                  as={roleIcon[member.role]} 
+                  color={`${roleColor[member.role]}.500`} 
+                  boxSize={3.5} 
+                />
               )}
             </HStack>
-            <Badge colorScheme={roleColor[member.role]} fontSize="xs">
+            <Badge 
+              colorScheme={roleColor[member.role]} 
+              fontSize="xs"
+              px={3}
+              py={1}
+              borderRadius="full"
+              fontWeight="600"
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
               {member.role}
             </Badge>
-            <HStack spacing={3} fontSize="xs" color="gray.600" mt={1}>
-              <HStack spacing={1}>
-                <Icon as={FaTrophy} boxSize={3} />
-                <Text>{member.contributionPoints} pts</Text>
+            <HStack spacing={4} fontSize="xs" color="gray.500" mt={1} fontWeight="500">
+              <HStack spacing={1.5}>
+                <Icon as={FaTrophy} boxSize={3.5} color="yellow.500" />
+                <Text fontWeight="600">{member.contributionPoints}</Text>
+                <Text>pts</Text>
               </HStack>
-              <Text>•</Text>
-              <Text>{member.totalPosts} posts</Text>
+              <Box w="1px" h="12px" bg="gray.300" />
+              <HStack spacing={1.5}>
+                <Icon as={FaFire} boxSize={3.5} color="orange.500" />
+                <Text fontWeight="600">{member.totalPosts}</Text>
+                <Text>posts</Text>
+              </HStack>
             </HStack>
           </VStack>
         </HStack>
@@ -177,9 +263,9 @@ const MemberCard = ({ member }) => {
 };
 
 const CompetitionCard = ({ competition }) => {
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const border = useColorModeValue('gray.200', 'gray.600');
-
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
+  
   const statusColor = {
     Upcoming: 'blue',
     Ongoing: 'green',
@@ -188,31 +274,68 @@ const CompetitionCard = ({ competition }) => {
   };
 
   return (
-    <Card bg={cardBg} borderColor={border} borderWidth="1px">
-      <CardBody>
-        <Stack spacing={3}>
-          <HStack justify="space-between">
-            <Heading size="sm" noOfLines={1}>
+    <Card 
+      bg={cardBg} 
+      shadow="md"
+      borderWidth="1px"
+      borderColor={borderColor}
+      _hover={{ 
+        shadow: 'xl', 
+        borderColor: `${statusColor[competition.status]}.300`,
+        transform: 'translateY(-4px)'
+      }}
+      transition="all 0.3s ease"
+      position="relative"
+      overflow="hidden"
+    >
+      <Box
+        position="absolute"
+        top={0}
+        right={0}
+        w="100px"
+        h="100px"
+        bgGradient={`linear(to-br, ${statusColor[competition.status]}.100, transparent)`}
+        opacity={0.4}
+        borderRadius="0 0 0 100%"
+      />
+      <CardBody p={5} position="relative">
+        <Stack spacing={4}>
+          <HStack justify="space-between" align="start">
+            <Heading size="sm" fontWeight="700" noOfLines={2} flex={1}>
               {competition.title}
             </Heading>
-            <Badge colorScheme={statusColor[competition.status]}>
+            <Badge 
+              colorScheme={statusColor[competition.status]}
+              fontSize="xs"
+              px={3}
+              py={1.5}
+              borderRadius="full"
+              fontWeight="600"
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
               {competition.status}
             </Badge>
           </HStack>
-          <Text fontSize="sm" color="gray.600" noOfLines={2}>
+          <Text fontSize="sm" color="gray.600" noOfLines={3} lineHeight="1.6">
             {competition.description}
           </Text>
           <Divider />
-          <HStack justify="space-between" fontSize="xs" color="gray.600">
-            <HStack spacing={1}>
-              <Icon as={FaCalendar} />
+          <HStack justify="space-between" fontSize="xs" color="gray.500" fontWeight="500">
+            <HStack spacing={1.5}>
+              <Icon as={FaCalendar} boxSize={3.5} />
               <Text>
-                {new Date(competition.startDate).toLocaleDateString()}
+                {new Date(competition.startDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
               </Text>
             </HStack>
-            <HStack spacing={1}>
-              <Icon as={FaUsers} />
-              <Text>{competition.participantCount} participants</Text>
+            <HStack spacing={1.5}>
+              <Icon as={FaUsers} boxSize={3.5} />
+              <Text fontWeight="600">{competition.participantCount}</Text>
+              <Text>participants</Text>
             </HStack>
           </HStack>
         </Stack>
@@ -227,14 +350,21 @@ const ClanDetail = () => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  
   const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const borderColor = useColorModeValue('white', 'gray.700');
-  const memberCardBg = useColorModeValue('gray.50', 'gray.700');
-  const topMembersHoverBg = useColorModeValue('gray.50', 'gray.600');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const tabBg = useColorModeValue('white', 'gray.800');
+  
   const [joinStatus, setJoinStatus] = React.useState('idle');
-  const [userRole, setUserRole] = React.useState(null); // 'Leader', 'CoLeader', 'Elder', 'Member'
-  const { isOpen: isPrivacyOpen, onOpen: openPrivacy, onClose: closePrivacy } = useDisclosure();
+  const [userRole, setUserRole] = React.useState(null);
+  
+  const { 
+    isOpen: isPrivacyOpen, 
+    onOpen: openPrivacy, 
+    onClose: closePrivacy 
+  } = useDisclosure();
+  
   const [privacyIsPublic, setPrivacyIsPublic] = React.useState(true);
   const [privacyRequireApproval, setPrivacyRequireApproval] = React.useState(false);
   const [privacyJoinCriteria, setPrivacyJoinCriteria] = React.useState('');
@@ -297,6 +427,7 @@ const ClanDetail = () => {
           description: 'Waiting for clan leader approval',
           status: 'info',
           duration: 4000,
+          isClosable: true,
         });
       } else {
         setJoinStatus('member');
@@ -304,6 +435,7 @@ const ClanDetail = () => {
           title: 'Joined clan',
           status: 'success',
           duration: 3000,
+          isClosable: true,
         });
       }
       invalidateClanData();
@@ -314,6 +446,7 @@ const ClanDetail = () => {
         description: error.response?.data?.message || 'Something went wrong',
         status: 'error',
         duration: 4000,
+        isClosable: true,
       });
     },
   });
@@ -326,6 +459,7 @@ const ClanDetail = () => {
         title: 'Left clan',
         status: 'success',
         duration: 3000,
+        isClosable: true,
       });
       invalidateClanData();
     },
@@ -335,6 +469,7 @@ const ClanDetail = () => {
         description: error.response?.data?.message || 'Something went wrong',
         status: 'error',
         duration: 4000,
+        isClosable: true,
       });
     },
   });
@@ -362,6 +497,16 @@ const ClanDetail = () => {
     enabled: !!clanId && isLeaderOrCoLeader,
   });
 
+  // Fix: Move useColorModeValue out of callback
+  const pendingRequestBg = useColorModeValue('purple.50', 'gray.700');
+  const topMemberHoverBg = useColorModeValue('purple.50', 'gray.700');
+  const topMemberBg = useColorModeValue('yellow.50', 'yellow.900');
+  const modalFormBg = useColorModeValue('gray.50', 'gray.700');
+  const joinCriteriaBg = useColorModeValue('purple.50', 'gray.700');
+  const clanInfoBg = useColorModeValue('gray.50', 'gray.700');
+  const statWeeklyBg = useColorModeValue('purple.50', 'gray.700');
+  const statMonthlyBg = useColorModeValue('blue.50', 'gray.700');
+
   const decideJoinRequestMutation = useMutation({
     mutationFn: ({ requestId, action }) =>
       api.post(`/clans/${clanId}/join-requests/${requestId}/decision`, { action }),
@@ -371,6 +516,7 @@ const ClanDetail = () => {
         title: variables.action === 'approve' ? 'Request approved' : 'Request rejected',
         status: 'success',
         duration: 3000,
+        isClosable: true,
       });
     },
     onError: (error) => {
@@ -379,6 +525,7 @@ const ClanDetail = () => {
         description: error.response?.data?.message || 'Something went wrong',
         status: 'error',
         duration: 4000,
+        isClosable: true,
       });
     },
   });
@@ -391,11 +538,22 @@ const ClanDetail = () => {
     mutationFn: (payload) => api.put(`/clans/${clanId}`, payload),
     onSuccess: () => {
       invalidateClanData();
-      toast({ title: 'Privacy settings updated', status: 'success', duration: 3000 });
+      toast({ 
+        title: 'Privacy settings updated', 
+        status: 'success', 
+        duration: 3000,
+        isClosable: true,
+      });
       closePrivacy();
     },
     onError: (error) => {
-      toast({ title: 'Failed to update privacy settings', description: error.response?.data?.message || 'Something went wrong', status: 'error', duration: 4000 });
+      toast({ 
+        title: 'Failed to update privacy settings', 
+        description: error.response?.data?.message || 'Something went wrong', 
+        status: 'error', 
+        duration: 4000,
+        isClosable: true,
+      });
     },
   });
 
@@ -412,16 +570,13 @@ const ClanDetail = () => {
     return (
       <Box bg={bgColor} minH="100vh">
         <Container maxW="7xl" py={10}>
-          <Skeleton height="300px" mb={8} borderRadius="lg" />
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {[...Array(6)].map((_, i) => (
-              <Card key={i}>
-                <CardBody>
-                  <SkeletonText noOfLines={3} />
-                </CardBody>
-              </Card>
+          <Skeleton height="350px" mb={8} borderRadius="xl" />
+          <SimpleGrid columns={{ base: 2, md: 4, lg: 5 }} spacing={6} mb={8}>
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} height="120px" borderRadius="xl" />
             ))}
           </SimpleGrid>
+          <Skeleton height="500px" borderRadius="xl" />
         </Container>
       </Box>
     );
@@ -431,12 +586,30 @@ const ClanDetail = () => {
     return (
       <Box bg={bgColor} minH="100vh">
         <Container maxW="7xl" py={20}>
-          <VStack spacing={4}>
-            <Icon as={FaShieldAlt} boxSize={20} color="gray.400" />
-            <Heading size="lg" color="gray.600">
+          <VStack spacing={8}>
+            <Box
+              p={8}
+              borderRadius="full"
+              bgGradient="linear(to-br, purple.100, blue.100)"
+            >
+              <Icon as={FaShieldAlt} boxSize={24} color="purple.500" />
+            </Box>
+            <Heading size="xl" color="gray.600" fontWeight="800">
               Clan not found
             </Heading>
-            <Button colorScheme="purple" onClick={() => navigate('/clans')}>
+            <Text color="gray.500" fontSize="lg">
+              The clan you're looking for doesn't exist or has been removed.
+            </Text>
+            <Button 
+              colorScheme="purple" 
+              onClick={() => navigate('/clans')}
+              size="lg"
+              px={8}
+              borderRadius="full"
+              shadow="lg"
+              _hover={{ transform: 'translateY(-2px)', shadow: 'xl' }}
+              leftIcon={<FaShieldAlt />}
+            >
               Browse Clans
             </Button>
           </VStack>
@@ -446,11 +619,11 @@ const ClanDetail = () => {
   }
 
   return (
-    <Box bg={bgColor} minH="100vh">
-      {/* Banner Section */}
+    <Box bg={bgColor} minH="100vh" pb={10}>
+      {/* Compact Banner Section */}
       <Box
         position="relative"
-        h={{ base: '200px', md: '300px' }}
+        h={{ base: '150px', md: '200px' }}
         overflow="hidden"
       >
         {clan.bannerUrl ? (
@@ -465,139 +638,182 @@ const ClanDetail = () => {
           <Box
             w="100%"
             h="100%"
-            bgGradient="linear(135deg, purple.400, blue.500)"
+            bgGradient="linear(135deg, purple.500 0%, purple.600 25%, blue.500 75%, blue.600 100%)"
           />
         )}
-        {/* Overlay */}
+        {/* Enhanced Overlay with pattern */}
         <Box
           position="absolute"
           top={0}
           left={0}
           right={0}
           bottom={0}
-          bgGradient="linear(to-b, transparent, blackAlpha.700)"
+          bgGradient="linear(to-b, transparent 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.8) 100%)"
+        />
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          opacity={0.1}
+          backgroundImage="repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)"
         />
       </Box>
 
-      <Container maxW="7xl" position="relative" mt={-20}>
-        {/* Clan Header Card */}
+      <Container maxW="7xl" position="relative" mt={{ base: -10, md: -12 }}>
+        {/* Compact Clan Header Card */}
         <Card
           bg={cardBg}
-          shadow="xl"
-          mb={8}
+          shadow="lg"
+          mb={6}
+          borderWidth="1px"
+          borderColor={borderColor}
+          borderRadius="xl"
         >
-          <CardBody>
-            <Grid
-              templateColumns={{ base: '1fr', md: 'auto 1fr auto' }}
-              gap={6}
-              alignItems="center"
-            >
-              <GridItem>
+          <CardBody p={{ base: 4, md: 5 }}>
+            <Flex gap={4} alignItems="start" direction={{ base: 'column', md: 'row' }}>
+              {/* Logo */}
+              <Box flexShrink={0}>
                 {clan.logoUrl ? (
-                          <Image
-                            src={clan.logoUrl}
-                            alt={clan.name}
-                            boxSize={{ base: '80px', md: '120px' }}
-                            borderRadius="lg"
-                            border="4px solid"
-                            borderColor={borderColor}
-                            shadow="lg"
-                          />
-                        ) : (
-                          <Box
-                            boxSize={{ base: '80px', md: '120px' }}
-                            borderRadius="lg"
-                            bgGradient="linear(to-r, purple.500, blue.500)"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            border="4px solid"
-                            borderColor={borderColor}
-                            shadow="lg"
-                          >
-                            <Icon as={FaShieldAlt} boxSize={10} color="white" />
-                          </Box>
-                        )}
-              </GridItem>
+                  <Image
+                    src={clan.logoUrl}
+                    alt={clan.name}
+                    boxSize={{ base: '70px', md: '90px' }}
+                    borderRadius="lg"
+                    border="3px solid"
+                    borderColor="white"
+                    shadow="md"
+                    objectFit="cover"
+                  />
+                ) : (
+                  <Flex
+                    boxSize={{ base: '70px', md: '90px' }}
+                    borderRadius="lg"
+                    bgGradient="linear(135deg, purple.500, blue.500)"
+                    alignItems="center"
+                    justifyContent="center"
+                    border="3px solid"
+                    borderColor="white"
+                    shadow="md"
+                  >
+                    <Icon as={FaShieldAlt} boxSize={8} color="white" />
+                  </Flex>
+                )}
+              </Box>
 
-              <GridItem>
-                <VStack align="start" spacing={2}>
-                  <HStack spacing={3} flexWrap="wrap">
-                    <Heading size="xl">{clan.name}</Heading>
-                    <Badge colorScheme="purple" fontSize="md" px={3}>
-                      [{clan.tag}]
+              {/* Clan Info */}
+              <VStack align="start" spacing={2} flex={1} minW={0}>
+                <HStack spacing={2} flexWrap="wrap">
+                  <Heading 
+                    size="lg" 
+                    fontWeight="800"
+                    bgGradient="linear(to-r, purple.600, blue.500)"
+                    bgClip="text"
+                  >
+                    {clan.name}
+                  </Heading>
+                  <Badge 
+                    colorScheme="purple" 
+                    fontSize="sm" 
+                    px={2}
+                    py={1}
+                    borderRadius="md"
+                    fontWeight="600"
+                  >
+                    [{clan.tag}]
+                  </Badge>
+                </HStack>
+                {clan.motto && (
+                  <Text 
+                    fontSize="sm" 
+                    fontStyle="italic" 
+                    color="gray.600"
+                    noOfLines={1}
+                  >
+                    "{clan.motto}"
+                  </Text>
+                )}
+                <Text color="gray.600" fontSize="sm" noOfLines={2}>
+                  {clan.description}
+                </Text>
+                <HStack spacing={2} flexWrap="wrap">
+                  <Badge colorScheme="blue" fontSize="xs" px={2} py={0.5}>
+                    {clan.clanType}
+                  </Badge>
+                  <Badge colorScheme={clan.isPublic ? 'green' : 'orange'} fontSize="xs" px={2} py={0.5}>
+                    {clan.isPublic ? 'Public' : 'Private'}
+                  </Badge>
+                  {clan.requireApproval && (
+                    <Badge colorScheme="orange" fontSize="xs" px={2} py={0.5}>
+                      Approval Required
                     </Badge>
-                    {!clan.isPublic && (
-                      <Icon as={FaCrown} color="yellow.500" boxSize={5} />
-                    )}
-                  </HStack>
-                  {clan.motto && (
-                    <Text fontSize="lg" fontStyle="italic" color="gray.600">
-                      "{clan.motto}"
-                    </Text>
                   )}
-                  <Text color="gray.600">{clan.description}</Text>
-                  <HStack spacing={4} flexWrap="wrap">
-                    <Badge colorScheme="blue">{clan.clanType}</Badge>
-                    <Badge colorScheme={clan.isPublic ? 'green' : 'orange'}>
-                      {clan.isPublic ? 'Public' : 'Private'}
+                  {clan.universityName && (
+                    <Badge variant="outline" colorScheme="purple" fontSize="xs" px={2} py={0.5}>
+                      {clan.universityName}
                     </Badge>
-                    {clan.requireApproval && (
-                      <Badge colorScheme="orange">Requires Approval</Badge>
-                    )}
-                    {clan.universityName && (
-                      <Badge variant="outline">{clan.universityName}</Badge>
-                    )}
-                  </HStack>
-                </VStack>
-              </GridItem>
+                  )}
+                </HStack>
+              </VStack>
 
-              <GridItem>
-                <VStack spacing={3} w="full">
-                  {isMember ? (
-                    <>
-                      {isLeaderOrCoLeader && (
-                        <Button
-                          colorScheme="purple"
-                          leftIcon={<FaCog />}
-                          w="full"
-                          onClick={() => navigate(`/clans/${clanId}/members`)}
-                        >
-                          Manage
-                        </Button>
-                      )}
+              {/* Action Buttons - Right Side */}
+              <VStack spacing={2} flexShrink={0} minW={{ base: 'full', md: '160px' }}>
+                {isMember ? (
+                  <>
+                    {isLeaderOrCoLeader && (
                       <Button
-                        variant="outline"
-                        colorScheme="red"
-                        leftIcon={<FaSignOutAlt />}
+                        colorScheme="purple"
+                        leftIcon={<FaCog />}
                         w="full"
+                        onClick={() => navigate(`/clans/${clanId}/members`)}
                         size="sm"
-                        onClick={() => leaveMutation.mutate()}
-                        isLoading={leaveMutation.isLoading}
+                        borderRadius="lg"
+                        fontWeight="600"
                       >
-                        Leave
+                        Manage Clan
                       </Button>
-                    </>
-                  ) : (
+                    )}
                     <Button
-                      colorScheme="purple"
-                      leftIcon={<FaUserPlus />}
+                      variant="outline"
+                      colorScheme="red"
+                      leftIcon={<FaSignOutAlt />}
                       w="full"
-                      onClick={() => joinMutation.mutate()}
-                      isLoading={joinMutation.isLoading}
-                      isDisabled={joinStatus === 'pending' || atCapacity}
+                      size="sm"
+                      borderRadius="lg"
+                      fontWeight="600"
+                      onClick={() => leaveMutation.mutate()}
+                      isLoading={leaveMutation.isLoading}
                     >
-                      {atCapacity ? 'Clan is Full' : joinButtonLabel}
+                      Leave Clan
                     </Button>
-                  )}
-                </VStack>
-              </GridItem>
-            </Grid>
+                  </>
+                ) : (
+                  <Button
+                    colorScheme="purple"
+                    leftIcon={<FaUserPlus />}
+                    w="full"
+                    size="sm"
+                    borderRadius="lg"
+                    fontWeight="600"
+                    onClick={() => joinMutation.mutate()}
+                    isLoading={joinMutation.isLoading}
+                    isDisabled={joinStatus === 'pending' || atCapacity}
+                  >
+                    {atCapacity ? 'Clan Full' : joinStatus === 'pending' ? 'Pending' : 'Join'}
+                  </Button>
+                )}
+              </VStack>
+            </Flex>
           </CardBody>
         </Card>
 
-        {/* Stats Grid */}
-        <SimpleGrid columns={{ base: 2, md: 4, lg: 5 }} spacing={4} mb={8}>
+        {/* Compact Stats Grid */}
+        <SimpleGrid 
+          columns={{ base: 2, md: 4, lg: 5 }} 
+          spacing={3} 
+          mb={6}
+        >
           <StatCard
             icon={FaUsers}
             label="Members"
@@ -607,7 +823,7 @@ const ClanDetail = () => {
           <StatCard
             icon={FaTrophy}
             label="Total Points"
-            value={clan.totalPoints}
+            value={clan.totalPoints.toLocaleString()}
             color="yellow"
           />
           <StatCard
@@ -630,616 +846,737 @@ const ClanDetail = () => {
           />
         </SimpleGrid>
 
-        {/* Tabs Section */}
-        <Tabs colorScheme="purple">
-          <TabList>
-            <Tab>Overview</Tab>
-            {isMember && <Tab>📢 Announcements</Tab>}
-            {isMember && <Tab>💬 Community</Tab>}
-            <Tab>Members ({members?.length || 0})</Tab>
-            <Tab>Competitions ({competitions?.length || 0})</Tab>
-            <Tab>Statistics</Tab>
-            {hasLeadership && <Tab icon={<FaCog />}>Management</Tab>}
-            {isLeader && <Tab icon={<FaCog />}>Settings</Tab>}
-          </TabList>
+        {/* Compact Tabs Section */}
+        <Card 
+          bg={tabBg} 
+          shadow="md"
+          borderWidth="1px"
+          borderColor={borderColor}
+          borderRadius="lg"
+        >
+          <Tabs colorScheme="purple" size="sm">
+            <TabList 
+              px={4} 
+              pt={3}
+              pb={2}
+              overflowX="auto"
+              gap={1}
+              css={{
+                '&::-webkit-scrollbar': {
+                  height: '4px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#CBD5E0',
+                  borderRadius: '2px',
+                },
+              }}
+            >
+              <Tab 
+                fontWeight="600" 
+                fontSize="xs"
+                px={3}
+                py={1.5}
+                _selected={{ 
+                  color: 'purple.600', 
+                  borderBottomWidth: '2px',
+                  borderBottomColor: 'purple.600'
+                }}
+              >
+                📊 Overview
+              </Tab>
+              {isMember && (
+                <Tab 
+                  fontWeight="600"
+                  fontSize="xs"
+                  px={3}
+                  py={1.5}
+                  _selected={{ 
+                    color: 'purple.600', 
+                    borderBottomWidth: '2px',
+                    borderBottomColor: 'purple.600'
+                  }}
+                >
+                  📢 Announcements
+                </Tab>
+              )}
+              {isMember && (
+                <Tab 
+                  fontWeight="600"
+                  fontSize="xs"
+                  px={3}
+                  py={1.5}
+                  _selected={{ 
+                    color: 'purple.600', 
+                    borderBottomWidth: '2px',
+                    borderBottomColor: 'purple.600'
+                  }}
+                >
+                  💬 Community
+                </Tab>
+              )}
+              <Tab 
+                fontWeight="600"
+                fontSize="xs"
+                px={3}
+                py={1.5}
+                _selected={{ 
+                  color: 'purple.600', 
+                  borderBottomWidth: '2px',
+                  borderBottomColor: 'purple.600'
+                }}
+              >
+                👥 Members ({members?.length || 0})
+              </Tab>
+              <Tab 
+                fontWeight="600"
+                fontSize="xs"
+                px={3}
+                py={1.5}
+                _selected={{ 
+                  color: 'purple.600', 
+                  borderBottomWidth: '2px',
+                  borderBottomColor: 'purple.600'
+                }}
+              >
+                🏆 Competitions ({competitions?.length || 0})
+              </Tab>
+              <Tab 
+                fontWeight="600"
+                fontSize="xs"
+                px={3}
+                py={1.5}
+                _selected={{ 
+                  color: 'purple.600', 
+                  borderBottomWidth: '2px',
+                  borderBottomColor: 'purple.600'
+                }}
+              >
+                📈 Statistics
+              </Tab>
+              {hasLeadership && (
+                <Tab 
+                  fontWeight="600"
+                  fontSize="xs"
+                  px={3}
+                  py={1.5}
+                  _selected={{ 
+                    color: 'purple.600', 
+                    borderBottomWidth: '2px',
+                    borderBottomColor: 'purple.600'
+                  }}
+                >
+                  <Icon as={FaCog} mr={1} boxSize={2.5} />
+                  Management
+                </Tab>
+              )}
+            </TabList>
 
-          <TabPanels>
-            {/* Overview Tab */}
-            <TabPanel>
-              <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={8}>
-                <GridItem>
-                  <Card
-                    bg={cardBg}
-                    mb={6}
-                  >
-                    <CardBody>
-                      <Heading size="md" mb={4}>
-                        About
+            <TabPanels>
+              {/* Overview Tab */}
+              <TabPanel p={6}>
+                <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={8}>
+                  <GridItem>
+                    <Card
+                      bg={cardBg}
+                      mb={6}
+                      shadow="lg"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      borderRadius="xl"
+                    >
+                      <CardBody p={6}>
+                        <Heading size="md" mb={4} fontWeight="800">
+                          🏰 About Clan
+                        </Heading>
+                        <Stack spacing={4}>
+                          <Text color="gray.700" lineHeight="1.8" fontSize="md">
+                            {clan.description}
+                          </Text>
+                          {clan.joinCriteria && (
+                            <>
+                              <Divider />
+                              <Box>
+                                <Text fontWeight="700" mb={2} color="gray.800" fontSize="md">
+                                  ✅ Join Criteria
+                                </Text>
+                                <Text fontSize="sm" color="gray.600" lineHeight="1.6" bg={joinCriteriaBg} p={3} borderRadius="lg">
+                                  {clan.joinCriteria}
+                                </Text>
+                              </Box>
+                            </>
+                          )}
+                        </Stack>
+                      </CardBody>
+                    </Card>
+
+                    <Box>
+                      <Heading size="md" mb={5} fontWeight="800">
+                        🏆 Recent Competitions
                       </Heading>
-                      <Stack spacing={3}>
-                        <Text>{clan.description}</Text>
-                        {clan.joinCriteria && (
-                          <>
-                            <Divider />
-                            <Box>
-                              <Text fontWeight="bold" mb={2}>
-                                Join Criteria:
-                              </Text>
-                              <Text fontSize="sm" color="gray.600">
-                                {clan.joinCriteria}
-                              </Text>
-                            </Box>
-                          </>
+                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
+                        {competitionsLoading ? (
+                          [...Array(2)].map((_, i) => (
+                            <Card key={i} borderRadius="xl">
+                              <CardBody>
+                                <SkeletonText noOfLines={4} />
+                              </CardBody>
+                            </Card>
+                          ))
+                        ) : competitions && competitions.length > 0 ? (
+                          competitions.slice(0, 4).map((comp) => (
+                            <CompetitionCard key={comp.id} competition={comp} />
+                          ))
+                        ) : (
+                          <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
+                            <CardBody py={8}>
+                              <VStack spacing={3}>
+                                <Icon as={FaTrophy} boxSize={12} color="gray.300" />
+                                <Text color="gray.500" textAlign="center" fontWeight="600">
+                                  No competitions yet
+                                </Text>
+                                <Text color="gray.400" textAlign="center" fontSize="sm">
+                                  Check back later for upcoming events
+                                </Text>
+                              </VStack>
+                            </CardBody>
+                          </Card>
                         )}
-                      </Stack>
-                    </CardBody>
-                  </Card>
+                      </SimpleGrid>
+                    </Box>
+                  </GridItem>
 
-                  <Heading size="md" mb={4}>
-                    Recent Competitions
-                  </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    {competitionsLoading ? (
-                      [...Array(2)].map((_, i) => (
-                        <Card key={i}>
-                          <CardBody>
-                            <SkeletonText noOfLines={4} />
-                          </CardBody>
-                        </Card>
-                      ))
-                    ) : competitions && competitions.length > 0 ? (
-                      competitions.slice(0, 4).map((comp) => (
-                        <CompetitionCard key={comp.id} competition={comp} />
-                      ))
-                    ) : (
-                      <Text color="gray.500" gridColumn="1/-1">
-                        No competitions yet
-                      </Text>
-                    )}
-                  </SimpleGrid>
-                </GridItem>
-
-                <GridItem>
-                  <Card bg={cardBg} mb={6}>
-                    <CardBody>
-                      <Heading size="sm" mb={4}>
-                        Top Members
-                      </Heading>
-                      <Stack spacing={3}>
-                        {stats?.topMembers
-                          ?.slice(0, 5)
-                          .map((member, index) => (
+                  <GridItem>
+                    <Card bg={cardBg} mb={6} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
+                      <CardBody p={6}>
+                        <Heading size="sm" mb={5} fontWeight="800">
+                          ⭐ Top Members
+                        </Heading>
+                        <Stack spacing={2}>
+                          {stats?.topMembers?.slice(0, 5).map((member, index) => (
                             <HStack 
                               key={member.userId} 
                               spacing={3}
                               cursor="pointer"
-                              p={2}
-                              borderRadius="md"
-                              _hover={{ bg: topMembersHoverBg }}
+                              p={4}
+                              borderRadius="xl"
+                              bg={index === 0 ? topMemberBg : 'transparent'}
+                              borderWidth={index === 0 ? "2px" : "1px"}
+                              borderColor={index === 0 ? "yellow.400" : borderColor}
+                              _hover={{ 
+                                bg: topMemberHoverBg,
+                                transform: 'translateX(4px)',
+                                borderColor: 'purple.300'
+                              }}
                               onClick={() => navigate(`/profile/${member.userId}`)}
-                              transition="all 0.2s"
+                              transition="all 0.2s ease"
                             >
-                              <Badge colorScheme="purple">{index + 1}</Badge>
+                              <Badge 
+                                colorScheme={index === 0 ? 'yellow' : index === 1 ? 'gray' : index === 2 ? 'orange' : 'purple'}
+                                borderRadius="full"
+                                w={8}
+                                h={8}
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                fontSize="sm"
+                                fontWeight="800"
+                              >
+                                {index + 1}
+                              </Badge>
                               <Avatar
                                 size="sm"
                                 name={member.userName}
                                 src={member.profileImage}
+                                borderWidth="2px"
+                                borderColor={index === 0 ? 'yellow.400' : 'gray.300'}
                               />
                               <VStack align="start" spacing={0} flex={1}>
-                                <Text fontSize="sm" fontWeight="bold">
+                                <Text fontSize="sm" fontWeight="700">
                                   {member.userName}
                                 </Text>
-                                <Text fontSize="xs" color="gray.600">
-                                  {member.contributionPoints} points
-                                </Text>
+                                <HStack spacing={1.5}>
+                                  <Icon as={FaTrophy} boxSize={3} color="yellow.500" />
+                                  <Text fontSize="xs" color="gray.500" fontWeight="600">
+                                    {member.contributionPoints.toLocaleString()} points
+                                  </Text>
+                                </HStack>
                               </VStack>
+                              {index === 0 && <Icon as={FaCrown} color="yellow.500" boxSize={5} />}
                             </HStack>
                           ))}
-                      </Stack>
-                    </CardBody>
-                  </Card>
-
-                  <Card bg={cardBg}>
-                    <CardBody>
-                      <Heading size="sm" mb={4}>
-                        Clan Info
-                      </Heading>
-                      <Stack spacing={3} fontSize="sm">
-                        <HStack justify="space-between">
-                          <Text color="gray.600">Leader:</Text>
-                          <Text fontWeight="bold">{clan.leaderName}</Text>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text color="gray.600">Created:</Text>
-                          <Text>
-                            {new Date(clan.createdAt).toLocaleDateString()}
-                          </Text>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text color="gray.600">Max Members:</Text>
-                          <Text>{clan.maxMembers}</Text>
-                        </HStack>
-                        {clan.requireApproval && (
-                          <Badge colorScheme="orange">
-                            Requires Approval
-                          </Badge>
-                        )}
-                      </Stack>
-                    </CardBody>
-                  </Card>
-                </GridItem>
-              </Grid>
-            </TabPanel>
-
-            {/* Announcements Tab - Members Only */}
-            {isMember && (
-              <TabPanel>
-                <ClanAnnouncements userRole={userRole} />
-              </TabPanel>
-            )}
-
-            {/* Community Tab - Members Only */}
-            {isMember && (
-              <TabPanel>
-                <ClanCommunity />
-              </TabPanel>
-            )}
-
-            {/* Members Tab */}
-            <TabPanel>
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-                {membersLoading ? (
-                  [...Array(6)].map((_, i) => (
-                    <Card key={i}>
-                      <CardBody>
-                        <SkeletonText noOfLines={3} />
+                        </Stack>
                       </CardBody>
                     </Card>
-                  ))
-                ) : members && members.length > 0 ? (
-                  members.map((member) => (
-                    <MemberCard key={member.id} member={member} />
-                  ))
-                ) : (
-                  <Text color="gray.500" gridColumn="1/-1">
-                    No members yet
-                  </Text>
-                )}
-              </SimpleGrid>
-            </TabPanel>
 
-            {/* Competitions Tab */}
-            <TabPanel>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                {competitionsLoading ? (
-                  [...Array(4)].map((_, i) => (
-                    <Card key={i}>
-                      <CardBody>
-                        <SkeletonText noOfLines={4} />
-                      </CardBody>
-                    </Card>
-                  ))
-                ) : competitions && competitions.length > 0 ? (
-                  competitions.map((comp) => (
-                    <CompetitionCard key={comp.id} competition={comp} />
-                  ))
-                ) : (
-                  <Text color="gray.500" gridColumn="1/-1">
-                    No competitions yet
-                  </Text>
-                )}
-              </SimpleGrid>
-            </TabPanel>
-
-            {/* Statistics Tab */}
-            <TabPanel>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                <Card bg={cardBg}>
-                  <CardBody>
-                    <Heading size="sm" mb={4}>
-                      Performance
-                    </Heading>
-                    <Stack spacing={4}>
-                      <Box>
-                        <HStack justify="space-between" mb={2}>
-                          <Text fontSize="sm">Win Rate</Text>
-                          <Text fontSize="sm" fontWeight="bold">
-                            {stats?.winRate
-                              ? `${(stats.winRate * 100).toFixed(1)}%`
-                              : '0%'}
-                          </Text>
-                        </HStack>
-                        <Progress
-                          value={stats?.winRate ? stats.winRate * 100 : 0}
-                          colorScheme="purple"
-                          size="sm"
-                          borderRadius="full"
-                        />
-                      </Box>
-                      <Divider />
-                      <SimpleGrid columns={2} spacing={4}>
-                        <Stat size="sm">
-                          <StatLabel>Weekly Points</StatLabel>
-                          <StatNumber>{stats?.weeklyPoints || 0}</StatNumber>
-                        </Stat>
-                        <Stat size="sm">
-                          <StatLabel>Monthly Points</StatLabel>
-                          <StatNumber>{stats?.monthlyPoints || 0}</StatNumber>
-                        </Stat>
-                      </SimpleGrid>
-                    </Stack>
-                  </CardBody>
-                </Card>
-
-                <Card bg={cardBg}>
-                  <CardBody>
-                    <Heading size="sm" mb={4}>
-                      Member Roles
-                    </Heading>
-                    <Stack spacing={3}>
-                      {stats?.memberRoleDistribution &&
-                        Object.entries(stats.memberRoleDistribution).map(
-                          ([role, count]) => (
-                            <HStack key={role} justify="space-between">
-                              <Text fontSize="sm">{role}</Text>
-                              <Badge colorScheme="purple">{count}</Badge>
+                    <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
+                      <CardBody p={6}>
+                        <Heading size="sm" mb={5} fontWeight="800">
+                          ℹ️ Clan Information
+                        </Heading>
+                        <Stack spacing={4} fontSize="sm">
+                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
+                            <HStack spacing={2}>
+                              <Icon as={FaCrown} color="yellow.500" boxSize={4} />
+                              <Text color="gray.600" fontWeight="600">Leader:</Text>
                             </HStack>
-                          )
-                        )}
-                    </Stack>
-                  </CardBody>
-                </Card>
-              </SimpleGrid>
-            </TabPanel>
+                            <Text fontWeight="700">{clan.leaderName}</Text>
+                          </HStack>
+                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
+                            <HStack spacing={2}>
+                              <Icon as={FaCalendar} color="blue.500" boxSize={4} />
+                              <Text color="gray.600" fontWeight="600">Created:</Text>
+                            </HStack>
+                            <Text fontWeight="700">
+                              {new Date(clan.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </Text>
+                          </HStack>
+                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
+                            <HStack spacing={2}>
+                              <Icon as={FaUsers} color="purple.500" boxSize={4} />
+                              <Text color="gray.600" fontWeight="600">Max Members:</Text>
+                            </HStack>
+                            <Text fontWeight="700">{clan.maxMembers}</Text>
+                          </HStack>
+                          {clan.requireApproval && (
+                            <Badge 
+                              colorScheme="orange"
+                              alignSelf="start"
+                              px={4}
+                              py={2}
+                              borderRadius="full"
+                              fontSize="sm"
+                              fontWeight="700"
+                            >
+                              ✓ Requires Approval
+                            </Badge>
+                          )}
+                        </Stack>
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+                </Grid>
+              </TabPanel>
 
-            {/* Management Tab (Leaders & CoLeaders) */}
-            {hasLeadership && (
-              <TabPanel>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                  {isLeaderOrCoLeader && (
-                    <Card bg={cardBg}>
-                      <CardBody>
-                        <HStack justify="space-between" mb={4} align="center">
-                          <Heading size="sm">Pending Join Requests</Heading>
-                          <Badge colorScheme="yellow">
-                            {pendingRequests?.length || 0}
-                          </Badge>
-                        </HStack>
+              {/* Announcements Tab - Members Only */}
+              {isMember && (
+                <TabPanel p={6}>
+                  <ClanAnnouncements userRole={userRole} />
+                </TabPanel>
+              )}
 
-                        {pendingRequestsLoading ? (
-                          <Stack spacing={3}>
-                            {[...Array(3)].map((_, i) => (
-                              <Skeleton key={i} height="64px" borderRadius="md" />
-                            ))}
-                          </Stack>
-                        ) : pendingRequests && pendingRequests.length > 0 ? (
-                          <Stack spacing={3}>
-                            {pendingRequests.map((req) => {
-                              const isProcessing =
-                                decideJoinRequestMutation.isLoading &&
-                                decideJoinRequestMutation.variables?.requestId === req.id;
+              {/* Community Tab - Members Only */}
+              {isMember && (
+                <TabPanel p={6}>
+                  <ClanCommunity />
+                </TabPanel>
+              )}
 
-                              return (
-                                <HStack
-                                  key={req.id}
-                                  align="flex-start"
-                                  p={3}
-                                  borderRadius="lg"
-                                  bg={memberCardBg}
-                                  spacing={3}
-                                >
-                                  <Avatar
-                                    size="sm"
-                                    name={req.userName}
-                                    src={req.profileImageUrl}
-                                    cursor="pointer"
-                                    onClick={() => navigate(`/profile/${req.userId}`)}
-                                  />
-                                  <VStack align="start" spacing={1} flex={1}>
-                                    <Text 
-                                      fontSize="sm" 
-                                      fontWeight="bold"
-                                      cursor="pointer"
-                                      _hover={{ color: 'purple.500' }}
-                                      onClick={() => navigate(`/profile/${req.userId}`)}
-                                    >
-                                      {req.userName}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">
-                                      Requested {new Date(req.requestedAt).toLocaleString()}
-                                    </Text>
-                                    {req.message && (
-                                      <Text fontSize="xs" color="gray.700" noOfLines={2}>
-                                        "{req.message}"
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                  <VStack spacing={2}>
-                                    <Button
-                                      size="xs"
-                                      colorScheme="blue"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/profile/${req.userId}`);
-                                      }}
-                                    >
-                                      View Profile
-                                    </Button>
-                                    <Button
-                                      size="xs"
-                                      colorScheme="green"
-                                      isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'approve'}
-                                      onClick={() => handleJoinRequestDecision(req.id, 'approve')}
-                                    >
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      size="xs"
-                                      colorScheme="red"
-                                      variant="outline"
-                                      isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'reject'}
-                                      onClick={() => handleJoinRequestDecision(req.id, 'reject')}
-                                    >
-                                      Reject
-                                    </Button>
-                                  </VStack>
-                                </HStack>
-                              );
-                            })}
-                          </Stack>
-                        ) : (
-                          <Text color="gray.500">No pending requests</Text>
-                        )}
+              {/* Members Tab */}
+              <TabPanel p={6}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
+                  {membersLoading ? (
+                    [...Array(6)].map((_, i) => (
+                      <Card key={i} borderRadius="xl">
+                        <CardBody>
+                          <SkeletonText noOfLines={3} />
+                        </CardBody>
+                      </Card>
+                    ))
+                  ) : members && members.length > 0 ? (
+                    members.map((member) => (
+                      <MemberCard key={member.id} member={member} />
+                    ))
+                  ) : (
+                    <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
+                      <CardBody py={8}>
+                        <VStack spacing={3}>
+                          <Icon as={FaUsers} boxSize={12} color="gray.300" />
+                          <Text color="gray.500" textAlign="center" fontWeight="600">
+                            No members yet
+                          </Text>
+                        </VStack>
                       </CardBody>
                     </Card>
                   )}
+                </SimpleGrid>
+              </TabPanel>
 
-                  {/* Member Management */}
-                  <Card bg={cardBg}>
-                    <CardBody>
-                      <HStack justify="space-between" mb={4}>
-                        <Heading size="sm">Member Management</Heading>
-                        <Icon as={FaUsers} color="purple.500" />
-                      </HStack>
-                      <Stack spacing={3}>
-                        {members
-                          ?.filter((m) => m.role !== 'Leader')
-                          .slice(0, 5)
-                          .map((member) => (
-                            <HStack
-                              key={member.id}
-                              p={3}
-                              borderRadius="lg"
-                              bg={memberCardBg}
-                              justify="space-between"
-                            >
-                              <HStack spacing={2} flex={1}>
-                                <Avatar
-                                  size="sm"
-                                  name={member.userName}
-                                  src={member.profileImage}
-                                />
-                                <VStack align="start" spacing={0}>
-                                  <Text fontSize="sm" fontWeight="bold">
-                                    {member.userName}
-                                  </Text>
-                                  <Badge colorScheme="blue" fontSize="xs">
-                                    {member.role}
-                                  </Badge>
-                                </VStack>
-                              </HStack>
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                colorScheme="red"
-                                onClick={() => alert('Remove feature coming soon')}
-                              >
-                                Remove
-                              </Button>
+              {/* Competitions Tab */}
+              <TabPanel p={6}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
+                  {competitionsLoading ? (
+                    [...Array(6)].map((_, i) => (
+                      <Card key={i} borderRadius="xl">
+                        <CardBody>
+                          <SkeletonText noOfLines={4} />
+                        </CardBody>
+                      </Card>
+                    ))
+                  ) : competitions && competitions.length > 0 ? (
+                    competitions.map((comp) => (
+                      <CompetitionCard key={comp.id} competition={comp} />
+                    ))
+                  ) : (
+                    <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
+                      <CardBody py={8}>
+                        <VStack spacing={3}>
+                          <Icon as={FaTrophy} boxSize={12} color="gray.300" />
+                          <Text color="gray.500" textAlign="center" fontWeight="600">
+                            No competitions yet
+                          </Text>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  )}
+                </SimpleGrid>
+              </TabPanel>
+
+              {/* Statistics Tab */}
+              <TabPanel p={6}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
+                    <CardBody p={6}>
+                      <Heading size="sm" mb={6} fontWeight="800">
+                        📊 Performance Metrics
+                      </Heading>
+                      <Stack spacing={6}>
+                        <Box>
+                          <HStack justify="space-between" mb={3}>
+                            <HStack spacing={2}>
+                              <Icon as={FaBolt} color="yellow.500" boxSize={4} />
+                              <Text fontSize="sm" color="gray.600" fontWeight="700">Win Rate</Text>
                             </HStack>
-                          ))}
+                            <Text fontSize="lg" fontWeight="800" color="purple.600">
+                              {stats?.winRate
+                                ? `${(stats.winRate * 100).toFixed(1)}%`
+                                : '0%'}
+                            </Text>
+                          </HStack>
+                          <Progress
+                            value={stats?.winRate ? stats.winRate * 100 : 0}
+                            colorScheme="purple"
+                            size="lg"
+                            borderRadius="full"
+                            hasStripe
+                          />
+                        </Box>
+                        <Divider />
+                        <SimpleGrid columns={2} spacing={5}>
+                          <Box p={4} bg={statWeeklyBg} borderRadius="xl">
+                            <Stat>
+                              <StatLabel color="gray.600" fontSize="xs" fontWeight="700" textTransform="uppercase">Weekly Points</StatLabel>
+                              <StatNumber fontSize="2xl" fontWeight="800" color="purple.600">
+                                {stats?.weeklyPoints?.toLocaleString() || 0}
+                              </StatNumber>
+                            </Stat>
+                          </Box>
+                          <Box p={4} bg={statMonthlyBg} borderRadius="xl">
+                            <Stat>
+                              <StatLabel color="gray.600" fontSize="xs" fontWeight="700" textTransform="uppercase">Monthly Points</StatLabel>
+                              <StatNumber fontSize="2xl" fontWeight="800" color="blue.600">
+                                {stats?.monthlyPoints?.toLocaleString() || 0}
+                              </StatNumber>
+                            </Stat>
+                          </Box>
+                        </SimpleGrid>
                       </Stack>
                     </CardBody>
                   </Card>
 
-                  {/* Recruitment */}
-                  <Card bg={cardBg}>
-                    <CardBody>
-                      <HStack justify="space-between" mb={4}>
-                        <Heading size="sm">Recruitment</Heading>
-                        <Icon as={FaUserPlus} color="green.500" />
-                      </HStack>
-                      <VStack spacing={4}>
-                        <Box>
-                          <Text fontSize="sm" color="gray.600" mb={2}>
-                            Clan Capacity
-                          </Text>
-                          <HStack justify="space-between" mb={2}>
-                            <Text fontSize="xs">
-                              {clan.memberCount}/{clan.maxMembers}
-                            </Text>
-                            <Text fontSize="xs" color="gray.600">
-                              {Math.round(
-                                (clan.memberCount / clan.maxMembers) * 100
-                              )}
-                              %
-                            </Text>
-                          </HStack>
-                          <Progress
-                            value={(clan.memberCount / clan.maxMembers) * 100}
-                            colorScheme="green"
-                            size="sm"
-                            borderRadius="full"
-                          />
-                        </Box>
-                        <Button
-                          w="full"
-                          colorScheme="green"
-                          size="sm"
-                          onClick={() =>
-                            alert('Invite feature coming soon')
-                          }
-                        >
-                          Invite Members
-                        </Button>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-
-                  {/* Competition Control */}
-                  <Card bg={cardBg}>
-                    <CardBody>
-                      <HStack justify="space-between" mb={4}>
-                        <Heading size="sm">Competition Control</Heading>
-                        <Icon as={FaTrophy} color="orange.500" />
-                      </HStack>
-                      <VStack spacing={3}>
-                        <Text fontSize="sm" color="gray.600">
-                          Manage clan competitions and teams
-                        </Text>
-                        <Button
-                          w="full"
-                          colorScheme="orange"
-                          size="sm"
-                          onClick={() =>
-                            navigate(`/clans/${clanId}/competitions`)
-                          }
-                        >
-                          Manage Competitions
-                        </Button>
-                        <Text fontSize="xs" color="gray.500">
-                          Active: {competitions?.length || 0}
-                        </Text>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-
-                  {/* Quick Stats */}
-                  <Card bg={cardBg}>
-                    <CardBody>
-                      <Heading size="sm" mb={4}>
-                        Management Stats
+                  <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
+                    <CardBody p={6}>
+                      <Heading size="sm" mb={6} fontWeight="800">
+                        👥 Member Distribution
                       </Heading>
-                      <Stack spacing={3}>
-                        <HStack justify="space-between">
-                          <Text fontSize="sm">Pending Requests</Text>
-                          <Badge colorScheme="yellow">{pendingRequests?.length || 0}</Badge>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text fontSize="sm">Pending Invites</Text>
-                          <Badge colorScheme="blue">0</Badge>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text fontSize="sm">Leadership</Text>
-                          <Badge colorScheme="purple">{userRole}</Badge>
-                        </HStack>
+                      <Stack spacing={4}>
+                        {stats?.memberRoleDistribution &&
+                          Object.entries(stats.memberRoleDistribution).map(
+                            ([role, count]) => (
+                              <HStack key={role} justify="space-between" p={4} bg={clanInfoBg} borderRadius="xl">
+                                <HStack spacing={3}>
+                                  <Box
+                                    w={4}
+                                    h={4}
+                                    borderRadius="full"
+                                    bg={
+                                      role === 'Leader' ? 'yellow.500' :
+                                      role === 'CoLeader' ? 'orange.500' :
+                                      role === 'Elder' ? 'purple.500' : 'blue.500'
+                                    }
+                                    shadow="md"
+                                  />
+                                  <Text fontSize="sm" fontWeight="700">{role}</Text>
+                                </HStack>
+                                <Badge 
+                                  colorScheme={
+                                    role === 'Leader' ? 'yellow' :
+                                    role === 'CoLeader' ? 'orange' :
+                                    role === 'Elder' ? 'purple' : 'blue'
+                                  }
+                                  fontSize="md"
+                                  px={4}
+                                  py={1.5}
+                                  borderRadius="full"
+                                  fontWeight="800"
+                                >
+                                  {count}
+                                </Badge>
+                              </HStack>
+                            )
+                          )}
                       </Stack>
                     </CardBody>
                   </Card>
                 </SimpleGrid>
               </TabPanel>
-            )}
 
-            {/* Settings Tab (Leader Only) */}
-            {isLeader && (
-              <TabPanel>
-                <Card bg={cardBg}>
-                  <CardBody>
-                    <VStack align="start" spacing={6}>
-                      <Box w="full">
-                        <Heading size="sm" mb={4}>
-                          Clan Settings
-                        </Heading>
-                        <Stack spacing={3}>
-                          <Button
-                            w="full"
-                            variant="outline"
-                            colorScheme="purple"
-                            onClick={() =>
-                              navigate(`/clans/${clanId}/edit`)
-                            }
-                          >
-                            Edit Clan Info
-                          </Button>
-                          <Button
-                            w="full"
-                            variant="outline"
-                            colorScheme="blue"
-                            onClick={() => {
-                              setPrivacyIsPublic(Boolean(clan?.isPublic));
-                              setPrivacyRequireApproval(Boolean(clan?.requireApproval));
-                              setPrivacyJoinCriteria(clan?.joinCriteria || '');
-                              openPrivacy();
-                            }}
-                          >
-                            Privacy Settings
-                          </Button>
-                          <Button
-                            w="full"
-                            variant="outline"
-                            colorScheme="orange"
-                            onClick={() =>
-                              alert('Role management coming soon')
-                            }
-                          >
-                            Role Management
-                          </Button>
-                        </Stack>
-                      </Box>
-                      <Divider />
-                      <Box w="full">
-                        <Text fontSize="sm" fontWeight="bold" color="red.500" mb={3}>
-                          Danger Zone
-                        </Text>
-                        <Button
-                          w="full"
-                          colorScheme="red"
-                          variant="outline"
-                          onClick={() =>
-                            alert('Delete clan feature coming soon')
-                          }
-                        >
-                          Delete Clan
-                        </Button>
-                      </Box>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-            )}
-          </TabPanels>
-        </Tabs>
+              {/* Management Tab (Leaders & CoLeaders) */}
+              {hasLeadership && (
+                <TabPanel p={6}>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                    {isLeaderOrCoLeader && (
+                      <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl" gridColumn={{ md: "1 / -1" }} maxW="2xl" mx="auto" w="full">
+                        <CardBody p={6}>
+                          <HStack justify="space-between" mb={6} align="center">
+                            <HStack spacing={3}>
+                              <Icon as={FaUserPlus} color="purple.500" boxSize={6} />
+                              <Heading size="sm" fontWeight="800">
+                                Pending Join Requests
+                              </Heading>
+                            </HStack>
+                            <Badge 
+                              colorScheme="yellow"
+                              fontSize="lg"
+                              px={4}
+                              py={2}
+                              borderRadius="full"
+                              fontWeight="800"
+                            >
+                              {pendingRequests?.length || 0}
+                            </Badge>
+                          </HStack>
 
-        <Modal isOpen={isPrivacyOpen} onClose={closePrivacy} isCentered>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Privacy Settings</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <FormControl display="flex" alignItems="center" mb={4}>
-                <FormLabel htmlFor="isPublic" mb="0">Public Clan</FormLabel>
-                <Switch id="isPublic" isChecked={privacyIsPublic} onChange={(e) => setPrivacyIsPublic(e.target.checked)} />
-              </FormControl>
+                          {pendingRequestsLoading ? (
+                            <Stack spacing={4}>
+                              {[...Array(3)].map((_, i) => (
+                                <Skeleton key={i} height="100px" borderRadius="xl" />
+                              ))}
+                            </Stack>
+                          ) : pendingRequests && pendingRequests.length > 0 ? (
+                            <Stack spacing={4}>
+                              {pendingRequests.map((req) => {
+                                const isProcessing =
+                                  decideJoinRequestMutation.isLoading &&
+                                  decideJoinRequestMutation.variables?.requestId === req.id;
 
-              <FormControl display="flex" alignItems="center" mb={4}>
-                <FormLabel htmlFor="requireApproval" mb="0">Require Approval to Join</FormLabel>
-                <Switch id="requireApproval" isChecked={privacyRequireApproval} onChange={(e) => setPrivacyRequireApproval(e.target.checked)} />
-              </FormControl>
+                                return (
+                                  <Box
+                                    key={req.id}
+                                    p={5}
+                                    borderRadius="xl"
+                                    bg={pendingRequestBg}
+                                    borderWidth="2px"
+                                    borderColor="transparent"
+                                    _hover={{ borderColor: 'purple.300', shadow: 'md' }}
+                                    transition="all 0.2s ease"
+                                  >
+                                    <Flex direction={{ base: 'column', md: 'row' }} gap={4}>
+                                      <HStack flex={1} align="start" spacing={4}>
+                                        <Avatar
+                                          size="md"
+                                          name={req.userName}
+                                          src={req.profileImageUrl}
+                                          cursor="pointer"
+                                          onClick={() => navigate(`/profile/${req.userId}`)}
+                                          borderWidth="3px"
+                                          borderColor="purple.400"
+                                        />
+                                        <VStack align="start" spacing={2} flex={1}>
+                                          <Text 
+                                            fontSize="md" 
+                                            fontWeight="800"
+                                            cursor="pointer"
+                                            _hover={{ color: 'purple.500' }}
+                                            onClick={() => navigate(`/profile/${req.userId}`)}
+                                          >
+                                            {req.userName}
+                                          </Text>
+                                          <Text fontSize="xs" color="gray.500" fontWeight="600">
+                                            📅 Requested {new Date(req.requestedAt).toLocaleDateString('en-US', {
+                                              month: 'short',
+                                              day: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit'
+                                            })}
+                                          </Text>
+                                          {req.message && (
+                                            <Text 
+                                              fontSize="sm" 
+                                              color="gray.700" 
+                                              noOfLines={2}
+                                              fontStyle="italic"
+                                              bg={cardBg}
+                                              p={3}
+                                              borderRadius="lg"
+                                              borderLeftWidth="3px"
+                                              borderLeftColor="purple.400"
+                                            >
+                                              "{req.message}"
+                                            </Text>
+                                          )}
+                                        </VStack>
+                                      </HStack>
+                                      <VStack spacing={2}>
+                                        <Button
+                                          size="sm"
+                                          colorScheme="purple"
+                                          variant="outline"
+                                          w="full"
+                                          borderRadius="lg"
+                                          fontWeight="700"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/profile/${req.userId}`);
+                                          }}
+                                        >
+                                          👤 View Profile
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          colorScheme="green"
+                                          w="full"
+                                          borderRadius="lg"
+                                          fontWeight="700"
+                                          isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'approve'}
+                                          onClick={() => handleJoinRequestDecision(req.id, 'approve')}
+                                          leftIcon={<Text>✓</Text>}
+                                        >
+                                          Accept
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          colorScheme="red"
+                                          variant="outline"
+                                          w="full"
+                                          borderRadius="lg"
+                                          fontWeight="700"
+                                          isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'reject'}
+                                          onClick={() => handleJoinRequestDecision(req.id, 'reject')}
+                                          leftIcon={<Text>✕</Text>}
+                                        >
+                                          Reject
+                                        </Button>
+                                      </VStack>
+                                    </Flex>
+                                  </Box>
+                                );
+                              })}
+                            </Stack>
+                          ) : (
+                            <VStack py={8} spacing={3}>
+                              <Icon as={FaUserPlus} boxSize={12} color="gray.300" />
+                              <Text color="gray.500" textAlign="center" fontWeight="600">
+                                No pending requests
+                              </Text>
+                              <Text color="gray.400" textAlign="center" fontSize="sm">
+                                New join requests will appear here
+                              </Text>
+                            </VStack>
+                          )}
+                        </CardBody>
+                      </Card>
+                    )}
+                  </SimpleGrid>
+                </TabPanel>
+              )}
+            </TabPanels>
+          </Tabs>
+        </Card>
 
-              <FormControl mb={4}>
-                <FormLabel>Join Criteria (optional)</FormLabel>
-                <Input value={privacyJoinCriteria || ''} onChange={(e) => setPrivacyJoinCriteria(e.target.value)} placeholder="e.g. Min rank, points, etc." />
-              </FormControl>
+        {/* Enhanced Settings Modal */}
+        <Modal isOpen={isPrivacyOpen} onClose={closePrivacy} isCentered size="lg">
+          <ModalOverlay backdropFilter="blur(4px)" />
+          <ModalContent borderRadius="2xl" mx={4}>
+            <ModalHeader fontWeight="800" fontSize="2xl" pt={6}>
+              🔒 Privacy Settings
+            </ModalHeader>
+            <ModalCloseButton top={6} right={6} />
+            <ModalBody pb={6}>
+              <Stack spacing={6}>
+                <FormControl display="flex" alignItems="center" p={4} bg={modalFormBg} borderRadius="xl">
+                  <FormLabel htmlFor="isPublic" mb="0" flex="1" fontWeight="700">
+                    🌐 Public Clan
+                  </FormLabel>
+                  <Switch 
+                    id="isPublic" 
+                    isChecked={privacyIsPublic} 
+                    onChange={(e) => setPrivacyIsPublic(e.target.checked)} 
+                    colorScheme="purple"
+                    size="lg"
+                  />
+                </FormControl>
+
+                <FormControl display="flex" alignItems="center" p={4} bg={modalFormBg} borderRadius="xl">
+                  <FormLabel htmlFor="requireApproval" mb="0" flex="1" fontWeight="700">
+                    ✓ Require Approval to Join
+                  </FormLabel>
+                  <Switch 
+                    id="requireApproval" 
+                    isChecked={privacyRequireApproval} 
+                    onChange={(e) => setPrivacyRequireApproval(e.target.checked)} 
+                    colorScheme="purple"
+                    size="lg"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel fontWeight="700" fontSize="md">📝 Join Criteria (optional)</FormLabel>
+                  <Input 
+                    value={privacyJoinCriteria || ''} 
+                    onChange={(e) => setPrivacyJoinCriteria(e.target.value)} 
+                    placeholder="e.g. Minimum rank, points, etc."
+                    size="lg"
+                    borderRadius="xl"
+                    borderWidth="2px"
+                    bg={modalFormBg}
+                    _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+                  />
+                </FormControl>
+              </Stack>
             </ModalBody>
 
-            <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={closePrivacy}>Cancel</Button>
-              <Button colorScheme="purple" onClick={handleSavePrivacy} isLoading={privacyMutation.isLoading}>Save</Button>
+            <ModalFooter pb={6} gap={3}>
+              <Button 
+                variant="ghost" 
+                onClick={closePrivacy}
+                size="lg"
+                borderRadius="xl"
+                fontWeight="700"
+              >
+                Cancel
+              </Button>
+              <Button 
+                colorScheme="purple" 
+                onClick={handleSavePrivacy} 
+                isLoading={privacyMutation.isLoading}
+                size="lg"
+                borderRadius="xl"
+                fontWeight="700"
+                px={8}
+                shadow="md"
+              >
+                💾 Save Changes
+              </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
-
       </Container>
     </Box>
   );

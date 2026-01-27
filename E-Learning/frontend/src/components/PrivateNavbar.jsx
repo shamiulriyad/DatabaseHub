@@ -130,7 +130,7 @@ const PrivateNavbar = () => {
                         <MenuItem as={RouterLink} to="/admin/dashboard">
                           Admin Dashboard
                         </MenuItem>
-                        <MenuItem as={RouterLink} to="/admin/teachers">
+                        <MenuItem as={RouterLink} to="/admin/manage-teachers">
                           Pending Teachers
                         </MenuItem>
                         <MenuItem as={RouterLink} to="/admin/manage-teachers">

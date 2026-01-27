@@ -76,10 +76,59 @@ const ManageTeachers = () => {
 
         response.data.applications.forEach((app) => {
           // Handle both 'status' and 'Status' field names for compatibility
-          const appStatus = app.Status || app.status || 'Pending';
-          console.log('Grouping app:', app.UserEmail, 'Status:', appStatus);
+          const appStatus = app.Status ?? app.status ?? 'Pending';
+
+          // Helper: robust date parse -> ISO string or null
+          const safeDate = (d) => {
+            if (!d && d !== 0) return null;
+            try {
+              // Numeric timestamp (ms) or numeric string
+              if (typeof d === 'number' || /^\d+$/.test(String(d).trim())) {
+                const ts = Number(d);
+                const dt = new Date(ts);
+                if (!isNaN(dt.getTime())) return dt.toISOString();
+              }
+
+              // Try Date constructor (handles ISO and many formats)
+              const dt2 = new Date(d);
+              if (!isNaN(dt2.getTime())) return dt2.toISOString();
+
+              // Fallback to Date.parse
+              const parsed = Date.parse(String(d));
+              if (!isNaN(parsed)) return new Date(parsed).toISOString();
+            } catch (e) {
+              // ignore and return null below
+            }
+            return null;
+          };
+
+          const first = app.FirstName ?? app.firstName ?? app.Firstname ?? '';
+          const last = app.LastName ?? app.lastName ?? app.Lastname ?? '';
+          const nameFromParts = (first + ' ' + last).trim();
+
+          const applicantName = ((app.ApplicantName ?? app.applicantName ?? nameFromParts) || app.UserName || app.userName || app.user?.username || 'N/A');
+          const applicantEmail = app.ApplicantEmail ?? app.applicantEmail ?? app.UserEmail ?? app.userEmail ?? app.user?.email ?? 'N/A';
+          const reason = app.ReasonForApplying ?? app.reasonForApplying ?? app.Reason ?? app.reason ?? '';
+
+          const applicationDate = safeDate(app.ApplicationDate ?? app.applicationDate ?? app.applicationDateUtc ?? app.ApplicationDateUtc);
+          const approvedDate = safeDate(app.ApprovedDate ?? app.approvedDate ?? app.ApprovedDateUtc ?? app.approvedDateUtc);
+          const reviewedDate = safeDate(app.ReviewedDate ?? app.reviewedDate ?? app.ReviewedDateUtc ?? app.reviewedDateUtc);
+
+          const adminRemarks = app.AdminRemarks ?? app.adminRemarks ?? app.AdminRemark ?? app.adminRemark ?? '';
+
+          const normalized = {
+            ...app,
+            ApplicantName: applicantName,
+            ApplicantEmail: applicantEmail,
+            ReasonForApplying: reason,
+            ApplicationDate: applicationDate,
+            ApprovedDate: approvedDate,
+            ReviewedDate: reviewedDate,
+            AdminRemarks: adminRemarks,
+          };
+
           grouped[appStatus] = grouped[appStatus] || [];
-          grouped[appStatus].push(app);
+          grouped[appStatus].push(normalized);
         });
 
         console.log('Final grouped applications:', grouped);
@@ -201,16 +250,16 @@ const ManageTeachers = () => {
                             <HStack justify="space-between" align="start">
                               <VStack align="start" spacing={2} flex={1}>
                                 <Heading size="sm">
-                                  {app.applicantName}
+                                  {app.ApplicantName}
                                 </Heading>
                                 <Text fontSize="sm" color="gray.600">
-                                  {app.applicantEmail}
+                                  {app.ApplicantEmail}
                                 </Text>
                                 <Text fontSize="sm">
-                                  {app.reasonForApplying}
+                                  {app.ReasonForApplying}
                                 </Text>
                                 <Text fontSize="xs" color="gray.500">
-                                  Applied: {new Date(app.applicationDate).toLocaleDateString()}
+                                  Applied: {app.ApplicationDate ? new Date(app.ApplicationDate).toLocaleDateString() : 'N/A'}
                                 </Text>
                               </VStack>
                               <Button
@@ -248,12 +297,12 @@ const ManageTeachers = () => {
                       <Tbody>
                         {applications.Approved.map((app) => (
                           <Tr key={app.id} borderBottomColor={borderColor}>
-                            <Td fontWeight="bold">{app.applicantName}</Td>
-                            <Td>{app.applicantEmail}</Td>
+                            <Td fontWeight="bold">{app.ApplicantName}</Td>
+                            <Td>{app.ApplicantEmail}</Td>
                             <Td>
-                              {app.approvedDate
-                                ? new Date(app.approvedDate).toLocaleDateString()
-                                : 'N/A'}
+                              {app.ApprovedDate
+                                ? new Date(app.ApprovedDate).toLocaleDateString()
+                                : (app.ReviewedDate ? new Date(app.ReviewedDate).toLocaleDateString() : 'N/A')}
                             </Td>
                             <Td>
                               <Button
@@ -291,14 +340,14 @@ const ManageTeachers = () => {
                       <Tbody>
                         {applications.Rejected.map((app) => (
                           <Tr key={app.id} borderBottomColor={borderColor}>
-                            <Td fontWeight="bold">{app.applicantName}</Td>
-                            <Td>{app.applicantEmail}</Td>
+                            <Td fontWeight="bold">{app.ApplicantName}</Td>
+                            <Td>{app.ApplicantEmail}</Td>
                             <Td>
-                              {app.reviewedDate
-                                ? new Date(app.reviewedDate).toLocaleDateString()
+                              {app.ReviewedDate
+                                ? new Date(app.ReviewedDate).toLocaleDateString()
                                 : 'N/A'}
                             </Td>
-                            <Td>{app.adminRemarks || 'No remarks'}</Td>
+                            <Td>{app.AdminRemarks ?? app.adminRemarks ?? 'No remarks'}</Td>
                           </Tr>
                         ))}
                       </Tbody>

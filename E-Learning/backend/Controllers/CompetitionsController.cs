@@ -283,6 +283,21 @@ namespace backend.Controllers
             });
         }
 
+        [Authorize]
+        [HttpPost("{id}/submit-answers")]
+        public async Task<IActionResult> SubmitCompetitionAnswers(int id, [FromBody] DTOs.SubmitCompetitionAnswersDTO payload)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _competitionService.SubmitCompetitionAnswers(id, userId, payload);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = result.Message, data = result.Data });
+        }
+
         // STATS
 
         [HttpGet("{id}/stats")]

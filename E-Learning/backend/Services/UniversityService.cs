@@ -37,18 +37,8 @@ namespace backend.Services
                 _context.Universities.Add(university);
                 await _context.SaveChangesAsync();
 
-                // Seed default departments for this university so teachers see options immediately
-                var defaultDepartments = new List<Models.Department>
-                {
-                    new Models.Department { Name = "Computer Science and Engineering", Code = "CSE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
-                    new Models.Department { Name = "Electrical and Electronic Engineering", Code = "EEE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
-                    new Models.Department { Name = "Civil Engineering", Code = "CE", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
-                    new Models.Department { Name = "Mechanical Engineering", Code = "ME", UniversityId = university.Id, DepartmentType = "Engineering", CreatedAt = DateTime.UtcNow },
-                    new Models.Department { Name = "Business Administration", Code = "BBA", UniversityId = university.Id, DepartmentType = "Business", CreatedAt = DateTime.UtcNow }
-                };
-
-                _context.Departments.AddRange(defaultDepartments);
-                await _context.SaveChangesAsync();
+                // Note: Previously we seeded a set of default departments here.
+                // Removed automatic seeding so newly created universities start with no departments.
 
                 var universityDto = MapToDTO(university);
                 return ServiceResult<UniversityDTO>.SuccessResult(universityDto, "University created successfully");
@@ -59,7 +49,7 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<UniversityDTO>> GetUniversityById(int universityId)
+        public async Task<ServiceResult<UniversityDTO>> GetUniversityById(int universityId, int? callerUserId = null)
         {
             try
             {
@@ -69,6 +59,10 @@ namespace backend.Services
                     return ServiceResult<UniversityDTO>.FailureResult("University not found");
 
                 var universityDto = MapToDTO(university);
+
+                // allow editing by all users
+                universityDto.CanEdit = true;
+
                 return ServiceResult<UniversityDTO>.SuccessResult(universityDto);
             }
             catch (Exception ex)
@@ -77,7 +71,7 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<List<UniversityDTO>>> GetAllUniversities(int page, int pageSize)
+        public async Task<ServiceResult<List<UniversityDTO>>> GetAllUniversities(int page, int pageSize, int? callerUserId = null)
         {
             try
             {
@@ -88,7 +82,35 @@ namespace backend.Services
                     .Take(pageSize)
                     .ToListAsync();
 
-                var universityDtos = universities.Select(MapToDTO).ToList();
+                // Determine which universities the caller can edit (if caller provided)
+                bool isAdmin = false;
+                HashSet<int> editableUniversityIds = new HashSet<int>();
+                if (callerUserId.HasValue)
+                {
+                    var caller = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == callerUserId.Value);
+                    if (caller != null)
+                    {
+                        isAdmin = caller.IsAdmin;
+                        if (!isAdmin)
+                        {
+                            var ids = await _context.Enrollments
+                                .AsNoTracking()
+                                .Where(e => e.UserId == callerUserId.Value && e.Course.UniversityId != null)
+                                .Select(e => e.Course.UniversityId)
+                                .Distinct()
+                                .ToListAsync();
+                            foreach (var id in ids) editableUniversityIds.Add(id);
+                        }
+                    }
+                }
+
+                var universityDtos = universities.Select(u => {
+                    var dto = MapToDTO(u);
+                    // expose edit capability to all users
+                    dto.CanEdit = true;
+                    return dto;
+                }).ToList();
+
                 return ServiceResult<List<UniversityDTO>>.SuccessResult(universityDtos);
             }
             catch (Exception ex)
@@ -97,7 +119,7 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<UniversityDTO>> UpdateUniversity(int universityId, UpdateUniversityDTO dto)
+        public async Task<ServiceResult<UniversityDTO>> UpdateUniversity(int universityId, UpdateUniversityDTO dto, int? callerUserId = null)
         {
             try
             {
@@ -105,6 +127,10 @@ namespace backend.Services
                 
                 if (university == null)
                     return ServiceResult<UniversityDTO>.FailureResult("University not found");
+
+                // Editing allowed for all authenticated users only
+                if (!callerUserId.HasValue)
+                    return ServiceResult<UniversityDTO>.FailureResult("Unauthorized");
 
                 if (!string.IsNullOrEmpty(dto.Name))
                     university.Name = dto.Name;
@@ -129,6 +155,8 @@ namespace backend.Services
                 await _context.SaveChangesAsync();
 
                 var universityDto = MapToDTO(university);
+                // Maintain CanEdit: caller can edit (we already checked)
+                universityDto.CanEdit = true;
                 return ServiceResult<UniversityDTO>.SuccessResult(universityDto, "University updated successfully");
             }
             catch (Exception ex)
@@ -281,7 +309,7 @@ namespace backend.Services
             }
         }
 
-        public async Task<ServiceResult<UniversityDetailDTO>> GetUniversityDetails(int universityId)
+        public async Task<ServiceResult<UniversityDetailDTO>> GetUniversityDetails(int universityId, int? callerUserId = null)
         {
             try
             {
@@ -362,6 +390,9 @@ namespace backend.Services
                     TopTeachers = topTeachers,
                     Stats = stats.Data
                 };
+
+                // expose edit capability to all users
+                detailDTO.CanEdit = true;
 
                 return ServiceResult<UniversityDetailDTO>.SuccessResult(detailDTO);
             }
