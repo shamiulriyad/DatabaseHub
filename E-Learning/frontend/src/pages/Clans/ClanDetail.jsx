@@ -61,6 +61,7 @@ import {
   FaUserPlus,
   FaSignOutAlt,
   FaCog,
+  FaEdit,
   FaChartLine,
   FaCalendar,
   FaMedal,
@@ -759,20 +760,33 @@ const ClanDetail = () => {
 
               {/* Action Buttons - Right Side */}
               <VStack spacing={2} flexShrink={0} minW={{ base: 'full', md: '160px' }}>
-                {isMember ? (
+                  {isMember ? (
                   <>
                     {isLeaderOrCoLeader && (
-                      <Button
-                        colorScheme="purple"
-                        leftIcon={<FaCog />}
-                        w="full"
-                        onClick={() => navigate(`/clans/${clanId}/members`)}
-                        size="sm"
-                        borderRadius="lg"
-                        fontWeight="600"
-                      >
-                        Manage Clan
-                      </Button>
+                      <HStack w="full" spacing={2}>
+                        <Button
+                          colorScheme="purple"
+                          leftIcon={<FaEdit />}
+                          w="full"
+                          onClick={() => navigate(`/clans/${clanId}/edit`)}
+                          size="sm"
+                          borderRadius="lg"
+                          fontWeight="600"
+                        >
+                          Edit Clan
+                        </Button>
+                        <Button
+                          colorScheme="purple"
+                          leftIcon={<FaCog />}
+                          w="full"
+                          onClick={() => navigate(`/clans/${clanId}/members`)}
+                          size="sm"
+                          borderRadius="lg"
+                          fontWeight="600"
+                        >
+                          Manage Clan
+                        </Button>
+                      </HStack>
                     )}
                     <Button
                       variant="outline"
@@ -856,11 +870,11 @@ const ClanDetail = () => {
         >
           <Tabs colorScheme="purple" size="sm">
             <TabList 
-              px={4} 
-              pt={3}
-              pb={2}
+              px={6} 
+              pt={4}
+              pb={3}
               overflowX="auto"
-              gap={1}
+              gap={3}
               css={{
                 '&::-webkit-scrollbar': {
                   height: '4px',
@@ -875,13 +889,13 @@ const ClanDetail = () => {
               }}
             >
               <Tab 
-                fontWeight="600" 
-                fontSize="xs"
-                px={3}
-                py={1.5}
+                fontWeight="700" 
+                fontSize="sm"
+                px={4}
+                py={2}
                 _selected={{ 
                   color: 'purple.600', 
-                  borderBottomWidth: '2px',
+                  borderBottomWidth: '3px',
                   borderBottomColor: 'purple.600'
                 }}
               >
@@ -889,13 +903,13 @@ const ClanDetail = () => {
               </Tab>
               {isMember && (
                 <Tab 
-                  fontWeight="600"
-                  fontSize="xs"
-                  px={3}
-                  py={1.5}
+                  fontWeight="700"
+                  fontSize="sm"
+                  px={4}
+                  py={2}
                   _selected={{ 
                     color: 'purple.600', 
-                    borderBottomWidth: '2px',
+                    borderBottomWidth: '3px',
                     borderBottomColor: 'purple.600'
                   }}
                 >
@@ -904,13 +918,13 @@ const ClanDetail = () => {
               )}
               {isMember && (
                 <Tab 
-                  fontWeight="600"
-                  fontSize="xs"
-                  px={3}
-                  py={1.5}
+                  fontWeight="700"
+                  fontSize="sm"
+                  px={4}
+                  py={2}
                   _selected={{ 
                     color: 'purple.600', 
-                    borderBottomWidth: '2px',
+                    borderBottomWidth: '3px',
                     borderBottomColor: 'purple.600'
                   }}
                 >
@@ -918,39 +932,39 @@ const ClanDetail = () => {
                 </Tab>
               )}
               <Tab 
-                fontWeight="600"
-                fontSize="xs"
-                px={3}
-                py={1.5}
+                fontWeight="700"
+                fontSize="sm"
+                px={4}
+                py={2}
                 _selected={{ 
                   color: 'purple.600', 
-                  borderBottomWidth: '2px',
+                  borderBottomWidth: '3px',
                   borderBottomColor: 'purple.600'
                 }}
               >
                 👥 Members ({members?.length || 0})
               </Tab>
               <Tab 
-                fontWeight="600"
-                fontSize="xs"
-                px={3}
-                py={1.5}
+                fontWeight="700"
+                fontSize="sm"
+                px={4}
+                py={2}
                 _selected={{ 
                   color: 'purple.600', 
-                  borderBottomWidth: '2px',
+                  borderBottomWidth: '3px',
                   borderBottomColor: 'purple.600'
                 }}
               >
                 🏆 Competitions ({competitions?.length || 0})
               </Tab>
               <Tab 
-                fontWeight="600"
-                fontSize="xs"
-                px={3}
-                py={1.5}
+                fontWeight="700"
+                fontSize="sm"
+                px={4}
+                py={2}
                 _selected={{ 
                   color: 'purple.600', 
-                  borderBottomWidth: '2px',
+                  borderBottomWidth: '3px',
                   borderBottomColor: 'purple.600'
                 }}
               >
@@ -958,17 +972,17 @@ const ClanDetail = () => {
               </Tab>
               {hasLeadership && (
                 <Tab 
-                  fontWeight="600"
-                  fontSize="xs"
-                  px={3}
-                  py={1.5}
+                  fontWeight="700"
+                  fontSize="sm"
+                  px={4}
+                  py={2}
                   _selected={{ 
                     color: 'purple.600', 
-                    borderBottomWidth: '2px',
+                    borderBottomWidth: '3px',
                     borderBottomColor: 'purple.600'
                   }}
                 >
-                  <Icon as={FaCog} mr={1} boxSize={2.5} />
+                  <Icon as={FaCog} mr={2} boxSize={5} />
                   Management
                 </Tab>
               )}

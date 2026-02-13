@@ -21,8 +21,4 @@
 }
 
 /* Responsive: Add padding on desktop when sidebar is visible */
-@media (min-width: 768px) {
-  .main-content {
-    padding-left: 16px;
-  }
-}
+/* Removed default desktop left padding to prevent visible body gutter */

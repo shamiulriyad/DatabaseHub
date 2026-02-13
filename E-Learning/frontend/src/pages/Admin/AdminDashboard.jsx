@@ -81,8 +81,9 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
+  // Use same background as Navbar so page edge doesn't show a different (black) strip
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   useEffect(() => {
