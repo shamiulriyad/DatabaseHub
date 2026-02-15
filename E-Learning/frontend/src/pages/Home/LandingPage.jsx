@@ -13,6 +13,7 @@ import {
   VStack,
   HStack,
   Icon,
+  Image,
   useColorModeValue,
   Grid,
   Badge,
@@ -69,6 +70,7 @@ const LandingPage = () => {
       title: 'Earn Credentials',
       description: 'Get recognized certificates and achievements to boost your career',
       color: 'green',
+      
     },
   ];
 
@@ -85,7 +87,7 @@ const LandingPage = () => {
     <Box minH="100vh">
       {/* ===== HERO SECTION ===== */}
       <Box
-        bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
+        bgGradient="linear(135deg, brand.600 0%, navy.500 100%)"
         color="white"
         py={{ base: 20, md: 32 }}
         position="relative"
@@ -93,14 +95,14 @@ const LandingPage = () => {
       >
         {/* Animated Background */}
         <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          bottom="0"
-          opacity="0.1"
-          bgImage="url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
-        />
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            opacity="0.08"
+            bgImage="url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4AF37' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
+          />
 
         <Container maxW="7xl" position="relative" zIndex={1}>
           <Grid templateColumns={{ base: '1fr', lg: '1.2fr 1fr' }} gap={12} alignItems="center">
@@ -191,15 +193,19 @@ const LandingPage = () => {
               </HStack>
             </VStack>
 
-            {/* Hero Illustration */}
+            {/* Hero Illustration (photo) */}
             <Box display={{ base: 'none', lg: 'flex' }} justifyContent="center" alignItems="center" minH="400px">
-              <Box position="relative">
-                <Icon 
-                  as={FaGraduationCap} 
-                  boxSize="200px" 
-                  opacity={0.2}
-                  filter="drop-shadow(0 20px 40px rgba(0,0,0,0.3))"
+              <Box position="relative" maxW="480px" width="100%" height="360px" borderRadius="20px" overflow="hidden" boxShadow="xl">
+                <Image
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
+                  alt="Person using laptop"
+                  objectFit="cover"
+                  width="100%"
+                  height="100%"
                 />
+                {/* Decorative overlay shapes */}
+                <Box position="absolute" top="-20px" right="-40px" width="120px" height="120px" bg="yellow.300" opacity={0.85} transform="rotate(15deg)" borderRadius="lg" />
+                <Box position="absolute" bottom="-30px" left="-30px" width="160px" height="160px" bg="green.300" opacity={0.12} borderRadius="2xl" />
               </Box>
             </Box>
           </Grid>
@@ -264,7 +270,7 @@ const LandingPage = () => {
       </Container>
 
       {/* ===== COMMUNITY / CLAN SECTION ===== */}
-      <Box py={20} bgGradient="linear(135deg, purple.50, blue.50)" _dark={{ bgGradient: "linear(135deg, purple.900, blue.900)" }}>
+      <Box py={20} bgGradient="linear(135deg, brand.50, navy.50)" _dark={{ bgGradient: "linear(135deg, brand.900, navy.500)" }}>
         <Container maxW="7xl">
           <VStack spacing={12} align="center">
             <VStack spacing={4} textAlign="center">
@@ -343,7 +349,7 @@ const LandingPage = () => {
 
             <Button
               size="lg"
-              bgGradient="linear(135deg, purple.600, blue.600)"
+              bgGradient="linear(135deg, brand.600, navy.500)"
               color="white"
               _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
               transition="all 0.3s"
@@ -385,7 +391,7 @@ const LandingPage = () => {
               <Button
                 mt={4}
                 size="lg"
-                bgGradient="linear(135deg, purple.600, blue.600)"
+                bgGradient="linear(135deg, brand.600, navy.500)"
                 color="white"
                 _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
                 transition="all 0.3s"
@@ -671,7 +677,7 @@ const LandingPage = () => {
                 <Button
                   w="full"
                   size="lg"
-                  bgGradient="linear(135deg, purple.600, blue.600)"
+                  bgGradient="linear(135deg, brand.600, navy.500)"
                   color="white"
                   _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
                   transition="all 0.3s"

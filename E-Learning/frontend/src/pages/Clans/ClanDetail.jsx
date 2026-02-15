@@ -45,6 +45,7 @@ import {
   ModalFooter,
   ModalCloseButton,
   useDisclosure,
+ 
   Switch,
   FormControl,
   FormLabel,
@@ -68,6 +69,7 @@ import {
   FaFire,
   FaBolt,
   FaAward,
+ 
 } from 'react-icons/fa';
 
 const fetchClanDetails = async (clanId) => {

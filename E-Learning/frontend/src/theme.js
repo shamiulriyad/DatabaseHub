@@ -2,28 +2,30 @@ import { extendTheme } from '@chakra-ui/react';
 
 const colors = {
   brand: {
-    50: '#EEF4EF',
-    100: '#D7E6D8',
-    200: '#BFD8C1',
-    300: '#A7C9AA',
-    400: '#6F9F73',
-    500: '#2C5F2D',   // Primary Brand Green
-    600: '#254F26',
-    700: '#1E3F1F',
-    800: '#162E17',
-    900: '#0F1E10',
+    50: '#F7F5FF',
+    100: '#EDE5FF',
+    200: '#D5C6FF',
+    300: '#B99BFF',
+    400: '#8F68FF',
+    500: '#6F3BFF',   // Rich violet — primary
+    600: '#5B30E6',
+    700: '#4426B3',
+    800: '#311A80',
+    900: '#20124D',
   },
 
   navy: {
-    500: '#1B3B6F',   // Academic navy
+    50: '#F2F5F8',
+    100: '#E6EEF6',
+    500: '#071028',   // Deep premium navy
   },
 
-  background: '#F4F1EC', // Ivory parchment
-  card: '#E7E2D9',       // Paper-like card background
-  text: '#1F1F1F',       // Deep charcoal
-  textSecondary: '#6B6B6B',
-  accent: '#C9A66B',     // Antique gold
-  border: '#CFC6B8',
+  background: '#0B0E14', // Dark canvas for premium feel
+  card: '#0F1724',       // Slightly lighter than background
+  text: '#EAF0FF',       // Pale text for contrast
+  textSecondary: '#9AA4B2',
+  accent: '#D4AF37',     // Premium gold
+  border: '#1B2633',
 };
 
 const config = {
@@ -56,26 +58,26 @@ const components = {
   },
 
   Card: {
-    baseStyle: {
-      bg: 'card',
+    baseStyle: (props) => ({
+      bg: props.colorMode === 'dark' ? 'card' : '#FFFFFF',
       borderRadius: 'lg',
-      boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
-    },
+      boxShadow: props.colorMode === 'dark' ? '0 8px 30px rgba(2,6,23,0.6)' : '0 6px 18px rgba(2,6,23,0.06)',
+    }),
   },
 };
 
 const styles = {
   global: props => ({
     'html, body': {
-      bg: props.colorMode === 'dark' ? 'gray.900' : colors.background,
-      color: props.colorMode === 'dark' ? 'gray.100' : colors.text,
+      bg: props.colorMode === 'dark' ? colors.background : '#FFFFFF',
+      color: props.colorMode === 'dark' ? colors.text : '#0F1724',
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
     },
 
     a: {
-      color: 'brand.500',
-      fontWeight: 500,
+      color: 'brand.300',
+      fontWeight: 600,
       _hover: {
         textDecoration: 'underline',
       },

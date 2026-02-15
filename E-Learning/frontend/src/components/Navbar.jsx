@@ -50,13 +50,13 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   
-  const navBg = useColorModeValue('white', 'gray.800');
-  const navShadow = useColorModeValue('md', 'md');
-  const linkColor = useColorModeValue('gray.600', 'gray.300');
-  const linkHoverColor = useColorModeValue('purple.600', 'purple.400');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const hoverBg = useColorModeValue('gray.100', 'gray.700');
-  const loginButtonHoverBg = useColorModeValue('gray.100', 'gray.700');
+  const navGradient = 'linear(135deg, brand.600 0%, navy.500 100%)';
+  const navShadow = 'none';
+  const linkColor = 'white';
+  const linkHoverColor = 'accent';
+  const borderColor = 'transparent';
+  const hoverBg = 'rgba(255,255,255,0.04)';
+  const loginButtonHoverBg = 'rgba(255,255,255,0.04)';
 
   const handleLogout = () => {
     logout();
@@ -81,7 +81,7 @@ const Navbar = () => {
   );
 
   return (
-    <Box bg={navBg} shadow={navShadow} position="sticky" top={0} zIndex={100} borderBottom="1px" borderColor={borderColor}>
+    <Box bgGradient={navGradient} shadow={navShadow} position="sticky" top={0} zIndex={100} borderBottom="0" borderColor={borderColor}>
       <Container maxW="7xl" py={0}>
         <Flex h={16} alignItems="center" justifyContent="space-between">
           {/* Logo */}
@@ -94,10 +94,9 @@ const Navbar = () => {
             _hover={{ textDecor: 'none' }}
             fontWeight="bold"
             fontSize="xl"
-            bgGradient="linear(135deg, purple.600, blue.600)"
-            bgClip="text"
+            color="white"
           >
-            <Icon as={FaBook} color="purple.600" boxSize={6} />
+            <Icon as={FaBook} color="white" boxSize={6} />
             NextUniVerse
           </Link>
 
@@ -185,9 +184,9 @@ const Navbar = () => {
                 </Button>
                 <Button
                   size="sm"
-                  bg="purple.600"
+                  bg="brand.500"
                   color="white"
-                  _hover={{ bg: 'purple.700' }}
+                  _hover={{ bg: 'brand.600' }}
                   as={RouterLink}
                   to="/register"
                 >

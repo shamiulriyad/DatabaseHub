@@ -36,6 +36,7 @@ import {
   Grid,
   GridItem,
 } from '@chakra-ui/react';
+import { formatTime } from '../../utils/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { 
   FaBook, 
@@ -85,7 +86,7 @@ const Hero = () => {
   return (
     <Box
       position="relative"
-      bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
+      bgGradient="linear(135deg, brand.600 0%, navy.500 100%)"
       color="white"
       py={{ base: 20, md: 32 }}
       overflow="hidden"
@@ -97,8 +98,8 @@ const Hero = () => {
         left="0"
         right="0"
         bottom="0"
-        opacity="0.1"
-        bgImage="url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
+        opacity="0.08"
+        bgImage="url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4AF37' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
       />
       
       <Container maxW="7xl" position="relative" zIndex={1}>
@@ -108,7 +109,7 @@ const Hero = () => {
               <Badge 
                 colorScheme="purple" 
                 bg="whiteAlpha.300" 
-                color="white" 
+                color="blue.100" 
                 px={3} 
                 py={1} 
                 borderRadius="full" 
@@ -183,7 +184,7 @@ const Hero = () => {
             </SlideFade>
           </GridItem>
           
-          {/* Hero Image/Illustration */}
+          {/* Hero Image/Illustration (photo) */}
           <GridItem display={{ base: 'none', lg: 'block' }}>
             <ScaleFade in initialScale={0.9}>
               <Box 
@@ -193,12 +194,15 @@ const Hero = () => {
                 alignItems="center"
                 justifyContent="center"
               >
-                <Icon 
-                  as={FaGraduationCap} 
-                  boxSize="300px" 
-                  color="whiteAlpha.300"
-                  filter="drop-shadow(0 20px 40px rgba(0,0,0,0.3))"
-                />
+                <Box maxW="520px" width="100%" height="340px" borderRadius="20px" overflow="hidden" boxShadow="xl">
+                  <Image
+                    src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
+                    alt="Student with laptop"
+                    objectFit="cover"
+                    width="100%"
+                    height="100%"
+                  />
+                </Box>
               </Box>
             </ScaleFade>
           </GridItem>
@@ -258,7 +262,7 @@ const CourseCard = ({ course }) => {
               <Box 
                 w="100%" 
                 h="180px" 
-                bgGradient="linear(135deg, purple.400, blue.500)"
+                bgGradient="linear(135deg, brand.400, navy.500)"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -295,9 +299,14 @@ const CourseCard = ({ course }) => {
             <Divider />
             <HStack justify="space-between" fontSize="xs" color="gray.600">
               <HStack spacing={1}>
-                <Icon as={FaClock} />
-                <Text>{course?.durationHours}h</Text>
-              </HStack>
+                  <Icon as={FaClock} />
+                  {
+                    (() => {
+                      const totalSeconds = course?.totalDurationSeconds ?? course?.totalDuration ?? course?.durationSeconds ?? course?.duration ?? course?.contentDuration ?? course?.totalVideoDuration ?? 0;
+                      return <Text>{totalSeconds ? formatTime(totalSeconds) : '—'}</Text>;
+                    })()
+                  }
+                </HStack>
               <Badge colorScheme="blue" variant="subtle" fontSize="xs">
                 {course?.difficultyLevel}
               </Badge>
@@ -420,8 +429,8 @@ const HowItWorks = () => {
     },
     {
       icon: FaCertificate,
-      title: 'Earn Certificates',
-      description: 'Complete courses and earn certificates to showcase your achievements and boost your career.',
+      title: 'Earn achievements',
+      description: 'Complete competitions and earn your achievements and boost your career.',
       color: 'orange',
     },
   ];
@@ -569,7 +578,7 @@ const CallToAction = () => {
   return (
     <Box 
       py={20} 
-      bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
+      bgGradient="linear(135deg, brand.600 0%, navy.500 100%)"
       color="white"
       position="relative"
       overflow="hidden"
@@ -650,7 +659,31 @@ const Home = () => {
   });
 
   const popular = useMemo(() => popularCourses || [], [popularCourses]);
-  const trending = useMemo(() => trendingCourses || [], [trendingCourses]);
+  const sortedPopular = useMemo(() => {
+    const list = Array.isArray(popular) ? popular.slice() : [];
+    list.sort((a, b) => {
+      const ra = Number(a?.averageRating ?? a?.rating ?? 0);
+      const rb = Number(b?.averageRating ?? b?.rating ?? 0);
+      if (rb !== ra) return rb - ra;
+      const ea = Number(a?.enrollmentCount ?? a?.totalEnrolled ?? 0);
+      const eb = Number(b?.enrollmentCount ?? b?.totalEnrolled ?? 0);
+      return eb - ea;
+    });
+    return list;
+  }, [popular]);
+  const trending = useMemo(() => {
+    const list = Array.isArray(trendingCourses) ? trendingCourses.slice() : [];
+    // sort by rating (fallback to different possible rating fields), then by enrollment
+    list.sort((a, b) => {
+      const ra = Number(a?.averageRating ?? a?.rating ?? 0);
+      const rb = Number(b?.averageRating ?? b?.rating ?? 0);
+      if (rb !== ra) return rb - ra;
+      const ea = Number(a?.enrollmentCount ?? a?.totalEnrolled ?? 0);
+      const eb = Number(b?.enrollmentCount ?? b?.totalEnrolled ?? 0);
+      return eb - ea;
+    });
+    return list;
+  }, [trendingCourses]);
   const unis = useMemo(() => universities || [], [universities]);
 
   return (
@@ -710,7 +743,7 @@ const Home = () => {
             </Box>
           ) : (
             <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-              {popular.slice(0, 8).map((c) => (<CourseCard key={c?.id} course={c} />))}
+              {sortedPopular.slice(0, 8).map((c) => (<CourseCard key={c?.id} course={c} />))}
             </SimpleGrid>
           )}
         </Box>
@@ -761,50 +794,78 @@ const Home = () => {
           )}
         </Box>
 
-        {/* Top Universities */}
-        <Box mt={16}>
-          <SectionHeader
-            title="Top Universities"
-            subtitle="Learn from prestigious institutions worldwide"
-            action={
-              <Button 
-                variant="ghost" 
-                colorScheme="purple" 
-                as={Link} 
-                to="/courses"
-                rightIcon={<Icon as={FaGraduationCap} />}
-              >
-                View All
-              </Button>
-            }
-          />
-          {loadingUniversities ? (
-            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Card key={`uni-skel-${i}`}>
-                  <Skeleton h="120px" />
-                  <CardBody>
-                    <SkeletonText noOfLines={3} spacing={3} />
-                  </CardBody>
-                </Card>
-              ))}
-            </SimpleGrid>
-          ) : errorUniversities ? (
-            <Box p={8} bg="red.50" border="1px solid" borderColor="red.200" borderRadius="xl" textAlign="center">
-              <Icon as={FaGraduationCap} boxSize={12} color="red.400" mb={3} />
-              <Text color="red.600" fontWeight="500">Failed to load universities. Please try again later.</Text>
-            </Box>
-          ) : unis.length === 0 ? (
-            <Box p={12} textAlign="center" bg={emptyStateBg} borderRadius="xl">
-              <Icon as={FaGraduationCap} boxSize={16} color="gray.400" mb={4} />
-              <Heading size="md" color="gray.600" mb={2}>No universities available</Heading>
-              <Text color="gray.500">Universities will be added soon!</Text>
-            </Box>
-          ) : (
-            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-              {unis.slice(0, 8).map((u) => (<UniversityCard key={u?.id} uni={u} />))}
-            </SimpleGrid>
-          )}
+        {/* Partner Universities */}
+        <Box mt={16} bg={useColorModeValue('gray.50', 'transparent')} py={20}>
+          <Container maxW="7xl">
+            <VStack spacing={3} align="center" mb={8} textAlign="center">
+              <Heading size="lg">Partner Universities</Heading>
+              <Text color="gray.600">Learn from top global universities</Text>
+            </VStack>
+
+              {loadingUniversities ? (
+              <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5, xl: 6 }} spacing={6}>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <Card
+                    key={`uni-skel-${i}`}
+                    bg="#FFFFFF"
+                    borderRadius="16px"
+                    boxShadow="0 6px 18px rgba(2,6,23,0.06)"
+                    border="1px solid"
+                    borderColor="rgba(15,23,36,0.08)"
+                    h="120px"
+                    p={4}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Skeleton h="70px" w="full" />
+                  </Card>
+                ))}
+              </SimpleGrid>
+            ) : errorUniversities ? (
+              <Box p={8} bg="red.50" border="1px solid" borderColor="red.200" borderRadius="xl" textAlign="center">
+                <Icon as={FaGraduationCap} boxSize={12} color="red.400" mb={3} />
+                <Text color="red.600" fontWeight="500">Failed to load university partners. Please try again later.</Text>
+              </Box>
+            ) : unis.length === 0 ? (
+              <Box p={12} textAlign="center" bg="transparent" borderRadius="xl">
+                <Icon as={FaGraduationCap} boxSize={16} color="gray.400" mb={4} />
+                <Heading size="md" color="gray.600" mb={2}>No partners available</Heading>
+                <Text color="gray.500">We will add partner universities soon.</Text>
+              </Box>
+            ) : (
+              <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5, xl: 6 }} spacing={6}>
+                {unis.slice(0, 18).map((u) => {
+                  const logoSrc = u?.logoUrl || u?.bannerUrl || u?.imageUrl || u?.logo || u?.logoUrlSmall || null;
+                  return (
+                    <Link key={u?.id} to={`/universities/${u?.id}`} style={{ textDecoration: 'none', width: '100%' }}>
+                          <Card
+                            bg="#FFFFFF"
+                            borderRadius="16px"
+                            boxShadow="0 6px 18px rgba(2,6,23,0.06)"
+                            border="1px solid"
+                            borderColor="rgba(15,23,36,0.08)"
+                          h="120px"
+                          p={4}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          transition="transform 0.3s ease, box-shadow 0.3s ease"
+                          _hover={{ transform: 'translateY(-4px)', boxShadow: '0 20px 40px rgba(2,6,23,0.12)' }}
+                          role="group"
+                        >
+                          {logoSrc ? (
+                            <Image src={logoSrc} alt={u?.name || u?.title} maxH="70px" objectFit="contain" bg="transparent" />
+                          ) : (
+                            <Box />
+                          )}
+                        </Card>
+                    </Link>
+                  );
+                })}
+              </SimpleGrid>
+            )}
+          </Container>
         </Box>
       </Container>
 
