@@ -91,6 +91,7 @@ import PostList from './pages/Community/PostList';
 import Forum from './pages/Community/Forum';
 
 import NotFound from './pages/NotFound/NotFound';
+import ThemeShowcase from './pages/ThemeShowcase';
 
 import './App.css';
 import './styles/global.css';
@@ -119,6 +120,7 @@ function PublicLayout() {
           <Route path="/home" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/theme-showcase" element={<ThemeShowcase />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -254,6 +256,7 @@ function AppRouter() {
     '/',
     '/home',
     '/about',
+    '/theme-showcase',
     '/payment',
     '/universities',
     '/login',

@@ -1,0 +1,70 @@
+/* ===================================
+   TYPOGRAPHY – NextUniVerse Design System
+   Font: Inter (Google Fonts)
+   =================================== */
+
+/* ── Headings ───────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary, #1A202C);
+}
+
+h1 { font-size: clamp(2rem, 4vw, 3rem); }
+h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
+h3 { font-size: clamp(1.25rem, 2.5vw, 1.875rem); }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+/* ── Body text ──────────────────────── */
+body, p, span, li, td, th, label, input, textarea, select, button {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+p {
+  line-height: 1.7;
+  color: var(--text-secondary, #4A5568);
+}
+
+/* ── Font weight utilities ──────────── */
+.font-normal   { font-weight: 400; }
+.font-medium   { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold     { font-weight: 700; }
+
+/* ── Font size utilities ────────────── */
+.text-xs  { font-size: 0.75rem;  }  /* 12px */
+.text-sm  { font-size: 0.875rem; }  /* 14px */
+.text-md  { font-size: 1rem;     }  /* 16px */
+.text-lg  { font-size: 1.125rem; }  /* 18px */
+.text-xl  { font-size: 1.25rem;  }  /* 20px */
+.text-2xl { font-size: 1.5rem;   }  /* 24px */
+.text-3xl { font-size: 1.875rem; }  /* 30px */
+
+/* ── Text colour utilities ──────────── */
+.text-primary   { color: var(--text-primary, #1A202C); }
+.text-secondary { color: var(--text-secondary, #718096); }
+.text-muted     { color: var(--text-muted, #A0AEC0); }
+.text-brand     { color: var(--primary-color, #4F46E5); }
+.text-accent    { color: var(--accent-color, #F59E0B); }
+
+/* ── Links ──────────────────────────── */
+a {
+  color: var(--primary-color, #4F46E5);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--primary-hover, #4338CA);
+}
+
+/* ── Selection ──────────────────────── */
+::selection {
+  background: #C7D2FE;   /* brand.200 */
+  color: #312E81;         /* brand.800 */
+}

@@ -1,0 +1,74 @@
+/* ===================================
+   COLOUR SYSTEM – NextUniVerse
+   CSS custom property tokens
+   =================================== */
+
+/* ── Semantic background helpers ────── */
+.bg-primary       { background-color: var(--primary-color); color: #fff; }
+.bg-primary-light { background-color: var(--primary-light); }
+.bg-secondary     { background-color: var(--secondary-color); color: #fff; }
+.bg-secondary-light { background-color: var(--secondary-light); }
+.bg-accent        { background-color: var(--accent-color); color: #fff; }
+.bg-accent-light  { background-color: var(--accent-light); }
+
+.bg-success { background-color: var(--success-color); color: #fff; }
+.bg-danger  { background-color: var(--danger-color);  color: #fff; }
+.bg-warning { background-color: var(--warning-color); color: #fff; }
+.bg-info    { background-color: var(--info-color);    color: #fff; }
+
+.bg-surface { background-color: var(--surface-color); }
+.bg-light   { background-color: var(--light-color); }
+.bg-dark    { background-color: var(--dark-color); color: #fff; }
+
+/* ── Gradient backgrounds for sections ─ */
+.bg-gradient-brand {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F0FDFA 100%);
+}
+
+.bg-gradient-warm {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+}
+
+.bg-gradient-hero {
+  background: linear-gradient(135deg, #4F46E5 0%, #14B8A6 100%);
+  color: #fff;
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(135deg, #1A202C 0%, #2D3748 100%);
+  color: #fff;
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(180deg, #FAFBFC 0%, #F7FAFC 100%);
+}
+
+/* ── Border colours ─────────────────── */
+.border-default { border-color: var(--border-color); }
+.border-brand   { border-color: var(--primary-color); }
+.border-accent  { border-color: var(--accent-color); }
+
+/* ── Dark mode overrides ────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --light-color: #1A202C;
+    --dark-color: #F7FAFC;
+    --text-primary: #F7FAFC;
+    --text-secondary: #A0AEC0;
+    --text-muted: #718096;
+    --surface-color: #2D3748;
+    --border-color: #4A5568;
+  }
+
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, #23215B 0%, #134E4A 100%);
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+  }
+
+  .bg-gradient-subtle {
+    background: linear-gradient(180deg, #1A202C 0%, #2D3748 100%);
+  }
+}
