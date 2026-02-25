@@ -34,33 +34,7 @@ A comprehensive RESTful API for an E-Learning platform built with ASP.NET Core a
 - PostgreSQL 14+
 - Visual Studio 2022 / VS Code
 
-🔑 API Endpoints
-Authentication
-POST /api/auth/register - User registration
-POST /api/auth/login - User login
-Universities & Departments
-GET /api/universities - Get all universities
-GET /api/departments - Get departments
-Courses
-GET /api/courses - Browse courses
-POST /api/courses - Create course (Teacher)
-GET /api/courses/{id} - Course details
-Enrollments
-POST /api/enrollments/enroll/{courseId} - Enroll in course
-GET /api/enrollments - User enrollments
-GET /api/enrollments/{id}/progress - Enrollment progress
-Learning
-POST /api/learning/complete-lesson - Mark lesson complete
-POST /api/learning/submit-quiz - Submit quiz
-POST /api/learning/submit-assignment - Submit assignment
-Community
-GET /api/community/posts - Get posts
-POST /api/community/posts - Create post
-POST /api/community/posts/{id}/vote - Vote on post
-Clans & Competitions
-GET /api/clans - Get clans
-POST /api/clans - Create clan
-GET /api/competitions - Get competitions
+
 
 
 👥 User Roles
