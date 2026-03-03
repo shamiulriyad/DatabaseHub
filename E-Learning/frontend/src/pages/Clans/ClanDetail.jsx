@@ -3,371 +3,470 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ClanAnnouncements from './ClanAnnouncements';
 import ClanCommunity from './ClanCommunity';
+import CosmicBg from '../../components/CosmicBg';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  Button,
-  SimpleGrid,
-  Card,
-  CardBody,
-  Image,
-  Badge,
-  Stack,
-  HStack,
-  VStack,
-  Skeleton,
-  SkeletonText,
-  Icon,
-  useColorModeValue,
-  Avatar,
-  Divider,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Grid,
-  GridItem,
-  Progress,
-  Stat,
-  StatLabel,
-  StatNumber,
-  useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  useDisclosure,
- 
-  Switch,
-  FormControl,
-  FormLabel,
-  Input,
-  Flex,
-  AvatarBadge,
+  Box, Container, Heading, Text, Button, SimpleGrid, Stack, HStack,
+  VStack, Skeleton, SkeletonText, Icon, Avatar, Divider, Tabs,
+  TabList, TabPanels, Tab, TabPanel, Grid, useToast, Modal,
+  ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  ModalCloseButton, useDisclosure, Switch, FormControl, FormLabel,
+  Input, Flex, AvatarBadge, Progress, Badge,
 } from '@chakra-ui/react';
 import {
-  FaUsers,
-  FaTrophy,
-  FaStar,
-  FaShieldAlt,
-  FaCrown,
-  FaUserPlus,
-  FaSignOutAlt,
-  FaCog,
-  FaEdit,
-  FaChartLine,
-  FaCalendar,
-  FaMedal,
-  FaFire,
-  FaBolt,
-  FaAward,
- 
+  FaUsers, FaTrophy, FaStar, FaShieldAlt, FaCrown, FaUserPlus,
+  FaSignOutAlt, FaCog, FaEdit, FaChartLine, FaCalendar, FaFire,
+  FaBolt, FaAward, FaCheckCircle, FaLock, FaGlobe,
 } from 'react-icons/fa';
+import TeamsPage from '../TeamsPage';
 
+// ─── NEW NEON COLOR PALETTE ───────────────────────────────────────────────────
+const N = {
+  // Dark base
+  void:     '#0a0e27',
+  deep:     '#0f1229',
+  space:    '#1a1f3a',
+  
+  // Neon accents
+  cyan:     '#00fff5',
+  magenta:  '#ff2e97',
+  violet:   '#a855f7',
+  lime:     '#84cc16',
+  orange:   '#ff6b35',
+  
+  // Soft variants
+  cyanSoft:    'rgba(0,255,245,0.15)',
+  magentaSoft: 'rgba(255,46,151,0.15)',
+  violetSoft:  'rgba(168,85,247,0.15)',
+  
+  // Text
+  text:     '#e2e8f0',
+  muted:    '#94a3b8',
+  dim:      '#64748b',
+};
+
+// ─── GLOBAL STYLES + ANIMATIONS ───────────────────────────────────────────────
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    body {
+      background: ${N.void};
+      color: ${N.text};
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: ${N.cyan}; color: #000; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: ${N.deep}; }
+    ::-webkit-scrollbar-thumb { 
+      background: linear-gradient(180deg, ${N.cyan}, ${N.magenta});
+      border-radius: 10px;
+    }
+
+    /* Keyframes */
+    @keyframes neonPulse {
+      0%, 100% { 
+        text-shadow: 0 0 10px ${N.cyan}, 0 0 20px ${N.cyan}, 0 0 30px ${N.cyan};
+        filter: brightness(1);
+      }
+      50% { 
+        text-shadow: 0 0 20px ${N.cyan}, 0 0 40px ${N.cyan}, 0 0 60px ${N.cyan};
+        filter: brightness(1.3);
+      }
+    }
+
+    @keyframes borderGlow {
+      0%, 100% { border-color: ${N.cyan}; box-shadow: 0 0 20px rgba(0,255,245,0.3); }
+      50% { border-color: ${N.magenta}; box-shadow: 0 0 30px rgba(255,46,151,0.4); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes rotate360 {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(0,255,245,0.4); }
+      50% { box-shadow: 0 0 60px rgba(255,46,151,0.6); }
+    }
+
+    /* Neon Glass Card */
+    .neon-glass {
+      background: linear-gradient(135deg, rgba(26,31,58,0.7), rgba(15,18,41,0.9));
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0,255,245,0.2);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .neon-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,255,245,0.05), rgba(255,46,151,0.05));
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .neon-glass:hover::before { opacity: 1; }
+    .neon-glass:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0,255,245,0.5);
+      box-shadow: 0 20px 60px rgba(0,255,245,0.2), 0 0 40px rgba(255,46,151,0.1);
+    }
+
+    /* Neon Border Effect */
+    .neon-border {
+      position: relative;
+      padding: 2px;
+      background: linear-gradient(135deg, ${N.cyan}, ${N.magenta}, ${N.violet});
+      border-radius: 20px;
+      animation: rotate360 4s linear infinite;
+    }
+    .neon-border-inner {
+      background: ${N.deep};
+      border-radius: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Stat Card Glow */
+    .stat-glow {
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    /* Member Card Hologram */
+    .member-holo {
+      background: linear-gradient(135deg, rgba(0,255,245,0.08), rgba(168,85,247,0.08));
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,255,245,0.3);
+      border-radius: 16px;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .member-holo::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(0,255,245,0.1),
+        transparent
+      );
+      transform: rotate(45deg);
+      transition: all 0.6s;
+    }
+    .member-holo:hover::after {
+      left: 100%;
+    }
+    .member-holo:hover {
+      border-color: ${N.cyan};
+      box-shadow: 0 10px 40px rgba(0,255,245,0.3);
+      transform: translateY(-6px);
+    }
+
+    /* Neon Tab */
+    .neon-tab {
+      color: ${N.muted};
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 12px 24px;
+      border-radius: 12px;
+      transition: all 0.3s;
+      border: 1px solid transparent;
+      position: relative;
+    }
+    .neon-tab:hover {
+      color: ${N.cyan};
+      background: rgba(0,255,245,0.1);
+    }
+    .neon-tab[aria-selected=true] {
+      color: #000;
+      background: linear-gradient(135deg, ${N.cyan}, ${N.magenta});
+      border-color: ${N.cyan};
+      box-shadow: 0 0 20px rgba(0,255,245,0.5), 0 4px 16px rgba(0,0,0,0.3);
+      font-weight: 700;
+    }
+
+    /* Reveal Animation */
+    .reveal { animation: slideUp 0.8s ease both; }
+    .reveal-1 { animation: slideUp 0.8s 0.1s ease both; }
+    .reveal-2 { animation: slideUp 0.8s 0.2s ease both; }
+    .reveal-3 { animation: slideUp 0.8s 0.3s ease both; }
+
+    /* Neon Text */
+    .neon-text {
+      font-family: 'Orbitron', sans-serif;
+      color: ${N.cyan};
+      text-shadow: 0 0 10px ${N.cyan}, 0 0 20px ${N.cyan};
+    }
+
+    /* Grid Pattern Background */
+    .grid-bg {
+      background-image: 
+        linear-gradient(rgba(0,255,245,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,245,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+  `}</style>
+);
+
+// ─── API Fetchers (unchanged) ─────────────────────────────────────────────────
 const fetchClanDetails = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}`);
   return data?.clan;
 };
-
 const fetchClanMembers = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}/members`);
   return data?.members || [];
 };
-
 const fetchClanStats = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}/stats`);
   return data?.stats;
 };
-
 const fetchClanCompetitions = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}/competitions`);
   return data?.competitions || [];
 };
-
 const fetchPendingJoinRequests = async (clanId) => {
   const { data } = await api.get(`/clans/${clanId}/join-requests/pending`);
   return data?.requests || [];
 };
 
-const StatCard = ({ icon, label, value, color }) => {
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const iconBg = useColorModeValue(`${color}.50`, `${color}.900`);
-  const iconColor = useColorModeValue(`${color}.500`, `${color}.300`);
-  const borderColor = useColorModeValue('gray.100', 'gray.700');
+// ─── NEON STAT CARD ───────────────────────────────────────────────────────────
+const NeonStat = ({ icon, label, value, color = N.cyan }) => (
+  <Box className="neon-glass stat-glow" p={6}>
+    <HStack spacing={4}>
+      <Box w="56px" h="56px" borderRadius="14px" display="flex" alignItems="center"
+        justifyContent="center" position="relative"
+        style={{ background:`linear-gradient(135deg, ${color}22, ${color}11)`,
+          border:`1px solid ${color}44`, boxShadow:`0 0 20px ${color}33` }}>
+        <Icon as={icon} boxSize={6} style={{ color, filter:`drop-shadow(0 0 8px ${color})` }} />
+      </Box>
+      <VStack spacing={0} align="flex-start" flex={1}>
+        <Text fontSize="10px" fontWeight="700" letterSpacing="0.15em" textTransform="uppercase"
+          style={{ color:N.dim }}>
+          {label}
+        </Text>
+        <Text fontSize="2xl" fontWeight="900" fontFamily="'Orbitron', sans-serif"
+          style={{ color, textShadow:`0 0 10px ${color}` }}>
+          {value}
+        </Text>
+      </VStack>
+    </HStack>
+  </Box>
+);
+
+// ─── HOLOGRAM MEMBER CARD ─────────────────────────────────────────────────────
+const HoloMember = ({ member, navigate }) => {
+  const roleColors = {
+    Leader:   N.orange,
+    CoLeader: N.magenta,
+    Elder:    N.violet,
+    Member:   N.cyan,
+  };
+  const roleIcons = { Leader:FaCrown, CoLeader:FaAward, Elder:FaStar, Member:null };
+  const rc = roleColors[member.role] || N.cyan;
 
   return (
-    <Card 
-      bg={cardBg} 
-      shadow="sm" 
-      borderWidth="1px" 
-      borderColor={borderColor}
-      _hover={{ 
-        shadow: 'md', 
-        borderColor: `${color}.300`,
-        transform: 'translateY(-2px)'
-      }}
-      transition="all 0.2s ease"
-    >
-      <CardBody p={3}>
-        <VStack spacing={2} align="center">
-          <Box
-            p={2}
-            borderRadius="lg"
-            bg={iconBg}
-            color={iconColor}
-          >
-            <Icon as={icon} boxSize={4} />
-          </Box>
-          <VStack spacing={0} align="center">
-            <Text 
-              fontSize="xs" 
-              color="gray.500" 
-              fontWeight="600"
-              textTransform="uppercase"
-            >
-              {label}
-            </Text>
-            <Heading 
-              size="md" 
-              fontWeight="800"
-              color={`${color}.600`}
-            >
-              {value}
-            </Heading>
-          </VStack>
-        </VStack>
-      </CardBody>
-    </Card>
-  );
-};
-
-const MemberCard = ({ member }) => {
-  const navigate = useNavigate();
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const hoverBg = useColorModeValue('purple.50', 'gray.700');
-  const borderColor = useColorModeValue('gray.100', 'gray.700');
-  
-  const roleColor = {
-    Leader: 'yellow',
-    CoLeader: 'orange',
-    Elder: 'purple',
-    Member: 'blue',
-  };
-
-  const roleIcon = {
-    Leader: FaCrown,
-    CoLeader: FaAward,
-    Elder: FaStar,
-    Member: null,
-  };
-
-  return (
-    <Card 
-      bg={cardBg} 
-      shadow="md"
-      borderWidth="1px"
-      borderColor={borderColor}
-      cursor="pointer"
-      onClick={() => navigate(`/profile/${member.userId}`)}
-      _hover={{ 
-        bg: hoverBg, 
-        transform: 'translateY(-4px)', 
-        shadow: 'xl',
-        borderColor: `${roleColor[member.role]}.300`
-      }}
-      transition="all 0.3s ease"
-      position="relative"
-      overflow="hidden"
-    >
-      <Box
-        position="absolute"
-        top={0}
-        right={0}
-        w="80px"
-        h="80px"
-        bgGradient={`linear(to-br, ${roleColor[member.role]}.100, transparent)`}
-        opacity={0.3}
-        borderRadius="0 0 0 100%"
-      />
-      <CardBody p={5} position="relative">
-        <HStack spacing={4} align="start">
+    <Box className="member-holo" p={5} onClick={() => navigate(`/profile/${member.userId}`)}>
+      <Stack spacing={4}>
+        <HStack spacing={3}>
           <Box position="relative">
-            <Avatar
-              name={member.userName}
-              src={member.profileImageUrl}
-              size="lg"
-              borderWidth="3px"
-              borderColor={`${roleColor[member.role]}.400`}
-              shadow="md"
-            >
-              {member.role === 'Leader' && (
-                <AvatarBadge 
-                  boxSize="1.25em" 
-                  bg="yellow.400"
-                  borderColor="white"
-                  borderWidth="2px"
-                >
-                  <Icon as={FaCrown} boxSize={3} color="white" />
-                </AvatarBadge>
-              )}
-            </Avatar>
+            <Avatar src={member.avatarUrl} name={member.userName} size="lg"
+              style={{ border:`2px solid ${rc}`, boxShadow:`0 0 20px ${rc}55` }} />
+            {member.role === 'Leader' && (
+              <Box position="absolute" top="-6px" right="-6px" w="24px" h="24px"
+                borderRadius="full" display="flex" alignItems="center" justifyContent="center"
+                style={{ background:`linear-gradient(135deg, ${N.orange}, ${N.magenta})`,
+                  boxShadow:`0 0 15px ${N.orange}` }}>
+                <Icon as={FaCrown} color="#000" boxSize={3} />
+              </Box>
+            )}
           </Box>
-          <VStack align="start" spacing={2} flex={1}>
-            <HStack spacing={2} align="center">
-              <Text fontWeight="700" fontSize="md" lineHeight="1">
-                {member.userName}
-              </Text>
-              {roleIcon[member.role] && (
-                <Icon 
-                  as={roleIcon[member.role]} 
-                  color={`${roleColor[member.role]}.500`} 
-                  boxSize={3.5} 
-                />
+          <VStack spacing={0} align="flex-start" flex={1}>
+            <Text fontWeight="700" fontSize="md" fontFamily="'Orbitron', sans-serif"
+              style={{ color:N.text }}>
+              {member.userName}
+            </Text>
+            <HStack spacing={2}>
+              {roleIcons[member.role] && (
+                <Icon as={roleIcons[member.role]} boxSize={3} style={{ color:rc }} />
               )}
-            </HStack>
-            <Badge 
-              colorScheme={roleColor[member.role]} 
-              fontSize="xs"
-              px={3}
-              py={1}
-              borderRadius="full"
-              fontWeight="600"
-              textTransform="uppercase"
-              letterSpacing="wide"
-            >
-              {member.role}
-            </Badge>
-            <HStack spacing={4} fontSize="xs" color="gray.500" mt={1} fontWeight="500">
-              <HStack spacing={1.5}>
-                <Icon as={FaTrophy} boxSize={3.5} color="yellow.500" />
-                <Text fontWeight="600">{member.contributionPoints}</Text>
-                <Text>pts</Text>
-              </HStack>
-              <Box w="1px" h="12px" bg="gray.300" />
-              <HStack spacing={1.5}>
-                <Icon as={FaFire} boxSize={3.5} color="orange.500" />
-                <Text fontWeight="600">{member.totalPosts}</Text>
-                <Text>posts</Text>
-              </HStack>
+              <Text fontSize="xs" fontWeight="600" letterSpacing="0.05em"
+                style={{ color:rc, textShadow:`0 0 8px ${rc}` }}>
+                {member.role.toUpperCase()}
+              </Text>
             </HStack>
           </VStack>
         </HStack>
-      </CardBody>
-    </Card>
+
+        <Box h="1px" style={{ background:`linear-gradient(90deg, transparent, ${rc}44, transparent)` }} />
+
+        <HStack justify="space-between">
+          <VStack spacing={0} align="flex-start">
+            <Text fontSize="9px" fontWeight="600" letterSpacing="0.1em" textTransform="uppercase"
+              style={{ color:N.dim }}>
+              Points
+            </Text>
+            <Text fontSize="lg" fontWeight="800" fontFamily="'Orbitron', sans-serif"
+              style={{ color:N.cyan, textShadow:`0 0 10px ${N.cyan}` }}>
+              {member.contributionPoints?.toLocaleString()}
+            </Text>
+          </VStack>
+          <VStack spacing={0} align="flex-end">
+            <Text fontSize="9px" fontWeight="600" letterSpacing="0.1em" textTransform="uppercase"
+              style={{ color:N.dim }}>
+              Posts
+            </Text>
+            <Text fontSize="lg" fontWeight="800" fontFamily="'Orbitron', sans-serif"
+              style={{ color:N.text }}>
+              {member.totalPosts}
+            </Text>
+          </VStack>
+        </HStack>
+      </Stack>
+    </Box>
   );
 };
 
-const CompetitionCard = ({ competition }) => {
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.100', 'gray.700');
-  
-  const statusColor = {
-    Upcoming: 'blue',
-    Ongoing: 'green',
-    Completed: 'gray',
-    Cancelled: 'red',
+// ─── COMPETITION HOLOGRAM CARD ────────────────────────────────────────────────
+const CompHolo = ({ comp, navigate }) => {
+  const statusColors = {
+    Upcoming:  N.cyan,
+    Ongoing:   N.lime,
+    Completed: N.dim,
+    Cancelled: '#ef4444',
   };
+  const sc = statusColors[comp.status] || N.cyan;
 
   return (
-    <Card 
-      bg={cardBg} 
-      shadow="md"
-      borderWidth="1px"
-      borderColor={borderColor}
-      _hover={{ 
-        shadow: 'xl', 
-        borderColor: `${statusColor[competition.status]}.300`,
-        transform: 'translateY(-4px)'
-      }}
-      transition="all 0.3s ease"
-      position="relative"
-      overflow="hidden"
-    >
-      <Box
-        position="absolute"
-        top={0}
-        right={0}
-        w="100px"
-        h="100px"
-        bgGradient={`linear(to-br, ${statusColor[competition.status]}.100, transparent)`}
-        opacity={0.4}
-        borderRadius="0 0 0 100%"
-      />
-      <CardBody p={5} position="relative">
-        <Stack spacing={4}>
-          <HStack justify="space-between" align="start">
-            <Heading size="sm" fontWeight="700" noOfLines={2} flex={1}>
-              {competition.title}
-            </Heading>
-            <Badge 
-              colorScheme={statusColor[competition.status]}
-              fontSize="xs"
-              px={3}
-              py={1.5}
-              borderRadius="full"
-              fontWeight="600"
-              textTransform="uppercase"
-              letterSpacing="wide"
-            >
-              {competition.status}
-            </Badge>
-          </HStack>
-          <Text fontSize="sm" color="gray.600" noOfLines={3} lineHeight="1.6">
-            {competition.description}
+    <Box className="neon-glass" p={6}>
+      <Stack spacing={4}>
+        <HStack justify="space-between" align="flex-start">
+          <Heading fontSize="md" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+            style={{ color:N.text }} flex={1}>
+            {comp.title}
+          </Heading>
+          <Badge px={3} py={1} borderRadius="full" fontSize="9px" fontWeight="700"
+            letterSpacing="0.1em" textTransform="uppercase"
+            style={{ background:`${sc}22`, color:sc, border:`1px solid ${sc}44` }}>
+            {comp.status}
+          </Badge>
+        </HStack>
+        {comp.description && (
+          <Text fontSize="sm" lineHeight="1.7" noOfLines={2} style={{ color:N.muted }}>
+            {comp.description}
           </Text>
-          <Divider />
-          <HStack justify="space-between" fontSize="xs" color="gray.500" fontWeight="500">
-            <HStack spacing={1.5}>
-              <Icon as={FaCalendar} boxSize={3.5} />
-              <Text>
-                {new Date(competition.startDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </Text>
-            </HStack>
-            <HStack spacing={1.5}>
-              <Icon as={FaUsers} boxSize={3.5} />
-              <Text fontWeight="600">{competition.participantCount}</Text>
-              <Text>participants</Text>
-            </HStack>
+        )}
+        <HStack justify="space-between" fontSize="xs">
+          <HStack spacing={2}>
+            <Icon as={FaCalendar} style={{ color:N.dim }} />
+            <Text style={{ color:N.dim }}>
+              {new Date(comp.startDate).toLocaleDateString('en-US', {
+                month:'short', day:'numeric', year:'numeric'
+              })}
+            </Text>
           </HStack>
-        </Stack>
-      </CardBody>
-    </Card>
+          <HStack spacing={2}>
+            <Icon as={FaUsers} style={{ color:N.cyan }} />
+            <Text fontWeight="700" fontFamily="'Orbitron', sans-serif"
+              style={{ color:N.cyan }}>
+              {comp.participantCount}
+            </Text>
+          </HStack>
+        </HStack>
+
+        <Button
+          size="sm"
+          w="full"
+          borderRadius="full"
+          fontWeight="700"
+          color="#000"
+          onClick={() => navigate(`/competitions/${comp.id}`)}
+          style={{
+            background: comp.status === 'Completed'
+              ? `linear-gradient(135deg, ${N.violet}, ${N.magenta})`
+              : `linear-gradient(135deg, ${N.cyan}, ${N.lime})`,
+            boxShadow: `0 0 20px ${comp.status === 'Completed' ? N.violet : N.cyan}66`,
+          }}
+          _hover={{ transform: 'translateY(-2px)' }}
+        >
+          {comp.status === 'Completed' ? 'VIEW DETAILS' : 'COMPETE NOW'}
+        </Button>
+      </Stack>
+    </Box>
   );
 };
 
+// ─── LOADING HOLOGRAM ─────────────────────────────────────────────────────────
+const LoadingHolo = () => (
+  <Box minH="100vh" className="grid-bg" style={{ background:N.void }}>
+    <GlobalStyles />
+    <Container maxW="7xl" py={16}>
+      <Stack spacing={6}>
+        <Skeleton h="300px" borderRadius="24px" startColor={N.space} endColor={N.deep} />
+        <SimpleGrid columns={{ base:2, md:4 }} spacing={4}>
+          {[...Array(4)].map((_,i) => (
+            <Skeleton key={i} h="120px" borderRadius="20px" startColor={N.space} endColor={N.deep} />
+          ))}
+        </SimpleGrid>
+      </Stack>
+    </Container>
+  </Box>
+);
+
+// ─── NOT FOUND ────────────────────────────────────────────────────────────────
+const NotFoundHolo = ({ navigate }) => (
+  <Box minH="100vh" className="grid-bg" style={{ background:N.void }}
+    display="flex" alignItems="center" justifyContent="center">
+    <GlobalStyles />
+    <VStack spacing={6} textAlign="center">
+      <Text fontSize="80px" style={{ animation:'neonPulse 2s ease-in-out infinite' }}>⚠️</Text>
+      <Heading fontFamily="'Orbitron', sans-serif" fontSize="3xl" className="neon-text">
+        CLAN NOT FOUND
+      </Heading>
+      <Text style={{ color:N.muted }}>
+        The clan you're looking for doesn't exist or has been removed.
+      </Text>
+      <Button size="lg" px={10} borderRadius="full" fontWeight="700" color="#000"
+        style={{ background:`linear-gradient(135deg, ${N.cyan}, ${N.magenta})`,
+          boxShadow:`0 0 30px ${N.cyan}66` }}
+        _hover={{ transform:'scale(1.05)', boxShadow:`0 0 50px ${N.cyan}` }}
+        transition="all 0.3s"
+        onClick={() => navigate('/clans')}>
+        BROWSE CLANS
+      </Button>
+    </VStack>
+  </Box>
+);
+
+// ─── MAIN CLAN DETAIL ─────────────────────────────────────────────────────────
 const ClanDetail = () => {
   const { clanId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const tabBg = useColorModeValue('white', 'gray.800');
-  
+
   const [joinStatus, setJoinStatus] = React.useState('idle');
   const [userRole, setUserRole] = React.useState(null);
-  
-  const { 
-    isOpen: isPrivacyOpen, 
-    onOpen: openPrivacy, 
-    onClose: closePrivacy 
-  } = useDisclosure();
-  
+  const { isOpen: isPrivacyOpen, onOpen: openPrivacy, onClose: closePrivacy } = useDisclosure();
   const [privacyIsPublic, setPrivacyIsPublic] = React.useState(true);
   const [privacyRequireApproval, setPrivacyRequireApproval] = React.useState(false);
   const [privacyJoinCriteria, setPrivacyJoinCriteria] = React.useState('');
@@ -376,47 +475,39 @@ const ClanDetail = () => {
     queryKey: ['clan', clanId],
     queryFn: () => fetchClanDetails(clanId),
   });
-
   const { data: members, isLoading: membersLoading } = useQuery({
     queryKey: ['clanMembers', clanId],
     queryFn: () => fetchClanMembers(clanId),
     enabled: !!clanId,
   });
-
   const { data: stats } = useQuery({
     queryKey: ['clanStats', clanId],
     queryFn: () => fetchClanStats(clanId),
     enabled: !!clanId,
   });
-
   const { data: competitions, isLoading: competitionsLoading } = useQuery({
     queryKey: ['clanCompetitions', clanId],
     queryFn: () => fetchClanCompetitions(clanId),
     enabled: !!clanId,
   });
 
-  // Determine user's role in clan
   React.useEffect(() => {
     if (clan?.isMember && members && user) {
       const userMember = members.find(m => m.userId === user.id);
-      if (userMember) {
-        setUserRole(userMember.role);
-        setJoinStatus('member');
-      }
+      if (userMember) { setUserRole(userMember.role); setJoinStatus('member'); }
     } else if (clan?.hasPendingJoinRequest) {
       setJoinStatus('pending');
     } else {
-      setJoinStatus('idle');
-      setUserRole(null);
+      setJoinStatus('idle'); setUserRole(null);
     }
   }, [clan, members, user]);
 
   const invalidateClanData = React.useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['clan', clanId] });
-    queryClient.invalidateQueries({ queryKey: ['clanMembers', clanId] });
-    queryClient.invalidateQueries({ queryKey: ['clanStats', clanId] });
-    queryClient.invalidateQueries({ queryKey: ['clanCompetitions', clanId] });
-    queryClient.invalidateQueries({ queryKey: ['clanPendingJoinRequests', clanId] });
+    queryClient.invalidateQueries({ queryKey:['clan',clanId] });
+    queryClient.invalidateQueries({ queryKey:['clanMembers',clanId] });
+    queryClient.invalidateQueries({ queryKey:['clanStats',clanId] });
+    queryClient.invalidateQueries({ queryKey:['clanCompetitions',clanId] });
+    queryClient.invalidateQueries({ queryKey:['clanPendingJoinRequests',clanId] });
   }, [clanId, queryClient]);
 
   const joinMutation = useMutation({
@@ -425,32 +516,16 @@ const ClanDetail = () => {
       const status = data?.membership?.status;
       if (status === 'Pending') {
         setJoinStatus('pending');
-        toast({
-          title: 'Join request sent',
-          description: 'Waiting for clan leader approval',
-          status: 'info',
-          duration: 4000,
-          isClosable: true,
-        });
+        toast({ title:'Join request sent', status:'info', duration:4000 });
       } else {
         setJoinStatus('member');
-        toast({
-          title: 'Joined clan',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
+        toast({ title:'Joined clan!', status:'success', duration:3000 });
       }
       invalidateClanData();
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to join clan',
-        description: error.response?.data?.message || 'Something went wrong',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
+      toast({ title:'Failed to join', description:error.response?.data?.message,
+        status:'error', duration:4000 });
     },
   });
 
@@ -458,78 +533,49 @@ const ClanDetail = () => {
     mutationFn: () => api.post(`/clans/${clanId}/leave`),
     onSuccess: () => {
       setJoinStatus('idle');
-      toast({
-        title: 'Left clan',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title:'Left clan', status:'success', duration:3000 });
       invalidateClanData();
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to leave clan',
-        description: error.response?.data?.message || 'Something went wrong',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
+      toast({ title:'Failed to leave', description:error.response?.data?.message,
+        status:'error', duration:4000 });
     },
   });
 
-  // Derived states
   const isMember = joinStatus === 'member';
   const isLeader = userRole === 'Leader';
   const isLeaderOrCoLeader = userRole === 'Leader' || userRole === 'CoLeader';
-  const hasLeadership = ['Leader', 'CoLeader', 'Elder'].includes(userRole);
+  const hasLeadership = ['Leader','CoLeader','Elder'].includes(userRole);
   const atCapacity = clan && clan.memberCount >= clan.maxMembers;
-  const needsApproval = clan && (!clan.isPublic || clan.requireApproval);
-  const joinButtonLabel =
-    joinStatus === 'pending'
-      ? 'Join Request Pending'
-      : needsApproval
-      ? 'Request to Join'
-      : 'Join Clan';
+  const totalClanExp = Number(
+    stats?.totalExp ??
+    stats?.TotalExp ??
+    stats?.totalPoints ??
+    stats?.TotalPoints ??
+    clan?.totalExp ??
+    clan?.TotalExp ??
+    clan?.totalPoints ??
+    clan?.TotalPoints ??
+    0
+  );
 
-  const {
-    data: pendingRequests = [],
-    isLoading: pendingRequestsLoading,
-  } = useQuery({
+  const { data: pendingRequests = [], isLoading: pendingRequestsLoading } = useQuery({
     queryKey: ['clanPendingJoinRequests', clanId],
     queryFn: () => fetchPendingJoinRequests(clanId),
     enabled: !!clanId && isLeaderOrCoLeader,
   });
-
-  // Fix: Move useColorModeValue out of callback
-  const pendingRequestBg = useColorModeValue('purple.50', 'gray.700');
-  const topMemberHoverBg = useColorModeValue('purple.50', 'gray.700');
-  const topMemberBg = useColorModeValue('yellow.50', 'yellow.900');
-  const modalFormBg = useColorModeValue('gray.50', 'gray.700');
-  const joinCriteriaBg = useColorModeValue('purple.50', 'gray.700');
-  const clanInfoBg = useColorModeValue('gray.50', 'gray.700');
-  const statWeeklyBg = useColorModeValue('purple.50', 'gray.700');
-  const statMonthlyBg = useColorModeValue('blue.50', 'gray.700');
 
   const decideJoinRequestMutation = useMutation({
     mutationFn: ({ requestId, action }) =>
       api.post(`/clans/${clanId}/join-requests/${requestId}/decision`, { action }),
     onSuccess: (_, variables) => {
       invalidateClanData();
-      toast({
-        title: variables.action === 'approve' ? 'Request approved' : 'Request rejected',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: variables.action === 'approve' ? 'Approved!' : 'Rejected',
+        status:'success', duration:3000 });
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to process request',
-        description: error.response?.data?.message || 'Something went wrong',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
+      toast({ title:'Failed', description:error.response?.data?.message,
+        status:'error', duration:4000 });
     },
   });
 
@@ -541,1059 +587,568 @@ const ClanDetail = () => {
     mutationFn: (payload) => api.put(`/clans/${clanId}`, payload),
     onSuccess: () => {
       invalidateClanData();
-      toast({ 
-        title: 'Privacy settings updated', 
-        status: 'success', 
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title:'Settings updated', status:'success', duration:3000 });
       closePrivacy();
     },
     onError: (error) => {
-      toast({ 
-        title: 'Failed to update privacy settings', 
-        description: error.response?.data?.message || 'Something went wrong', 
-        status: 'error', 
-        duration: 4000,
-        isClosable: true,
-      });
+      toast({ title:'Failed', description:error.response?.data?.message,
+        status:'error', duration:4000 });
     },
   });
 
   const handleSavePrivacy = () => {
-    const payload = {
+    privacyMutation.mutate({
       isPublic: privacyIsPublic,
       requireApproval: privacyRequireApproval,
       joinCriteria: privacyJoinCriteria,
-    };
-    privacyMutation.mutate(payload);
+    });
   };
 
-  if (clanLoading) {
-    return (
-      <Box bg={bgColor} minH="100vh">
-        <Container maxW="7xl" py={10}>
-          <Skeleton height="350px" mb={8} borderRadius="xl" />
-          <SimpleGrid columns={{ base: 2, md: 4, lg: 5 }} spacing={6} mb={8}>
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} height="120px" borderRadius="xl" />
-            ))}
-          </SimpleGrid>
-          <Skeleton height="500px" borderRadius="xl" />
-        </Container>
-      </Box>
-    );
-  }
-
-  if (!clan) {
-    return (
-      <Box bg={bgColor} minH="100vh">
-        <Container maxW="7xl" py={20}>
-          <VStack spacing={8}>
-            <Box
-              p={8}
-              borderRadius="full"
-              bgGradient="linear(to-br, purple.100, blue.100)"
-            >
-              <Icon as={FaShieldAlt} boxSize={24} color="purple.500" />
-            </Box>
-            <Heading size="xl" color="gray.600" fontWeight="800">
-              Clan not found
-            </Heading>
-            <Text color="gray.500" fontSize="lg">
-              The clan you're looking for doesn't exist or has been removed.
-            </Text>
-            <Button 
-              colorScheme="purple" 
-              onClick={() => navigate('/clans')}
-              size="lg"
-              px={8}
-              borderRadius="full"
-              shadow="lg"
-              _hover={{ transform: 'translateY(-2px)', shadow: 'xl' }}
-              leftIcon={<FaShieldAlt />}
-            >
-              Browse Clans
-            </Button>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
+  if (clanLoading) return <LoadingHolo />;
+  if (!clan) return <NotFoundHolo navigate={navigate} />;
 
   return (
-    <Box bg={bgColor} minH="100vh" pb={10}>
-      {/* Compact Banner Section */}
-      <Box
-        position="relative"
-        h={{ base: '150px', md: '200px' }}
-        overflow="hidden"
-      >
-        {clan.bannerUrl ? (
-          <Image
-            src={clan.bannerUrl}
-            alt={clan.name}
-            objectFit="cover"
-            w="100%"
-            h="100%"
-          />
-        ) : (
-          <Box
-            w="100%"
-            h="100%"
-            bgGradient="linear(135deg, purple.500 0%, purple.600 25%, blue.500 75%, blue.600 100%)"
-          />
+    <Box minH="100vh" className="grid-bg" bg="#070B1A" position="relative">
+      <CosmicBg />
+      <GlobalStyles />
+
+      {/* Floating orbs */}
+      <Box position="fixed" top="-200px" right="-200px" w="600px" h="600px" borderRadius="full"
+        style={{ background:`radial-gradient(circle, ${N.cyan}22, transparent 70%)`,
+          filter:'blur(80px)', pointerEvents:'none', zIndex:0 }} />
+      <Box position="fixed" bottom="-200px" left="-200px" w="600px" h="600px" borderRadius="full"
+        style={{ background:`radial-gradient(circle, ${N.magenta}22, transparent 70%)`,
+          filter:'blur(80px)', pointerEvents:'none', zIndex:0 }} />
+
+      {/* Hero */}
+      <Box position="relative" zIndex={1} overflow="hidden">
+        {/* Banner */}
+        {clan.bannerUrl && (
+          <Box position="absolute" inset={0} overflow="hidden">
+            <Box as="img" src={clan.bannerUrl} alt={clan.name}
+              style={{ width:'100%', height:'100%', objectFit:'cover',
+                filter:'blur(5px) brightness(0.3) saturate(1.5)' }} />
+            <Box position="absolute" inset={0}
+              style={{ background:`linear-gradient(to bottom, ${N.void}00, ${N.void})` }} />
+          </Box>
         )}
-        {/* Enhanced Overlay with pattern */}
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          bgGradient="linear(to-b, transparent 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.8) 100%)"
-        />
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          opacity={0.1}
-          backgroundImage="repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)"
-        />
+
+        <Container maxW="7xl" py={{ base:16, md:24 }} position="relative" zIndex={2}>
+          <Grid templateColumns={{ base:'1fr', md:'auto 1fr auto' }} gap={8} alignItems="center"
+            className="reveal">
+            {/* Logo */}
+            <Box>
+              <Box className="neon-border" w="140px" h="140px">
+                <Box className="neon-border-inner" w="100%" h="100%" borderRadius="18px"
+                  display="flex" alignItems="center" justifyContent="center">
+                  {clan.logoUrl ? (
+                    <Avatar src={clan.logoUrl} name={clan.name} size="2xl" />
+                  ) : (
+                    <Text fontSize="60px">🏰</Text>
+                  )}
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Info */}
+            <Stack spacing={4}>
+              <HStack spacing={3} flexWrap="wrap">
+                <Badge px={3} py={1} borderRadius="full" fontSize="9px" fontWeight="700"
+                  letterSpacing="0.1em" textTransform="uppercase"
+                  style={{ background:N.violetSoft, color:N.violet, border:`1px solid ${N.violet}44` }}>
+                  {clan.clanType}
+                </Badge>
+                <Badge px={3} py={1} borderRadius="full" fontSize="9px" fontWeight="700"
+                  letterSpacing="0.1em" textTransform="uppercase"
+                  style={{ background: clan.isPublic ? `${N.lime}22` : `${N.orange}22`,
+                    color: clan.isPublic ? N.lime : N.orange,
+                    border: `1px solid ${clan.isPublic ? N.lime+'44' : N.orange+'44'}` }}>
+                  {clan.isPublic ? '🌐 PUBLIC' : '🔒 PRIVATE'}
+                </Badge>
+              </HStack>
+
+              <Heading fontFamily="'Orbitron', sans-serif" fontWeight="900"
+                fontSize={{ base:'3xl', md:'4xl' }} letterSpacing="-0.01em"
+                className="neon-text" style={{ animation:'neonPulse 3s ease-in-out infinite' }}>
+                {clan.name} <Box as="span" style={{ color:N.magenta }}>[{clan.tag}]</Box>
+              </Heading>
+
+              {clan.motto && (
+                <Text fontSize="md" fontStyle="italic" style={{ color:N.muted }}>
+                  "{clan.motto}"
+                </Text>
+              )}
+
+              {clan.universityName && (
+                <HStack spacing={2}>
+                  <Icon as={FaShieldAlt} style={{ color:N.violet }} boxSize={4} />
+                  <Text fontSize="sm" fontWeight="600" style={{ color:N.text }}>
+                    {clan.universityName}
+                  </Text>
+                </HStack>
+              )}
+            </Stack>
+
+            {/* Actions */}
+            <VStack spacing={3} minW={{ base:'full', md:'220px' }}>
+              {isMember ? (
+                <>
+                  {isLeaderOrCoLeader && (
+                    <>
+                      <Button size="md" w="full" borderRadius="full" fontWeight="700" color="#000"
+                        leftIcon={<Icon as={FaEdit} />}
+                        style={{ background:`linear-gradient(135deg, ${N.cyan}, ${N.violet})`,
+                          boxShadow:`0 0 20px ${N.cyan}66` }}
+                        _hover={{ transform:'translateY(-3px)', boxShadow:`0 0 40px ${N.cyan}` }}
+                        onClick={() => navigate(`/clans/${clanId}/edit`)}>
+                        EDIT
+                      </Button>
+                      <Button size="md" w="full" borderRadius="full" fontWeight="700" color="#000"
+                        leftIcon={<Icon as={FaCog} />}
+                        style={{ background:`linear-gradient(135deg, ${N.magenta}, ${N.orange})`,
+                          boxShadow:`0 0 20px ${N.magenta}66` }}
+                        _hover={{ transform:'translateY(-3px)', boxShadow:`0 0 40px ${N.magenta}` }}
+                        onClick={() => navigate(`/clans/${clanId}/members`)}>
+                        MANAGE
+                      </Button>
+                    </>
+                  )}
+                  <Button size="md" w="full" borderRadius="full" fontWeight="700"
+                    bg="transparent" leftIcon={<Icon as={FaSignOutAlt} />}
+                    style={{ border:`2px solid #ef4444`, color:'#ef4444' }}
+                    _hover={{ bg:'rgba(239,68,68,0.1)' }}
+                    onClick={() => leaveMutation.mutate()}
+                    isLoading={leaveMutation.isLoading}>
+                    LEAVE
+                  </Button>
+                </>
+              ) : (
+                <Button size="md" w="full" borderRadius="full" fontWeight="700" color="#000"
+                  leftIcon={<Icon as={FaUserPlus} />}
+                  style={{ background: atCapacity || joinStatus === 'pending'
+                    ? N.dim : `linear-gradient(135deg, ${N.cyan}, ${N.magenta})`,
+                    boxShadow: atCapacity || joinStatus === 'pending'
+                      ? 'none' : `0 0 30px ${N.cyan}66`,
+                    opacity: atCapacity || joinStatus === 'pending' ? 0.5 : 1 }}
+                  _hover={{ transform: atCapacity || joinStatus === 'pending' ? 'none' : 'translateY(-3px)',
+                    boxShadow: atCapacity || joinStatus === 'pending' ? 'none' : `0 0 50px ${N.cyan}` }}
+                  onClick={() => joinMutation.mutate()}
+                  isLoading={joinMutation.isLoading}
+                  isDisabled={joinStatus === 'pending' || atCapacity}>
+                  {atCapacity ? 'FULL' : joinStatus === 'pending' ? 'PENDING' : 'JOIN'}
+                </Button>
+              )}
+            </VStack>
+          </Grid>
+        </Container>
       </Box>
 
-      <Container maxW="7xl" position="relative" mt={{ base: -10, md: -12 }}>
-        {/* Compact Clan Header Card */}
-        <Card
-          bg={cardBg}
-          shadow="lg"
-          mb={6}
-          borderWidth="1px"
-          borderColor={borderColor}
-          borderRadius="xl"
-        >
-          <CardBody p={{ base: 4, md: 5 }}>
-            <Flex gap={4} alignItems="start" direction={{ base: 'column', md: 'row' }}>
-              {/* Logo */}
-              <Box flexShrink={0}>
-                {clan.logoUrl ? (
-                  <Image
-                    src={clan.logoUrl}
-                    alt={clan.name}
-                    boxSize={{ base: '70px', md: '90px' }}
-                    borderRadius="lg"
-                    border="3px solid"
-                    borderColor="white"
-                    shadow="md"
-                    objectFit="cover"
-                  />
-                ) : (
-                  <Flex
-                    boxSize={{ base: '70px', md: '90px' }}
-                    borderRadius="lg"
-                    bgGradient="linear(135deg, purple.500, blue.500)"
-                    alignItems="center"
-                    justifyContent="center"
-                    border="3px solid"
-                    borderColor="white"
-                    shadow="md"
-                  >
-                    <Icon as={FaShieldAlt} boxSize={8} color="white" />
-                  </Flex>
-                )}
-              </Box>
+      {/* Stats */}
+      <Box py={10} position="relative" zIndex={1}
+        style={{ borderTop:`1px solid ${N.cyan}22`, borderBottom:`1px solid ${N.cyan}22` }}>
+        <Container maxW="7xl">
+          <SimpleGrid columns={{ base:2, md:4 }} spacing={4} className="reveal-1">
+            <NeonStat icon={FaUsers} label="Members"
+              value={`${clan.memberCount}/${clan.maxMembers}`} color={N.cyan} />
+            <NeonStat icon={FaTrophy} label="Competitions"
+              value={competitions?.length || 0} color={N.magenta} />
+            <NeonStat icon={FaFire} label="Total EXP"
+              value={totalClanExp.toLocaleString()} color={N.lime} />
+            <NeonStat icon={FaChartLine} label="Win Rate"
+              value={stats?.winRate ? `${(stats.winRate*100).toFixed(1)}%` : '0%'} color={N.violet} />
+          </SimpleGrid>
+        </Container>
+      </Box>
 
-              {/* Clan Info */}
-              <VStack align="start" spacing={2} flex={1} minW={0}>
-                <HStack spacing={2} flexWrap="wrap">
-                  <Heading 
-                    size="lg" 
-                    fontWeight="800"
-                    bgGradient="linear(to-r, purple.600, blue.500)"
-                    bgClip="text"
-                  >
-                    {clan.name}
+      {/* Tabs */}
+      <Container maxW="7xl" py={12} position="relative" zIndex={1}>
+        <Tabs variant="unstyled" className="reveal-2">
+          <TabList gap={2} flexWrap="wrap" mb={10}>
+            <Tab className="neon-tab">⚡ OVERVIEW</Tab>
+            {isMember && <Tab className="neon-tab">📢 ANNOUNCEMENTS</Tab>}
+            {isMember && <Tab className="neon-tab">💬 COMMUNITY</Tab>}
+            <Tab className="neon-tab">👥 MEMBERS</Tab>
+            <Tab className="neon-tab">🛡️ TEAMS</Tab>
+            <Tab className="neon-tab">🏆 COMPETITIONS</Tab>
+            <Tab className="neon-tab">📊 STATS</Tab>
+            {hasLeadership && <Tab className="neon-tab">⚙️ MANAGE</Tab>}
+          </TabList>
+
+          <TabPanels>
+            {/* Overview */}
+            <TabPanel px={0}>
+              <Grid templateColumns={{ base:'1fr', lg:'2fr 1fr' }} gap={8}>
+                <Stack spacing={6}>
+                  <Box className="neon-glass" p={7}>
+                    <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                      className="neon-text" mb={4}>
+                      ABOUT CLAN
+                    </Heading>
+                    <Text fontSize="sm" lineHeight="1.8" style={{ color:N.muted }}>
+                      {clan.description || 'No description.'}
+                    </Text>
+                  </Box>
+
+                  <Box className="neon-glass" p={7}>
+                    <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                      className="neon-text" mb={5}>
+                      🏆 RECENT BATTLES
+                    </Heading>
+                    <Stack spacing={4}>
+                      {competitions && competitions.length > 0 ? (
+                        competitions.slice(0,3).map(c => <CompHolo key={c.id} comp={c} navigate={navigate} />)
+                      ) : (
+                        <Text fontSize="sm" textAlign="center" py={8} style={{ color:N.dim }}>
+                          No competitions yet
+                        </Text>
+                      )}
+                    </Stack>
+                  </Box>
+                </Stack>
+
+                <Stack spacing={6}>
+                  <Box className="neon-glass" p={6}>
+                    <Heading fontSize="md" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                      className="neon-text" mb={5}>
+                      TOP WARRIORS
+                    </Heading>
+                    <VStack spacing={3} align="stretch">
+                      {stats?.topMembers?.slice(0,5).map((m, i) => (
+                        <HStack key={i} spacing={3} px={4} py={3} borderRadius="12px"
+                          cursor="pointer"
+                          onClick={() => navigate(`/profile/${m.userId}`)}
+                          style={{ background: i === 0 ? `${N.orange}11` : 'transparent',
+                            border: i === 0 ? `1px solid ${N.orange}44` : '1px solid transparent' }}
+                          _hover={{ background:`${N.cyan}11`, borderColor:`${N.cyan}44` }}
+                          transition="all 0.3s">
+                          <Text fontSize="sm" fontWeight="900" fontFamily="'Orbitron', sans-serif"
+                            w="24px" textAlign="center"
+                            style={{ color: i === 0 ? N.orange : N.dim }}>
+                            {i + 1}
+                          </Text>
+                          <Text fontSize="sm" fontWeight="600" flex={1} style={{ color:N.text }}>
+                            {m.userName}
+                          </Text>
+                          <Text fontSize="sm" fontWeight="800" fontFamily="'Orbitron', sans-serif"
+                            style={{ color:N.cyan, textShadow:`0 0 8px ${N.cyan}` }}>
+                            {m.contributionPoints?.toLocaleString()}
+                          </Text>
+                          {i === 0 && <Icon as={FaCrown} style={{ color:N.orange }} />}
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
+
+                  <Box className="neon-glass" p={6}>
+                    <Heading fontSize="md" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                      className="neon-text" mb={5}>
+                      CLAN INFO
+                    </Heading>
+                    <Stack spacing={3}>
+                      {[
+                        { label:'LEADER', value:clan.leaderName },
+                        { label:'CREATED', value:new Date(clan.createdAt).toLocaleDateString() },
+                        { label:'CAPACITY', value:clan.maxMembers },
+                      ].map((d,i) => (
+                        <HStack key={i} justify="space-between" px={4} py={3} borderRadius="10px"
+                          style={{ background:`${N.cyan}05`, border:`1px solid ${N.cyan}22` }}>
+                          <Text fontSize="10px" fontWeight="700" letterSpacing="0.1em"
+                            style={{ color:N.dim }}>
+                            {d.label}
+                          </Text>
+                          <Text fontSize="sm" fontWeight="600" style={{ color:N.text }}>
+                            {d.value}
+                          </Text>
+                        </HStack>
+                      ))}
+                    </Stack>
+                  </Box>
+                </Stack>
+              </Grid>
+            </TabPanel>
+
+            {/* Teams */}
+            <TabPanel px={0}>
+              <TeamsPage clanId={clanId} clan={clan} currentUser={user} />
+            </TabPanel>
+
+            {isMember && (
+              <TabPanel px={0}>
+                <ClanAnnouncements userRole={userRole} />
+              </TabPanel>
+            )}
+
+            {isMember && (
+              <TabPanel px={0}>
+                <ClanCommunity />
+              </TabPanel>
+            )}
+
+            <TabPanel px={0}>
+              {membersLoading ? (
+                <SimpleGrid columns={{ base:1, md:2, lg:3 }} spacing={5}>
+                  {[...Array(6)].map((_,i) => (
+                    <Skeleton key={i} h="160px" borderRadius="16px" startColor={N.space} endColor={N.deep} />
+                  ))}
+                </SimpleGrid>
+              ) : members && members.length > 0 ? (
+                <SimpleGrid columns={{ base:1, md:2, lg:3 }} spacing={5}>
+                  {members.map(m => <HoloMember key={m.userId} member={m} navigate={navigate} />)}
+                </SimpleGrid>
+              ) : (
+                <Box py={20} textAlign="center">
+                  <Text fontSize="64px" mb={2}>👥</Text>
+                  <Text style={{ color:N.dim }}>No members</Text>
+                </Box>
+              )}
+            </TabPanel>
+
+            <TabPanel px={0}>
+              {competitionsLoading ? (
+                <SimpleGrid columns={{ base:1, md:2 }} spacing={5}>
+                  {[...Array(4)].map((_,i) => (
+                    <Skeleton key={i} h="140px" borderRadius="16px" startColor={N.space} endColor={N.deep} />
+                  ))}
+                </SimpleGrid>
+              ) : competitions && competitions.length > 0 ? (
+                <SimpleGrid columns={{ base:1, md:2 }} spacing={5}>
+                  {competitions.map(c => <CompHolo key={c.id} comp={c} navigate={navigate} />)}
+                </SimpleGrid>
+              ) : (
+                <Box py={20} textAlign="center">
+                  <Text fontSize="64px" mb={2}>🏆</Text>
+                  <Text style={{ color:N.dim }}>No competitions</Text>
+                </Box>
+              )}
+            </TabPanel>
+
+            <TabPanel px={0}>
+              <Stack spacing={6}>
+                <Box className="neon-glass" p={7}>
+                  <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                    className="neon-text" mb={6}>
+                    PERFORMANCE
                   </Heading>
-                  <Badge 
-                    colorScheme="purple" 
-                    fontSize="sm" 
-                    px={2}
-                    py={1}
-                    borderRadius="md"
-                    fontWeight="600"
-                  >
-                    [{clan.tag}]
-                  </Badge>
-                </HStack>
-                {clan.motto && (
-                  <Text 
-                    fontSize="sm" 
-                    fontStyle="italic" 
-                    color="gray.600"
-                    noOfLines={1}
-                  >
-                    "{clan.motto}"
-                  </Text>
-                )}
-                <Text color="gray.600" fontSize="sm" noOfLines={2}>
-                  {clan.description}
-                </Text>
-                <HStack spacing={2} flexWrap="wrap">
-                  <Badge colorScheme="blue" fontSize="xs" px={2} py={0.5}>
-                    {clan.clanType}
-                  </Badge>
-                  <Badge colorScheme={clan.isPublic ? 'green' : 'orange'} fontSize="xs" px={2} py={0.5}>
-                    {clan.isPublic ? 'Public' : 'Private'}
-                  </Badge>
-                  {clan.requireApproval && (
-                    <Badge colorScheme="orange" fontSize="xs" px={2} py={0.5}>
-                      Approval Required
-                    </Badge>
-                  )}
-                  {clan.universityName && (
-                    <Badge variant="outline" colorScheme="purple" fontSize="xs" px={2} py={0.5}>
-                      {clan.universityName}
-                    </Badge>
-                  )}
-                </HStack>
-              </VStack>
+                  <SimpleGrid columns={{ base:1, md:3 }} spacing={5}>
+                    {[
+                      { label:'WIN RATE', value:stats?.winRate ? `${(stats.winRate*100).toFixed(1)}%` : '0%', color:N.cyan },
+                      { label:'WEEKLY', value:stats?.weeklyPoints?.toLocaleString() || '0', color:N.magenta },
+                      { label:'MONTHLY', value:stats?.monthlyPoints?.toLocaleString() || '0', color:N.violet },
+                    ].map((s,i) => (
+                      <VStack key={i} spacing={2} px={5} py={4} borderRadius="14px"
+                        style={{ background:`${s.color}11`, border:`1px solid ${s.color}33` }}>
+                        <Text fontSize="9px" fontWeight="700" letterSpacing="0.15em"
+                          style={{ color:N.dim }}>
+                          {s.label}
+                        </Text>
+                        <Text fontSize="3xl" fontWeight="900" fontFamily="'Orbitron', sans-serif"
+                          style={{ color:s.color, textShadow:`0 0 15px ${s.color}` }}>
+                          {s.value}
+                        </Text>
+                      </VStack>
+                    ))}
+                  </SimpleGrid>
+                </Box>
 
-              {/* Action Buttons - Right Side */}
-              <VStack spacing={2} flexShrink={0} minW={{ base: 'full', md: '160px' }}>
-                  {isMember ? (
-                  <>
-                    {isLeaderOrCoLeader && (
-                      <HStack w="full" spacing={2}>
-                        <Button
-                          colorScheme="purple"
-                          leftIcon={<FaEdit />}
-                          w="full"
-                          onClick={() => navigate(`/clans/${clanId}/edit`)}
-                          size="sm"
-                          borderRadius="lg"
-                          fontWeight="600"
-                        >
-                          Edit Clan
-                        </Button>
-                        <Button
-                          colorScheme="purple"
-                          leftIcon={<FaCog />}
-                          w="full"
-                          onClick={() => navigate(`/clans/${clanId}/members`)}
-                          size="sm"
-                          borderRadius="lg"
-                          fontWeight="600"
-                        >
-                          Manage Clan
+                {stats?.memberRoleDistribution && (
+                  <Box className="neon-glass" p={7}>
+                    <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                      className="neon-text" mb={6}>
+                      ROLE DISTRIBUTION
+                    </Heading>
+                    <Stack spacing={4}>
+                      {Object.entries(stats.memberRoleDistribution).map(([role, count]) => (
+                        <HStack key={role} justify="space-between">
+                          <Text fontSize="sm" fontWeight="600" style={{ color:N.muted }}>
+                            {role}
+                          </Text>
+                          <HStack spacing={3} flex={1} maxW="400px">
+                            <Progress value={(count/clan.memberCount)*100} flex={1}
+                              borderRadius="full" h="6px" bg={N.deep}
+                              sx={{ '& > div': { background:`linear-gradient(90deg, ${N.cyan}, ${N.magenta})` } }} />
+                            <Text fontSize="sm" fontWeight="800" fontFamily="'Orbitron', sans-serif"
+                              style={{ color:N.cyan, minWidth:'30px', textAlign:'right' }}>
+                              {count}
+                            </Text>
+                          </HStack>
+                        </HStack>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            </TabPanel>
+
+            {hasLeadership && (
+              <TabPanel px={0}>
+                <Stack spacing={6}>
+                  {isLeaderOrCoLeader && (
+                    <Box className="neon-glass" p={7}>
+                      <HStack justify="space-between" mb={6}>
+                        <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                          className="neon-text">
+                          PRIVACY
+                        </Heading>
+                        <Button size="sm" borderRadius="full" fontWeight="700" color="#000" px={6}
+                          style={{ background:`linear-gradient(135deg, ${N.cyan}, ${N.magenta})`,
+                            boxShadow:`0 0 20px ${N.cyan}66` }}
+                          _hover={{ boxShadow:`0 0 40px ${N.cyan}` }}
+                          onClick={openPrivacy}>
+                          EDIT
                         </Button>
                       </HStack>
-                    )}
-                    <Button
-                      variant="outline"
-                      colorScheme="red"
-                      leftIcon={<FaSignOutAlt />}
-                      w="full"
-                      size="sm"
-                      borderRadius="lg"
-                      fontWeight="600"
-                      onClick={() => leaveMutation.mutate()}
-                      isLoading={leaveMutation.isLoading}
-                    >
-                      Leave Clan
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    colorScheme="purple"
-                    leftIcon={<FaUserPlus />}
-                    w="full"
-                    size="sm"
-                    borderRadius="lg"
-                    fontWeight="600"
-                    onClick={() => joinMutation.mutate()}
-                    isLoading={joinMutation.isLoading}
-                    isDisabled={joinStatus === 'pending' || atCapacity}
-                  >
-                    {atCapacity ? 'Clan Full' : joinStatus === 'pending' ? 'Pending' : 'Join'}
-                  </Button>
-                )}
-              </VStack>
-            </Flex>
-          </CardBody>
-        </Card>
-
-        {/* Compact Stats Grid */}
-        <SimpleGrid 
-          columns={{ base: 2, md: 4, lg: 5 }} 
-          spacing={3} 
-          mb={6}
-        >
-          <StatCard
-            icon={FaUsers}
-            label="Members"
-            value={clan.memberCount}
-            color="purple"
-          />
-          <StatCard
-            icon={FaTrophy}
-            label="Total Points"
-            value={clan.totalPoints.toLocaleString()}
-            color="yellow"
-          />
-          <StatCard
-            icon={FaMedal}
-            label="Rank"
-            value={`#${clan.rank}`}
-            color="blue"
-          />
-          <StatCard
-            icon={FaChartLine}
-            label="Competitions"
-            value={clan.totalCompetitions}
-            color="green"
-          />
-          <StatCard
-            icon={FaStar}
-            label="Wins"
-            value={clan.competitionWins}
-            color="orange"
-          />
-        </SimpleGrid>
-
-        {/* Compact Tabs Section */}
-        <Card 
-          bg={tabBg} 
-          shadow="md"
-          borderWidth="1px"
-          borderColor={borderColor}
-          borderRadius="lg"
-        >
-          <Tabs colorScheme="purple" size="sm">
-            <TabList 
-              px={6} 
-              pt={4}
-              pb={3}
-              overflowX="auto"
-              gap={3}
-              css={{
-                '&::-webkit-scrollbar': {
-                  height: '4px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: 'transparent',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: '#CBD5E0',
-                  borderRadius: '2px',
-                },
-              }}
-            >
-              <Tab 
-                fontWeight="700" 
-                fontSize="sm"
-                px={4}
-                py={2}
-                _selected={{ 
-                  color: 'purple.600', 
-                  borderBottomWidth: '3px',
-                  borderBottomColor: 'purple.600'
-                }}
-              >
-                📊 Overview
-              </Tab>
-              {isMember && (
-                <Tab 
-                  fontWeight="700"
-                  fontSize="sm"
-                  px={4}
-                  py={2}
-                  _selected={{ 
-                    color: 'purple.600', 
-                    borderBottomWidth: '3px',
-                    borderBottomColor: 'purple.600'
-                  }}
-                >
-                  📢 Announcements
-                </Tab>
-              )}
-              {isMember && (
-                <Tab 
-                  fontWeight="700"
-                  fontSize="sm"
-                  px={4}
-                  py={2}
-                  _selected={{ 
-                    color: 'purple.600', 
-                    borderBottomWidth: '3px',
-                    borderBottomColor: 'purple.600'
-                  }}
-                >
-                  💬 Community
-                </Tab>
-              )}
-              <Tab 
-                fontWeight="700"
-                fontSize="sm"
-                px={4}
-                py={2}
-                _selected={{ 
-                  color: 'purple.600', 
-                  borderBottomWidth: '3px',
-                  borderBottomColor: 'purple.600'
-                }}
-              >
-                👥 Members ({members?.length || 0})
-              </Tab>
-              <Tab 
-                fontWeight="700"
-                fontSize="sm"
-                px={4}
-                py={2}
-                _selected={{ 
-                  color: 'purple.600', 
-                  borderBottomWidth: '3px',
-                  borderBottomColor: 'purple.600'
-                }}
-              >
-                🏆 Competitions ({competitions?.length || 0})
-              </Tab>
-              <Tab 
-                fontWeight="700"
-                fontSize="sm"
-                px={4}
-                py={2}
-                _selected={{ 
-                  color: 'purple.600', 
-                  borderBottomWidth: '3px',
-                  borderBottomColor: 'purple.600'
-                }}
-              >
-                📈 Statistics
-              </Tab>
-              {hasLeadership && (
-                <Tab 
-                  fontWeight="700"
-                  fontSize="sm"
-                  px={4}
-                  py={2}
-                  _selected={{ 
-                    color: 'purple.600', 
-                    borderBottomWidth: '3px',
-                    borderBottomColor: 'purple.600'
-                  }}
-                >
-                  <Icon as={FaCog} mr={2} boxSize={5} />
-                  Management
-                </Tab>
-              )}
-            </TabList>
-
-            <TabPanels>
-              {/* Overview Tab */}
-              <TabPanel p={6}>
-                <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={8}>
-                  <GridItem>
-                    <Card
-                      bg={cardBg}
-                      mb={6}
-                      shadow="lg"
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                      borderRadius="xl"
-                    >
-                      <CardBody p={6}>
-                        <Heading size="md" mb={4} fontWeight="800">
-                          🏰 About Clan
-                        </Heading>
-                        <Stack spacing={4}>
-                          <Text color="gray.700" lineHeight="1.8" fontSize="md">
-                            {clan.description}
+                      <Stack spacing={3}>
+                        <HStack justify="space-between" px={4} py={3} borderRadius="10px"
+                          style={{ background:`${N.cyan}05`, border:`1px solid ${N.cyan}22` }}>
+                          <Text fontSize="xs" style={{ color:N.muted }}>Visibility</Text>
+                          <Text fontSize="sm" fontWeight="700"
+                            style={{ color: clan.isPublic ? N.lime : N.orange }}>
+                            {clan.isPublic ? 'PUBLIC' : 'PRIVATE'}
                           </Text>
-                          {clan.joinCriteria && (
-                            <>
-                              <Divider />
-                              <Box>
-                                <Text fontWeight="700" mb={2} color="gray.800" fontSize="md">
-                                  ✅ Join Criteria
-                                </Text>
-                                <Text fontSize="sm" color="gray.600" lineHeight="1.6" bg={joinCriteriaBg} p={3} borderRadius="lg">
-                                  {clan.joinCriteria}
-                                </Text>
-                              </Box>
-                            </>
-                          )}
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Box>
-                      <Heading size="md" mb={5} fontWeight="800">
-                        🏆 Recent Competitions
-                      </Heading>
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
-                        {competitionsLoading ? (
-                          [...Array(2)].map((_, i) => (
-                            <Card key={i} borderRadius="xl">
-                              <CardBody>
-                                <SkeletonText noOfLines={4} />
-                              </CardBody>
-                            </Card>
-                          ))
-                        ) : competitions && competitions.length > 0 ? (
-                          competitions.slice(0, 4).map((comp) => (
-                            <CompetitionCard key={comp.id} competition={comp} />
-                          ))
-                        ) : (
-                          <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
-                            <CardBody py={8}>
-                              <VStack spacing={3}>
-                                <Icon as={FaTrophy} boxSize={12} color="gray.300" />
-                                <Text color="gray.500" textAlign="center" fontWeight="600">
-                                  No competitions yet
-                                </Text>
-                                <Text color="gray.400" textAlign="center" fontSize="sm">
-                                  Check back later for upcoming events
-                                </Text>
-                              </VStack>
-                            </CardBody>
-                          </Card>
-                        )}
-                      </SimpleGrid>
+                        </HStack>
+                      </Stack>
                     </Box>
-                  </GridItem>
-
-                  <GridItem>
-                    <Card bg={cardBg} mb={6} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
-                      <CardBody p={6}>
-                        <Heading size="sm" mb={5} fontWeight="800">
-                          ⭐ Top Members
-                        </Heading>
-                        <Stack spacing={2}>
-                          {stats?.topMembers?.slice(0, 5).map((member, index) => (
-                            <HStack 
-                              key={member.userId} 
-                              spacing={3}
-                              cursor="pointer"
-                              p={4}
-                              borderRadius="xl"
-                              bg={index === 0 ? topMemberBg : 'transparent'}
-                              borderWidth={index === 0 ? "2px" : "1px"}
-                              borderColor={index === 0 ? "yellow.400" : borderColor}
-                              _hover={{ 
-                                bg: topMemberHoverBg,
-                                transform: 'translateX(4px)',
-                                borderColor: 'purple.300'
-                              }}
-                              onClick={() => navigate(`/profile/${member.userId}`)}
-                              transition="all 0.2s ease"
-                            >
-                              <Badge 
-                                colorScheme={index === 0 ? 'yellow' : index === 1 ? 'gray' : index === 2 ? 'orange' : 'purple'}
-                                borderRadius="full"
-                                w={8}
-                                h={8}
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                fontSize="sm"
-                                fontWeight="800"
-                              >
-                                {index + 1}
-                              </Badge>
-                              <Avatar
-                                size="sm"
-                                name={member.userName}
-                                src={member.profileImage}
-                                borderWidth="2px"
-                                borderColor={index === 0 ? 'yellow.400' : 'gray.300'}
-                              />
-                              <VStack align="start" spacing={0} flex={1}>
-                                <Text fontSize="sm" fontWeight="700">
-                                  {member.userName}
-                                </Text>
-                                <HStack spacing={1.5}>
-                                  <Icon as={FaTrophy} boxSize={3} color="yellow.500" />
-                                  <Text fontSize="xs" color="gray.500" fontWeight="600">
-                                    {member.contributionPoints.toLocaleString()} points
-                                  </Text>
-                                </HStack>
-                              </VStack>
-                              {index === 0 && <Icon as={FaCrown} color="yellow.500" boxSize={5} />}
-                            </HStack>
-                          ))}
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
-                      <CardBody p={6}>
-                        <Heading size="sm" mb={5} fontWeight="800">
-                          ℹ️ Clan Information
-                        </Heading>
-                        <Stack spacing={4} fontSize="sm">
-                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
-                            <HStack spacing={2}>
-                              <Icon as={FaCrown} color="yellow.500" boxSize={4} />
-                              <Text color="gray.600" fontWeight="600">Leader:</Text>
-                            </HStack>
-                            <Text fontWeight="700">{clan.leaderName}</Text>
-                          </HStack>
-                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
-                            <HStack spacing={2}>
-                              <Icon as={FaCalendar} color="blue.500" boxSize={4} />
-                              <Text color="gray.600" fontWeight="600">Created:</Text>
-                            </HStack>
-                            <Text fontWeight="700">
-                              {new Date(clan.createdAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </Text>
-                          </HStack>
-                          <HStack justify="space-between" p={3} bg={clanInfoBg} borderRadius="lg">
-                            <HStack spacing={2}>
-                              <Icon as={FaUsers} color="purple.500" boxSize={4} />
-                              <Text color="gray.600" fontWeight="600">Max Members:</Text>
-                            </HStack>
-                            <Text fontWeight="700">{clan.maxMembers}</Text>
-                          </HStack>
-                          {clan.requireApproval && (
-                            <Badge 
-                              colorScheme="orange"
-                              alignSelf="start"
-                              px={4}
-                              py={2}
-                              borderRadius="full"
-                              fontSize="sm"
-                              fontWeight="700"
-                            >
-                              ✓ Requires Approval
-                            </Badge>
-                          )}
-                        </Stack>
-                      </CardBody>
-                    </Card>
-                  </GridItem>
-                </Grid>
-              </TabPanel>
-
-              {/* Announcements Tab - Members Only */}
-              {isMember && (
-                <TabPanel p={6}>
-                  <ClanAnnouncements userRole={userRole} />
-                </TabPanel>
-              )}
-
-              {/* Community Tab - Members Only */}
-              {isMember && (
-                <TabPanel p={6}>
-                  <ClanCommunity />
-                </TabPanel>
-              )}
-
-              {/* Members Tab */}
-              <TabPanel p={6}>
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
-                  {membersLoading ? (
-                    [...Array(6)].map((_, i) => (
-                      <Card key={i} borderRadius="xl">
-                        <CardBody>
-                          <SkeletonText noOfLines={3} />
-                        </CardBody>
-                      </Card>
-                    ))
-                  ) : members && members.length > 0 ? (
-                    members.map((member) => (
-                      <MemberCard key={member.id} member={member} />
-                    ))
-                  ) : (
-                    <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
-                      <CardBody py={8}>
-                        <VStack spacing={3}>
-                          <Icon as={FaUsers} boxSize={12} color="gray.300" />
-                          <Text color="gray.500" textAlign="center" fontWeight="600">
-                            No members yet
-                          </Text>
-                        </VStack>
-                      </CardBody>
-                    </Card>
                   )}
-                </SimpleGrid>
-              </TabPanel>
 
-              {/* Competitions Tab */}
-              <TabPanel p={6}>
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
-                  {competitionsLoading ? (
-                    [...Array(6)].map((_, i) => (
-                      <Card key={i} borderRadius="xl">
-                        <CardBody>
-                          <SkeletonText noOfLines={4} />
-                        </CardBody>
-                      </Card>
-                    ))
-                  ) : competitions && competitions.length > 0 ? (
-                    competitions.map((comp) => (
-                      <CompetitionCard key={comp.id} competition={comp} />
-                    ))
-                  ) : (
-                    <Card gridColumn="1/-1" borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
-                      <CardBody py={8}>
-                        <VStack spacing={3}>
-                          <Icon as={FaTrophy} boxSize={12} color="gray.300" />
-                          <Text color="gray.500" textAlign="center" fontWeight="600">
-                            No competitions yet
-                          </Text>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  )}
-                </SimpleGrid>
-              </TabPanel>
-
-              {/* Statistics Tab */}
-              <TabPanel p={6}>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                  <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
-                    <CardBody p={6}>
-                      <Heading size="sm" mb={6} fontWeight="800">
-                        📊 Performance Metrics
-                      </Heading>
-                      <Stack spacing={6}>
-                        <Box>
-                          <HStack justify="space-between" mb={3}>
-                            <HStack spacing={2}>
-                              <Icon as={FaBolt} color="yellow.500" boxSize={4} />
-                              <Text fontSize="sm" color="gray.600" fontWeight="700">Win Rate</Text>
-                            </HStack>
-                            <Text fontSize="lg" fontWeight="800" color="purple.600">
-                              {stats?.winRate
-                                ? `${(stats.winRate * 100).toFixed(1)}%`
-                                : '0%'}
-                            </Text>
-                          </HStack>
-                          <Progress
-                            value={stats?.winRate ? stats.winRate * 100 : 0}
-                            colorScheme="purple"
-                            size="lg"
-                            borderRadius="full"
-                            hasStripe
-                          />
-                        </Box>
-                        <Divider />
-                        <SimpleGrid columns={2} spacing={5}>
-                          <Box p={4} bg={statWeeklyBg} borderRadius="xl">
-                            <Stat>
-                              <StatLabel color="gray.600" fontSize="xs" fontWeight="700" textTransform="uppercase">Weekly Points</StatLabel>
-                              <StatNumber fontSize="2xl" fontWeight="800" color="purple.600">
-                                {stats?.weeklyPoints?.toLocaleString() || 0}
-                              </StatNumber>
-                            </Stat>
-                          </Box>
-                          <Box p={4} bg={statMonthlyBg} borderRadius="xl">
-                            <Stat>
-                              <StatLabel color="gray.600" fontSize="xs" fontWeight="700" textTransform="uppercase">Monthly Points</StatLabel>
-                              <StatNumber fontSize="2xl" fontWeight="800" color="blue.600">
-                                {stats?.monthlyPoints?.toLocaleString() || 0}
-                              </StatNumber>
-                            </Stat>
-                          </Box>
-                        </SimpleGrid>
-                      </Stack>
-                    </CardBody>
-                  </Card>
-
-                  <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl">
-                    <CardBody p={6}>
-                      <Heading size="sm" mb={6} fontWeight="800">
-                        👥 Member Distribution
-                      </Heading>
+                  {isLeaderOrCoLeader && (
+                    <Box className="neon-glass" p={7}>
+                      <HStack justify="space-between" mb={6}>
+                        <Heading fontSize="lg" fontWeight="700" fontFamily="'Orbitron', sans-serif"
+                          className="neon-text">
+                          PENDING REQUESTS
+                        </Heading>
+                        <Badge px={3} py={1} borderRadius="full" fontSize="10px" fontWeight="700"
+                          style={{ background:N.cyanSoft, color:N.cyan }}>
+                          {pendingRequests?.length || 0}
+                        </Badge>
+                      </HStack>
                       <Stack spacing={4}>
-                        {stats?.memberRoleDistribution &&
-                          Object.entries(stats.memberRoleDistribution).map(
-                            ([role, count]) => (
-                              <HStack key={role} justify="space-between" p={4} bg={clanInfoBg} borderRadius="xl">
-                                <HStack spacing={3}>
-                                  <Box
-                                    w={4}
-                                    h={4}
-                                    borderRadius="full"
-                                    bg={
-                                      role === 'Leader' ? 'yellow.500' :
-                                      role === 'CoLeader' ? 'orange.500' :
-                                      role === 'Elder' ? 'purple.500' : 'blue.500'
-                                    }
-                                    shadow="md"
-                                  />
-                                  <Text fontSize="sm" fontWeight="700">{role}</Text>
-                                </HStack>
-                                <Badge 
-                                  colorScheme={
-                                    role === 'Leader' ? 'yellow' :
-                                    role === 'CoLeader' ? 'orange' :
-                                    role === 'Elder' ? 'purple' : 'blue'
-                                  }
-                                  fontSize="md"
-                                  px={4}
-                                  py={1.5}
-                                  borderRadius="full"
-                                  fontWeight="800"
-                                >
-                                  {count}
-                                </Badge>
-                              </HStack>
-                            )
-                          )}
+                        {pendingRequests && pendingRequests.length > 0 ? (
+                          pendingRequests.map(req => {
+                            const isProcessing = decideJoinRequestMutation.isLoading
+                              && decideJoinRequestMutation.variables?.requestId === req.id;
+                            return (
+                              <Box key={req.id} className="neon-glass" p={5}>
+                                <Stack spacing={4}>
+                                  <HStack spacing={3}>
+                                    <Avatar src={req.avatarUrl} name={req.userName} size="md"
+                                      style={{ border:`2px solid ${N.cyan}` }}
+                                      cursor="pointer"
+                                      onClick={() => navigate(`/profile/${req.userId}`)} />
+                                    <VStack spacing={0} align="flex-start" flex={1}>
+                                      <Text fontWeight="700" style={{ color:N.text }}>
+                                        {req.userName}
+                                      </Text>
+                                      <Text fontSize="xs" style={{ color:N.dim }}>
+                                        {new Date(req.requestedAt).toLocaleDateString()}
+                                      </Text>
+                                    </VStack>
+                                  </HStack>
+                                  <HStack spacing={3}>
+                                    <Button size="sm" flex={1} borderRadius="full" fontWeight="700" color="#000"
+                                      style={{ background:`linear-gradient(135deg, ${N.lime}, ${N.cyan})` }}
+                                      _hover={{ boxShadow:`0 0 20px ${N.lime}` }}
+                                      isLoading={isProcessing}
+                                      onClick={() => handleJoinRequestDecision(req.id, 'approve')}>
+                                      ✓ ACCEPT
+                                    </Button>
+                                    <Button size="sm" flex={1} borderRadius="full" fontWeight="700"
+                                      bg="transparent" style={{ border:`2px solid #ef4444`, color:'#ef4444' }}
+                                      _hover={{ bg:'rgba(239,68,68,0.1)' }}
+                                      isLoading={isProcessing}
+                                      onClick={() => handleJoinRequestDecision(req.id, 'reject')}>
+                                      ✕ REJECT
+                                    </Button>
+                                  </HStack>
+                                </Stack>
+                              </Box>
+                            );
+                          })
+                        ) : (
+                          <Text fontSize="sm" textAlign="center" py={8} style={{ color:N.dim }}>
+                            No pending requests
+                          </Text>
+                        )}
                       </Stack>
-                    </CardBody>
-                  </Card>
-                </SimpleGrid>
+                    </Box>
+                  )}
+                </Stack>
               </TabPanel>
-
-              {/* Management Tab (Leaders & CoLeaders) */}
-              {hasLeadership && (
-                <TabPanel p={6}>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                    {isLeaderOrCoLeader && (
-                      <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} borderRadius="xl" gridColumn={{ md: "1 / -1" }} maxW="2xl" mx="auto" w="full">
-                        <CardBody p={6}>
-                          <HStack justify="space-between" mb={6} align="center">
-                            <HStack spacing={3}>
-                              <Icon as={FaUserPlus} color="purple.500" boxSize={6} />
-                              <Heading size="sm" fontWeight="800">
-                                Pending Join Requests
-                              </Heading>
-                            </HStack>
-                            <Badge 
-                              colorScheme="yellow"
-                              fontSize="lg"
-                              px={4}
-                              py={2}
-                              borderRadius="full"
-                              fontWeight="800"
-                            >
-                              {pendingRequests?.length || 0}
-                            </Badge>
-                          </HStack>
-
-                          {pendingRequestsLoading ? (
-                            <Stack spacing={4}>
-                              {[...Array(3)].map((_, i) => (
-                                <Skeleton key={i} height="100px" borderRadius="xl" />
-                              ))}
-                            </Stack>
-                          ) : pendingRequests && pendingRequests.length > 0 ? (
-                            <Stack spacing={4}>
-                              {pendingRequests.map((req) => {
-                                const isProcessing =
-                                  decideJoinRequestMutation.isLoading &&
-                                  decideJoinRequestMutation.variables?.requestId === req.id;
-
-                                return (
-                                  <Box
-                                    key={req.id}
-                                    p={5}
-                                    borderRadius="xl"
-                                    bg={pendingRequestBg}
-                                    borderWidth="2px"
-                                    borderColor="transparent"
-                                    _hover={{ borderColor: 'purple.300', shadow: 'md' }}
-                                    transition="all 0.2s ease"
-                                  >
-                                    <Flex direction={{ base: 'column', md: 'row' }} gap={4}>
-                                      <HStack flex={1} align="start" spacing={4}>
-                                        <Avatar
-                                          size="md"
-                                          name={req.userName}
-                                          src={req.profileImageUrl}
-                                          cursor="pointer"
-                                          onClick={() => navigate(`/profile/${req.userId}`)}
-                                          borderWidth="3px"
-                                          borderColor="purple.400"
-                                        />
-                                        <VStack align="start" spacing={2} flex={1}>
-                                          <Text 
-                                            fontSize="md" 
-                                            fontWeight="800"
-                                            cursor="pointer"
-                                            _hover={{ color: 'purple.500' }}
-                                            onClick={() => navigate(`/profile/${req.userId}`)}
-                                          >
-                                            {req.userName}
-                                          </Text>
-                                          <Text fontSize="xs" color="gray.500" fontWeight="600">
-                                            📅 Requested {new Date(req.requestedAt).toLocaleDateString('en-US', {
-                                              month: 'short',
-                                              day: 'numeric',
-                                              hour: '2-digit',
-                                              minute: '2-digit'
-                                            })}
-                                          </Text>
-                                          {req.message && (
-                                            <Text 
-                                              fontSize="sm" 
-                                              color="gray.700" 
-                                              noOfLines={2}
-                                              fontStyle="italic"
-                                              bg={cardBg}
-                                              p={3}
-                                              borderRadius="lg"
-                                              borderLeftWidth="3px"
-                                              borderLeftColor="purple.400"
-                                            >
-                                              "{req.message}"
-                                            </Text>
-                                          )}
-                                        </VStack>
-                                      </HStack>
-                                      <VStack spacing={2}>
-                                        <Button
-                                          size="sm"
-                                          colorScheme="purple"
-                                          variant="outline"
-                                          w="full"
-                                          borderRadius="lg"
-                                          fontWeight="700"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/profile/${req.userId}`);
-                                          }}
-                                        >
-                                          👤 View Profile
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          colorScheme="green"
-                                          w="full"
-                                          borderRadius="lg"
-                                          fontWeight="700"
-                                          isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'approve'}
-                                          onClick={() => handleJoinRequestDecision(req.id, 'approve')}
-                                          leftIcon={<Text>✓</Text>}
-                                        >
-                                          Accept
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          colorScheme="red"
-                                          variant="outline"
-                                          w="full"
-                                          borderRadius="lg"
-                                          fontWeight="700"
-                                          isLoading={isProcessing && decideJoinRequestMutation.variables?.action === 'reject'}
-                                          onClick={() => handleJoinRequestDecision(req.id, 'reject')}
-                                          leftIcon={<Text>✕</Text>}
-                                        >
-                                          Reject
-                                        </Button>
-                                      </VStack>
-                                    </Flex>
-                                  </Box>
-                                );
-                              })}
-                            </Stack>
-                          ) : (
-                            <VStack py={8} spacing={3}>
-                              <Icon as={FaUserPlus} boxSize={12} color="gray.300" />
-                              <Text color="gray.500" textAlign="center" fontWeight="600">
-                                No pending requests
-                              </Text>
-                              <Text color="gray.400" textAlign="center" fontSize="sm">
-                                New join requests will appear here
-                              </Text>
-                            </VStack>
-                          )}
-                        </CardBody>
-                      </Card>
-                    )}
-                  </SimpleGrid>
-                </TabPanel>
-              )}
-            </TabPanels>
-          </Tabs>
-        </Card>
-
-        {/* Enhanced Settings Modal */}
-        <Modal isOpen={isPrivacyOpen} onClose={closePrivacy} isCentered size="lg">
-          <ModalOverlay backdropFilter="blur(4px)" />
-          <ModalContent borderRadius="2xl" mx={4}>
-            <ModalHeader fontWeight="800" fontSize="2xl" pt={6}>
-              🔒 Privacy Settings
-            </ModalHeader>
-            <ModalCloseButton top={6} right={6} />
-            <ModalBody pb={6}>
-              <Stack spacing={6}>
-                <FormControl display="flex" alignItems="center" p={4} bg={modalFormBg} borderRadius="xl">
-                  <FormLabel htmlFor="isPublic" mb="0" flex="1" fontWeight="700">
-                    🌐 Public Clan
-                  </FormLabel>
-                  <Switch 
-                    id="isPublic" 
-                    isChecked={privacyIsPublic} 
-                    onChange={(e) => setPrivacyIsPublic(e.target.checked)} 
-                    colorScheme="purple"
-                    size="lg"
-                  />
-                </FormControl>
-
-                <FormControl display="flex" alignItems="center" p={4} bg={modalFormBg} borderRadius="xl">
-                  <FormLabel htmlFor="requireApproval" mb="0" flex="1" fontWeight="700">
-                    ✓ Require Approval to Join
-                  </FormLabel>
-                  <Switch 
-                    id="requireApproval" 
-                    isChecked={privacyRequireApproval} 
-                    onChange={(e) => setPrivacyRequireApproval(e.target.checked)} 
-                    colorScheme="purple"
-                    size="lg"
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel fontWeight="700" fontSize="md">📝 Join Criteria (optional)</FormLabel>
-                  <Input 
-                    value={privacyJoinCriteria || ''} 
-                    onChange={(e) => setPrivacyJoinCriteria(e.target.value)} 
-                    placeholder="e.g. Minimum rank, points, etc."
-                    size="lg"
-                    borderRadius="xl"
-                    borderWidth="2px"
-                    bg={modalFormBg}
-                    _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
-                  />
-                </FormControl>
-              </Stack>
-            </ModalBody>
-
-            <ModalFooter pb={6} gap={3}>
-              <Button 
-                variant="ghost" 
-                onClick={closePrivacy}
-                size="lg"
-                borderRadius="xl"
-                fontWeight="700"
-              >
-                Cancel
-              </Button>
-              <Button 
-                colorScheme="purple" 
-                onClick={handleSavePrivacy} 
-                isLoading={privacyMutation.isLoading}
-                size="lg"
-                borderRadius="xl"
-                fontWeight="700"
-                px={8}
-                shadow="md"
-              >
-                💾 Save Changes
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+            )}
+          </TabPanels>
+        </Tabs>
       </Container>
+
+      <Modal isOpen={isPrivacyOpen} onClose={closePrivacy} size="lg">
+        <ModalOverlay bg="rgba(0,0,0,0.8)" backdropFilter="blur(10px)" />
+        <ModalContent bg={N.deep} border={`2px solid ${N.cyan}`} borderRadius="24px"
+          style={{ boxShadow:`0 0 60px ${N.cyan}66` }}>
+          <ModalHeader fontFamily="'Orbitron', sans-serif" className="neon-text">
+            PRIVACY SETTINGS
+          </ModalHeader>
+          <ModalCloseButton style={{ color:N.text }} />
+          <ModalBody pb={6}>
+            <Stack spacing={6}>
+              <FormControl display="flex" alignItems="center" justifyContent="space-between"
+                px={5} py={4} borderRadius="14px"
+                style={{ background:N.cyanSoft, border:`1px solid ${N.cyan}33` }}>
+                <FormLabel htmlFor="public" mb={0} fontWeight="700" style={{ color:N.text }}>
+                  PUBLIC CLAN
+                </FormLabel>
+                <Switch id="public" size="lg" colorScheme="cyan"
+                  isChecked={privacyIsPublic}
+                  onChange={(e) => setPrivacyIsPublic(e.target.checked)} />
+              </FormControl>
+
+              <FormControl display="flex" alignItems="center" justifyContent="space-between"
+                px={5} py={4} borderRadius="14px"
+                style={{ background:N.cyanSoft, border:`1px solid ${N.cyan}33` }}>
+                <FormLabel htmlFor="approval" mb={0} fontWeight="700" style={{ color:N.text }}>
+                  REQUIRE APPROVAL
+                </FormLabel>
+                <Switch id="approval" size="lg" colorScheme="cyan"
+                  isChecked={privacyRequireApproval}
+                  onChange={(e) => setPrivacyRequireApproval(e.target.checked)} />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel fontWeight="700" fontSize="sm" style={{ color:N.text }}>
+                  JOIN CRITERIA
+                </FormLabel>
+                <Input
+                  value={privacyJoinCriteria}
+                  onChange={(e) => setPrivacyJoinCriteria(e.target.value)}
+                  placeholder="e.g. Min rank, points..."
+                  size="lg"
+                  borderRadius="14px"
+                  bg={N.space}
+                  borderColor={N.cyan+'44'}
+                  style={{ color:N.text }}
+                  _placeholder={{ color:N.dim }}
+                  _focus={{ borderColor:N.cyan, boxShadow:`0 0 0 1px ${N.cyan}` }}
+                />
+              </FormControl>
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <HStack spacing={3} w="100%">
+              <Button flex={1} borderRadius="full" fontWeight="700" onClick={closePrivacy}
+                bg="transparent" style={{ border:`2px solid ${N.dim}`, color:N.dim }}
+                _hover={{ borderColor:N.text, color:N.text }}>
+                CANCEL
+              </Button>
+              <Button flex={1} borderRadius="full" fontWeight="700" color="#000"
+                style={{ background:`linear-gradient(135deg, ${N.cyan}, ${N.magenta})`,
+                  boxShadow:`0 0 30px ${N.cyan}66` }}
+                _hover={{ boxShadow:`0 0 50px ${N.cyan}` }}
+                onClick={handleSavePrivacy}
+                isLoading={privacyMutation.isLoading}>
+                SAVE
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

@@ -71,10 +71,12 @@ import AdminCourses from './pages/Admin/AdminCourses';
 import ManageTeachers from './pages/Admin/ManageTeachers';
 import PendingCompetitions from './pages/Admin/PendingCompetitions';
 import CompetitionManagement from './pages/Admin/CompetitionManagement';
+import ClanCompetitionAdmin from './pages/Admin/ClanCompetitionAdmin';
 import UniversityManagement from './pages/Admin/UniversityManagement';
 import UniversityRequestsAdmin from './pages/Admin/UniversityRequestsAdmin';
 import DepartmentRequestsAdmin from './pages/Admin/DepartmentRequestsAdmin';
 import UserManagement from './pages/Admin/UserManagement';
+import AdminHome from './pages/Admin/AdminHome';
 import UniversityBrowse from './pages/Courses/UniversityBrowse';
 import UniversityDetails from './pages/Courses/UniversityDetails';
 import UniversityEdit from './pages/Courses/UniversityEdit';
@@ -164,6 +166,8 @@ function PublicLayout() {
 
           {/* Public user profile (view other users) */}
           <Route path="/user/:userId" element={<PublicUserProfile />} />
+          {/* support legacy singular /profile/:userId path */}
+          <Route path="/profile/:userId" element={<PublicUserProfile />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -205,6 +209,7 @@ function PrivateLayout() {
             <Route path="/teacher/reviews" element={<ProtectedRoute requiredTeacher><TeacherReviews /></ProtectedRoute>} />
 
             {/* Admin */}
+            <Route path="/admin/home" element={<ProtectedRoute requiredAdmin><AdminHome /></ProtectedRoute>} />
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredAdmin><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute requiredAdmin><UserManagement /></ProtectedRoute>} />
             <Route path="/admin/courses" element={<ProtectedRoute requiredAdmin><AdminCourses /></ProtectedRoute>} />
@@ -214,6 +219,7 @@ function PrivateLayout() {
             <Route path="/admin/manage-teachers" element={<ProtectedRoute requiredAdmin><ManageTeachers /></ProtectedRoute>} />
             <Route path="/admin/pending-competitions" element={<ProtectedRoute requiredAdmin><PendingCompetitions /></ProtectedRoute>} />
             <Route path="/admin/competitions" element={<ProtectedRoute requiredAdmin><CompetitionManagement /></ProtectedRoute>} />
+            <Route path="/admin/clan-competitions" element={<ProtectedRoute requiredAdmin><ClanCompetitionAdmin /></ProtectedRoute>} />
 
             {/* Community Routes - Private (Same as public but accessible from private layout) */}
             <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
@@ -224,6 +230,8 @@ function PrivateLayout() {
 
             {/* Public user profile (view other users) */}
             <Route path="/user/:userId" element={<PublicUserProfile />} />
+            {/* support legacy singular /profile/:userId path for logged-in users */}
+            <Route path="/profile/:userId" element={<PublicUserProfile />} />
 
             {/* My competitions */}
             <Route path="/my-competitions" element={<ProtectedRoute><MyCompetitions /></ProtectedRoute>} />

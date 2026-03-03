@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace backend.DTOs
 {
@@ -14,6 +15,20 @@ namespace backend.DTOs
 
         [MaxLength(500)]
         public string? ExperienceArea { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string IdType { get; set; } = null!;
+
+        [Required]
+        [MaxLength(100)]
+        public string IdNumber { get; set; } = null!;
+
+        [Required]
+        public IFormFile IdFrontImage { get; set; } = null!;
+
+        [Required]
+        public IFormFile IdBackImage { get; set; } = null!;
     }
 
     // Teacher Application Response
@@ -28,6 +43,10 @@ namespace backend.DTOs
         public string ReasonForApplying { get; set; } = null!;
         public string? QualificationDetails { get; set; }
         public string? ExperienceArea { get; set; }
+        public string IdType { get; set; } = null!;
+        public string IdNumber { get; set; } = null!;
+        public string IdFrontImagePath { get; set; } = null!;
+        public string IdBackImagePath { get; set; } = null!;
         public string Status { get; set; } = null!;
         public DateTime ApplicationDate { get; set; }
         public DateTime? ReviewedDate { get; set; }
@@ -66,5 +85,9 @@ namespace backend.DTOs
         public string ReasonForApplying { get; set; } = null!;
         public string? ExperienceArea { get; set; }
         public string? QualificationDetails { get; set; }
+        public string IdType { get; set; } = null!;
+        public string IdNumber { get; set; } = null!;
+        public string IdFrontImagePath { get; set; } = null!;
+        public string IdBackImagePath { get; set; } = null!;
     }
 }

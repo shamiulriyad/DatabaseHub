@@ -9,6 +9,7 @@ namespace backend.DTOs
         public string Title { get; set; }
         public string? Description { get; set; }
         public string? CompetitionType { get; set; }
+        public string? CompetitionPeriod { get; set; }
         // Scope fields (added to match Competition model)
         public int? UniversityId { get; set; }
         public int? DepartmentId { get; set; }

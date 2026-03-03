@@ -103,7 +103,7 @@ const Rankings = () => {
             <Spinner size="xl" color="purple.500" />
           </Box>
         ) : rankings.length === 0 ? (
-          <Card bg="white" shadow="md">
+          <Card bg="card.bg" shadow="md">
             <CardBody>
               <Text color="gray.500" textAlign="center" py={10}>
                 No completed competitions yet
@@ -168,7 +168,7 @@ const Rankings = () => {
                 {rankings.slice(3).map((ranking, idx) => (
                   <Card
                     key={ranking.id}
-                    bg="white"
+                    bg="card.bg"
                     shadow="sm"
                     borderWidth="1px"
                     borderColor="gray.200"

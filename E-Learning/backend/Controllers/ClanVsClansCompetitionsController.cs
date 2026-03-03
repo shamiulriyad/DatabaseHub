@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/clan-vs-clans-competitions")]
     public class ClanVsClansCompetitionsController : ControllerBase
     {
         private readonly IClanVsClansCompetitionService _competitionService;
@@ -107,7 +107,14 @@ namespace backend.Controllers
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
 
-            return Ok(new { success = true, message = result.Message, data = result.Data });
+            return Ok(new
+            {
+                success = true,
+                message = result.Message,
+                competitionId = result.Data.Id,
+                redirectUrl = $"/clans-competitions/{result.Data.Id}",
+                data = result.Data
+            });
         }
 
         /// <summary>
@@ -126,7 +133,14 @@ namespace backend.Controllers
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
 
-            return Ok(new { success = true, message = result.Message, data = result.Data });
+            return Ok(new
+            {
+                success = true,
+                message = result.Message,
+                competitionId = result.Data.Id,
+                redirectUrl = "/clans-competitions",
+                data = result.Data
+            });
         }
 
         /// <summary>

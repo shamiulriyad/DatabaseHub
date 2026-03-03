@@ -22,14 +22,67 @@ namespace backend.Controllers
         [HttpGet("posts")]
         public async Task<IActionResult> GetAllPosts(
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? sectionType = null)
         {
-            var result = await _communityService.GetAllPosts(page, pageSize);
+            var result = await _communityService.GetAllPosts(page, pageSize, sectionType);
             
             return Ok(new {
                 success = result.Success,
                 message = result.Message,
                 data = result.Data
+            });
+        }
+
+        [HttpGet("posts/forums")]
+        [HttpGet("/api/posts/forums")]
+        public async Task<IActionResult> GetForumPosts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _communityService.GetForumPosts(page, pageSize);
+            var countResult = await _communityService.GetForumPostsCount();
+            var totalCount = countResult.Success ? countResult.Data : 0;
+            var safePageSize = pageSize <= 0 ? 10 : pageSize;
+            var totalPages = (int)Math.Ceiling((double)totalCount / safePageSize);
+            if (totalPages <= 0) totalPages = 1;
+
+            return Ok(new {
+                success = result.Success,
+                message = result.Message,
+                data = new {
+                    posts = result.Data,
+                    page,
+                    pageSize = safePageSize,
+                    totalCount,
+                    totalPages
+                }
+            });
+        }
+
+        [HttpGet("posts/public")]
+        [HttpGet("/api/posts/public")]
+        public async Task<IActionResult> GetPublicPosts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _communityService.GetPublicPosts(page, pageSize);
+            var countResult = await _communityService.GetPublicPostsCount();
+            var totalCount = countResult.Success ? countResult.Data : 0;
+            var safePageSize = pageSize <= 0 ? 10 : pageSize;
+            var totalPages = (int)Math.Ceiling((double)totalCount / safePageSize);
+            if (totalPages <= 0) totalPages = 1;
+
+            return Ok(new {
+                success = result.Success,
+                message = result.Message,
+                data = new {
+                    posts = result.Data,
+                    page,
+                    pageSize = safePageSize,
+                    totalCount,
+                    totalPages
+                }
             });
         }
 
@@ -72,6 +125,57 @@ namespace backend.Controllers
         }
 
         [Authorize]
+        [HttpPost("posts/forums")]
+        [HttpPost("/api/posts/forums")]
+        public async Task<IActionResult> CreateForumPost([FromBody] CreatePostDTO postDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _communityService.CreateForumPost(postDto, userId);
+            if (!result.Success)
+            {
+                if (result.Message.Contains("Only admins", StringComparison.OrdinalIgnoreCase))
+                    return StatusCode(403, new { success = false, message = result.Message });
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+
+            return CreatedAtAction(nameof(GetPost), new { id = result.Data.Id }, new {
+                success = true,
+                message = "Forum post created successfully",
+                post = result.Data
+            });
+        }
+
+        [Authorize]
+        [HttpPost("posts/public")]
+        [HttpPost("/api/posts/public")]
+        public async Task<IActionResult> CreatePublicPost([FromBody] CreatePostDTO postDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _communityService.CreatePublicPost(postDto, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return CreatedAtAction(nameof(GetPost), new { id = result.Data.Id }, new {
+                success = true,
+                message = "Public post created successfully",
+                post = result.Data
+            });
+        }
+
+        [Authorize]
         [HttpPut("posts/{id}")]
         public async Task<IActionResult> UpdatePost(int id, [FromBody] UpdatePostDTO postDto)
         {
@@ -83,7 +187,7 @@ namespace backend.Controllers
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            var result = await _communityService.UpdatePost(id, postDto);
+            var result = await _communityService.UpdatePost(id, postDto, userId);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
@@ -104,7 +208,7 @@ namespace backend.Controllers
             if (userId == 0)
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
-            var result = await _communityService.DeletePost(id);
+            var result = await _communityService.DeletePost(id, userId);
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
@@ -172,6 +276,49 @@ namespace backend.Controllers
             return Ok(new {
                 success = true,
                 message = "Post downvoted successfully"
+            });
+        }
+
+        [Authorize]
+        [HttpPost("posts/{id}/react")]
+        public async Task<IActionResult> ReactToPost(int id, [FromBody] PostReactionDTO reactionDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _communityService.ReactToPost(id, userId, reactionDto.Reaction);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                message = "Reaction updated successfully"
+            });
+        }
+
+        [Authorize]
+        [HttpPut("posts/{id}/pin")]
+        public async Task<IActionResult> TogglePin(int id)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _communityService.TogglePin(id, userId);
+
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                message = result.Message
             });
         }
 
@@ -425,13 +572,24 @@ namespace backend.Controllers
                 return Unauthorized(new { success = false, message = "Invalid token" });
 
             var result = await _communityService.GetUserPosts(userId, page, pageSize);
+            var countResult = await _communityService.GetUserPostsCount(userId);
+            var totalCount = countResult.Success ? countResult.Data : 0;
+            var safePageSize = pageSize <= 0 ? 10 : pageSize;
+            var totalPages = (int)Math.Ceiling((double)totalCount / safePageSize);
+            if (totalPages <= 0) totalPages = 1;
             
             if (!result.Success)
                 return BadRequest(new { success = false, message = result.Message });
 
             return Ok(new {
                 success = true,
-                posts = result.Data
+                data = new {
+                    posts = result.Data,
+                    page,
+                    pageSize = safePageSize,
+                    totalCount,
+                    totalPages
+                }
             });
         }
 

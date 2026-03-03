@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Models
 {
+    [Index(nameof(IdNumber), IsUnique = true)]
     [Table("TeacherApplications")]
     public class TeacherApplication
     {
@@ -24,6 +26,22 @@ namespace backend.Models
 
         [MaxLength(500)]
         public string? ExperienceArea { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string IdType { get; set; } = null!;
+
+        [Required]
+        [MaxLength(100)]
+        public string IdNumber { get; set; } = null!;
+
+        [Required]
+        [MaxLength(500)]
+        public string IdFrontImagePath { get; set; } = null!;
+
+        [Required]
+        [MaxLength(500)]
+        public string IdBackImagePath { get; set; } = null!;
 
         // Application Status: Pending, Approved, Rejected
         [Required]

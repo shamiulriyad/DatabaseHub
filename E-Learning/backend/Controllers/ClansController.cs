@@ -11,11 +11,13 @@ namespace backend.Controllers
     public class ClansController : ControllerBase
     {
         private readonly IClanService _clanService;
+        private readonly ITeamService _teamService;
 
-        public ClansController(IClanService clanService)
-        {
-            _clanService = clanService;
-        }
+            public ClansController(IClanService clanService, ITeamService teamService)
+            {
+                _clanService = clanService;
+                _teamService = teamService;
+            }
 
         /// <summary>
         /// Helper method to check if user has leadership permission in clan (Leader/CoLeader/Elder)
@@ -133,6 +135,88 @@ namespace backend.Controllers
                 message = "Clan updated successfully",
                 clan = result.Data
             });
+        }
+
+        // TEAM MANAGEMENT
+
+        [Authorize]
+        [HttpPost("{clanId}/team/create")]
+        public async Task<IActionResult> CreateTeam(int clanId, [FromBody] backend.DTOs.TeamCreateDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, userId, requireLeaderOnly: true);
+            if (!hasPermission)
+                return Forbid();
+
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Invalid payload" });
+
+            dto.ClanId = clanId;
+            var result = await _teamService.CreateTeam(dto, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return CreatedAtAction(nameof(GetClan), new { id = clanId }, new { success = true, team = result.Data });
+        }
+
+        [Authorize]
+        [HttpPost("{clanId}/team/add-member")]
+        public async Task<IActionResult> AddTeamMember(int clanId, [FromBody] backend.DTOs.AddTeamMemberDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, userId, requireLeaderOnly: true);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _teamService.AddMember(dto, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Member added" });
+        }
+
+        [Authorize]
+        [HttpDelete("{clanId}/team/remove-member")]
+        public async Task<IActionResult> RemoveTeamMember(int clanId, [FromBody] backend.DTOs.RemoveTeamMemberDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var (hasPermission, errorMessage) = await CheckClanLeadershipPermissionAsync(clanId, userId, requireLeaderOnly: true);
+            if (!hasPermission)
+                return Forbid();
+
+            var result = await _teamService.RemoveMember(dto, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Member removed" });
+        }
+
+        [HttpGet("{clanId}/teams")]
+        public async Task<IActionResult> GetClanTeams(int clanId)
+        {
+            var result = await _teamService.GetClanTeams(clanId);
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, teams = result.Data });
         }
 
         [Authorize]

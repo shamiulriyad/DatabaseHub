@@ -77,6 +77,9 @@ namespace backend.DTOs
         public string? TwitterUrl { get; set; }
         public string? LinkedInUrl { get; set; }
         public string? GitHubUrl { get; set; }
+
+        public int? StreakDays { get; set; }
+        public DateTime? LastActive { get; set; }
     }
 
     // Password Change
@@ -147,13 +150,17 @@ namespace backend.DTOs
         public bool IsTeacher { get; set; }
         public bool IsCompetitor { get; set; }
         public bool IsAdmin { get; set; }
+        public long Exp { get; set; }
+        public int Level { get; set; }
         public int TotalPoints { get; set; }
         public int CurrentRank { get; set; }
+        public int StreakDays { get; set; }
         public int TotalCoursesEnrolled { get; set; }
         public int TotalCoursesCompleted { get; set; }
         public decimal AverageGrade { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
+        public DateTime? LastActive { get; set; }
         // Date when the user applied to become a teacher (if any)
         public DateTime? TeacherRequestDate { get; set; }
         
@@ -206,6 +213,8 @@ namespace backend.DTOs
         public string? Bio { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
+        public long Exp { get; set; }
+        public int Level { get; set; }
         public int TotalPoints { get; set; }
         public int CurrentRank { get; set; }
         public List<UserRoleDTO> Roles { get; set; } = new();

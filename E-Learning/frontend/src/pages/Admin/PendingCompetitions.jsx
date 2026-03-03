@@ -152,7 +152,7 @@ const PendingCompetitions = () => {
             </Box>
           ) : pending.length === 0 ? (
             <Box
-              bg="white"
+              bg="card.bg"
               rounded="lg"
               p={8}
               textAlign="center"
@@ -164,7 +164,7 @@ const PendingCompetitions = () => {
               </Text>
             </Box>
           ) : (
-            <Box bg="white" rounded="lg" shadow="md" borderWidth="1px" borderColor="gray.200" overflowX="auto">
+            <Box bg="card.bg" rounded="lg" shadow="md" borderWidth="1px" borderColor="gray.200" overflowX="auto">
               <Table variant="simple">
                 <Thead bg="purple.50">
                   <Tr>

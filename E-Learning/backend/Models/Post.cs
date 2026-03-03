@@ -30,6 +30,10 @@ namespace backend.Models
         [MaxLength(20)]
         public string PostType { get; set; } = "Discussion"; // Discussion, Question, Announcement, Resource, ExamTip, Doubt
 
+        [Required]
+        [MaxLength(20)]
+        public string Type { get; set; } = "public_post"; // admin_forum | public_post
+
         // Exam-focused posts
         public bool IsExamRelated { get; set; } = false;
         public string? ExamTags { get; set; } // JSON array
@@ -38,6 +42,10 @@ namespace backend.Models
         // Media
         public string? MediaUrl { get; set; }
         public string? MediaType { get; set; } // Image, Video, PDF
+
+        // Optional section marker to scope posts to a specific area (e.g. AdminForum)
+        [MaxLength(50)]
+        public string? SectionType { get; set; }
 
         // Stats for Ranking
         public int UpvoteCount { get; set; } = 0;

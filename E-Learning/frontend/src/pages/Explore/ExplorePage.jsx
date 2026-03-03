@@ -649,7 +649,7 @@ const ExplorePage = () => {
                 <HStack spacing={4} pt={4} flexWrap="wrap" justify="center">
                   <Button
                     size="lg"
-                    bg="white"
+                    bg="card.bg"
                     color="purple.600"
                     fontWeight="bold"
                     _hover={{ bg: 'gray.100' }}

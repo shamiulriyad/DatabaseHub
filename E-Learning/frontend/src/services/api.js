@@ -9,6 +9,13 @@ const api = axios.create({
   }
 });
 
+export const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
 // Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -59,6 +66,21 @@ api.interceptors.response.use(
 
 // Community API endpoints
 export const communityAPI = {
+  getForumPosts: (params = {}) => {
+    const page = Number(params.page) || 1;
+    const pageSize = Number(params.pageSize) || 10;
+    return api.get(`/posts/forums?page=${page}&pageSize=${pageSize}`);
+  },
+
+  getPublicPosts: (params = {}) => {
+    const page = Number(params.page) || 1;
+    const pageSize = Number(params.pageSize) || 10;
+    return api.get(`/posts/public?page=${page}&pageSize=${pageSize}`);
+  },
+
+  createForumPost: (postData) => api.post('/posts/forums', postData),
+  createPublicPost: (postData) => api.post('/posts/public', postData),
+
   // Get single post by ID
   getPostById: (postId) => api.get(`/community/posts/${postId}`),
 
@@ -84,18 +106,7 @@ export const communityAPI = {
 
   // Get posts with filters
   getPosts: (params = {}) => {
-    // Accepts either (page, pageSize, sortBy, search) or an object
-    let page = 1, pageSize = 10, sortBy = 'latest', search = '';
-    if (typeof params === 'object' && params !== null) {
-      page = Number(params.page) || 1;
-      pageSize = Number(params.pageSize) || 10;
-      sortBy = params.sortBy || 'latest';
-      search = params.search || '';
-    }
-    let url = `/community/posts?page=${page}&pageSize=${pageSize}`;
-    if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    return api.get(url);
+    return communityAPI.getPublicPosts(params);
   },
   // Get posts created by current user (requires auth)
   getMyPosts: (params = {}) => {
@@ -121,7 +132,7 @@ export const communityAPI = {
   dislikePost: (postId) => api.post(`/community/posts/${postId}/dislike`),
   
   // Create a post
-  createPost: (postData) => api.post('/community/posts', postData),
+  createPost: (postData) => communityAPI.createPublicPost(postData),
 
   // Update a post
   updatePost: (postId, postData) => api.put(`/community/posts/${postId}`, postData),

@@ -22,12 +22,18 @@ namespace backend.DTOs
         [MaxLength(20)]
         public string PostType { get; set; } = "Discussion";
 
+        [MaxLength(20)]
+        public string? Type { get; set; }
+
         public bool IsExamRelated { get; set; } = false;
         public List<string>? ExamTags { get; set; }
         public string? Subject { get; set; }
         public string? MediaUrl { get; set; }
         public string? MediaType { get; set; }
         public List<string>? Tags { get; set; }
+        // Optional section marker (e.g. AdminForum) to scope posts to a specific community area
+        [MaxLength(50)]
+        public string? SectionType { get; set; }
     }
 
     // Post Update
@@ -38,12 +44,15 @@ namespace backend.DTOs
 
         public string? Content { get; set; }
         public string? PostType { get; set; }
+        public string? Type { get; set; }
         public bool? IsExamRelated { get; set; }
         public List<string>? ExamTags { get; set; }
         public string? Subject { get; set; }
         public string? MediaUrl { get; set; }
         public string? MediaType { get; set; }
         public List<string>? Tags { get; set; }
+        [MaxLength(50)]
+        public string? SectionType { get; set; }
     }
 
     // Post Response
@@ -64,6 +73,7 @@ namespace backend.DTOs
         public int? ClanId { get; set; }
         public string? ClanName { get; set; }
         public string PostType { get; set; }
+        public string Type { get; set; }
         public bool IsExamRelated { get; set; }
         public List<string> ExamTags { get; set; }
         public string? Subject { get; set; }
@@ -86,6 +96,8 @@ namespace backend.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public DateTime? LastActivity { get; set; }
+        // Optional section marker present when a post belongs to a special area
+        public string? SectionType { get; set; }
     }
 
     // Post Detail
@@ -154,6 +166,13 @@ namespace backend.DTOs
         public int DownvoteCount { get; set; }
         public bool HasUpvoted { get; set; }
         public bool HasDownvoted { get; set; }
+    }
+
+    public class PostReactionDTO
+    {
+        [Required]
+        [MaxLength(30)]
+        public string Reaction { get; set; } = null!;
     }
 
     // Related Post

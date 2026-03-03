@@ -123,7 +123,8 @@ namespace backend.Services
                                 VideoUrl = p.VideoUrl,
                                 YouTubeUrl = p.YouTubeUrl,
                                 Order = p.Order,
-                                IsPreview = p.IsPreview
+                                IsPreview = p.IsPreview,
+                                DurationSeconds = p.DurationSeconds
                             }).ToList(),
                         UniversityId = x.UniversityId,
                         University = new UniversityDTO { Id = x.University.Id, Name = x.University.Name, BannerUrl = x.University.BannerUrl },
@@ -170,15 +171,31 @@ namespace backend.Services
                     c.IsEnrolled = enrollment != null;
                     if (enrollment != null)
                     {
-                     
-                        var partsCount = await _context.CourseParts
+                        var partProgresses = await _context.CoursePartProgresses
                             .AsNoTracking()
-                            .Where(p => p.CourseId == id)
-                            .CountAsync();
+                            .Where(pp => pp.EnrollmentId == enrollment.Id)
+                            .ToListAsync();
 
-                        c.TotalLessons = enrollment.TotalLessons > 0 ? enrollment.TotalLessons : partsCount;
-                        c.TotalCompleted = enrollment.CompletedLessons;
-                        c.ProgressPercentage = enrollment.ProgressPercentage;
+                        var partProgressMap = partProgresses.ToDictionary(pp => pp.CoursePartId, pp => pp);
+                        foreach (var part in c.VideoParts)
+                        {
+                            if (partProgressMap.TryGetValue(part.Id, out var pp))
+                            {
+                                part.ProgressPercentage = pp.ProgressPercentage;
+                                part.IsCompleted = pp.IsCompleted;
+                                part.TimeSpentMinutes = pp.TimeSpentMinutes;
+                                part.CompletedAt = pp.CompletedAt;
+                            }
+                        }
+
+                        var totalParts = c.VideoParts.Count;
+                        var completedParts = c.VideoParts.Count(p => p.IsCompleted);
+
+                        c.TotalLessons = totalParts > 0 ? totalParts : enrollment.TotalLessons;
+                        c.TotalCompleted = completedParts > 0 ? completedParts : enrollment.CompletedLessons;
+                        c.ProgressPercentage = c.TotalLessons > 0
+                            ? Math.Round((decimal)c.TotalCompleted * 100m / c.TotalLessons, 2)
+                            : enrollment.ProgressPercentage;
                         c.EnrollmentId = enrollment.Id;
                     }
                     else
@@ -528,10 +545,20 @@ namespace backend.Services
                         VideoUrl = p.VideoUrl,
                         YouTubeUrl = p.YouTubeUrl,
                         Order = p.Order != 0 ? p.Order : idx + 1,
-                        IsPreview = p.IsPreview
+                        IsPreview = p.IsPreview,
+                        DurationSeconds = p.DurationSeconds ?? 0
                     }).ToList();
 
                     _context.AddRange(parts);
+                    await _context.SaveChangesAsync();
+                }
+                // If DurationHours not provided, derive from provided parts durations (seconds -> hours)
+                if ((dto.DurationHours == 0 || dto.DurationHours == default) && dto.VideoParts != null && dto.VideoParts.Any())
+                {
+                    var totalSec = dto.VideoParts.Sum(p => p.DurationSeconds ?? 0);
+                    course.DurationHours = (int)Math.Ceiling(totalSec / 3600.0);
+                    // update persisted course record
+                    _context.Courses.Update(course);
                     await _context.SaveChangesAsync();
                 }
                 var resultDto = new CourseDTO
@@ -621,7 +648,8 @@ namespace backend.Services
                         VideoUrl = p.VideoUrl,
                         YouTubeUrl = p.YouTubeUrl,
                         Order = p.Order != 0 ? p.Order : idx + 1,
-                        IsPreview = p.IsPreview
+                        IsPreview = p.IsPreview,
+                        DurationSeconds = p.DurationSeconds ?? 0
                     }).ToList();
 
                     if (newParts.Any())
@@ -629,6 +657,14 @@ namespace backend.Services
                         _context.Set<Models.CoursePart>().AddRange(newParts);
                         await _context.SaveChangesAsync();
                     }
+                        // Recompute duration hours from new parts if parts provided
+                        if (dto.VideoParts != null && dto.VideoParts.Any())
+                        {
+                            var totalSec = dto.VideoParts.Sum(p => p.DurationSeconds ?? 0);
+                            course.DurationHours = (int)Math.Ceiling(totalSec / 3600.0);
+                            _context.Courses.Update(course);
+                            await _context.SaveChangesAsync();
+                        }
                 }
 
                 // Return basic DTO
@@ -810,7 +846,9 @@ namespace backend.Services
                     EnrollmentType = "Student",
                     EnrolledAt = DateTime.UtcNow,
                     Status = "Active",
-                    ProgressPercentage = 0
+                    ProgressPercentage = 0,
+                    TotalLessons = await _context.CourseParts.Where(p => p.CourseId == courseId).CountAsync(),
+                    CompletedLessons = 0
                 };
 
                 _context.Enrollments.Add(enrollment);
@@ -856,8 +894,128 @@ namespace backend.Services
             }
         }
 
-        public Task<ServiceResult<PaginatedResponse<EnrollmentDTO>>> GetUserEnrolledCourses(int userId, string? status, int page, int pageSize)
-            => Task.FromResult(ServiceResult<PaginatedResponse<EnrollmentDTO>>.FailureResult("Not implemented"));
+        public async Task<ServiceResult<PaginatedResponse<EnrollmentDTO>>> GetUserEnrolledCourses(int userId, string? status, int page, int pageSize)
+        {
+            try
+            {
+                var query = _context.Enrollments
+                    .AsNoTracking()
+                    .Where(e => e.UserId == userId);
+
+                if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "All", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(e => e.Status == status);
+                }
+
+                var total = await query.CountAsync();
+
+                var items = await query
+                    .OrderByDescending(e => e.EnrolledAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(e => new EnrollmentDTO
+                    {
+                        Id = e.Id,
+                        UserId = e.UserId,
+                        CourseId = e.CourseId,
+                        CourseTitle = e.Course.Title,
+                        CourseThumbnail = e.Course.ThumbnailUrl,
+                        CourseBannerUrl = e.Course.ThumbnailUrl,
+                        Instructor = e.Course.Teacher != null ? (e.Course.Teacher.FirstName + " " + e.Course.Teacher.LastName) : null,
+                        InstructorAvatar = e.Course.Teacher != null ? e.Course.Teacher.ProfileImageUrl : null,
+                        EnrollmentType = e.EnrollmentType,
+                        EnrolledAt = e.EnrolledAt,
+                        CompletedAt = e.CompletedAt,
+                        LastAccessed = e.LastAccessed,
+                        ExpiryDate = e.ExpiryDate,
+                        CompletedLessons = e.CompletedLessons,
+                        TotalLessons = e.TotalLessons,
+                        CourseTotalLessons = e.Course.TotalLessons,
+                        CompletedModules = e.CompletedModules,
+                        TotalModules = e.TotalModules,
+                        ProgressPercentage = e.ProgressPercentage,
+                        QuizAverage = e.QuizAverage,
+                        AssignmentAverage = e.AssignmentAverage,
+                        FinalGrade = e.FinalGrade,
+                        GradeLetter = e.GradeLetter,
+                        PointsEarned = e.PointsEarned,
+                        Status = e.Status,
+                        AmountPaid = e.AmountPaid,
+                        PaymentStatus = e.PaymentStatus,
+                        CertificateEarned = e.CertificateEarned,
+                        CertificateUrl = e.CertificateUrl
+                    })
+                    .ToListAsync();
+
+                var missingTotals = items.Where(i => i.TotalLessons <= 0).ToList();
+                if (missingTotals.Any())
+                {
+                    var courseIds = missingTotals.Select(i => i.CourseId).Distinct().ToList();
+                    var partCounts = await _context.CourseParts
+                        .AsNoTracking()
+                        .Where(p => courseIds.Contains(p.CourseId))
+                        .GroupBy(p => p.CourseId)
+                        .Select(g => new { CourseId = g.Key, Count = g.Count() })
+                        .ToListAsync();
+
+                    var byCourse = partCounts.ToDictionary(x => x.CourseId, x => x.Count);
+                    foreach (var item in missingTotals)
+                    {
+                        if (byCourse.TryGetValue(item.CourseId, out var count) && count > 0)
+                        {
+                            item.TotalLessons = count;
+                            item.CourseTotalLessons = count;
+                        }
+                    }
+                }
+
+                var needCompletedFix = items.Where(i => i.CompletedLessons <= 0).ToList();
+                if (needCompletedFix.Any())
+                {
+                    var enrollmentIds = needCompletedFix.Select(i => i.Id).ToList();
+                    var completedCounts = await _context.CoursePartProgresses
+                        .AsNoTracking()
+                        .Where(pp => enrollmentIds.Contains(pp.EnrollmentId) && pp.IsCompleted)
+                        .GroupBy(pp => pp.EnrollmentId)
+                        .Select(g => new { EnrollmentId = g.Key, Count = g.Count() })
+                        .ToListAsync();
+
+                    var byEnrollment = completedCounts.ToDictionary(x => x.EnrollmentId, x => x.Count);
+                    foreach (var item in needCompletedFix)
+                    {
+                        if (byEnrollment.TryGetValue(item.Id, out var count) && count > 0)
+                        {
+                            item.CompletedLessons = count;
+                        }
+                    }
+                }
+
+                foreach (var item in items)
+                {
+                    if (item.TotalLessons > 0)
+                    {
+                        item.ProgressPercentage = Math.Round((decimal)item.CompletedLessons * 100m / item.TotalLessons, 2);
+                    }
+                }
+
+                var paged = new PaginatedResponse<EnrollmentDTO>
+                {
+                    Items = items,
+                    TotalCount = total,
+                    PageNumber = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)total / pageSize),
+                    HasPreviousPage = page > 1,
+                    HasNextPage = page * pageSize < total
+                };
+
+                return ServiceResult<PaginatedResponse<EnrollmentDTO>>.SuccessResult(paged);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<PaginatedResponse<EnrollmentDTO>>.FailureResult($"Failed to get enrolled courses: {ex.Message}");
+            }
+        }
 
         public async Task<ServiceResult<PaginatedResponse<CourseDTO>>> GetUserCreatedCourses(int userId, string? status, int page, int pageSize)
         {

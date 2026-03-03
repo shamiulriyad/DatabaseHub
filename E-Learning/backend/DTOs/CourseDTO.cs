@@ -159,8 +159,6 @@ namespace backend.DTOs
         public DepartmentDTO Department { get; set; }
         public int TotalModules { get; set; }
         public int TotalLessons { get; set; }
-        public int TotalQuizzes { get; set; }
-        public int TotalAssignments { get; set; }
         public int TotalCompleted { get; set; }
         public List<ModuleDTO> Modules { get; set; }
         public List<ReviewDTO> Reviews { get; set; }
@@ -183,6 +181,8 @@ namespace backend.DTOs
         public string? YouTubeUrl { get; set; }
         public int Order { get; set; }
         public bool IsPreview { get; set; }
+        // duration in seconds (optional)
+        public int? DurationSeconds { get; set; }
     }
 
     public class CoursePartUpdateDTO : CoursePartCreateDTO
@@ -199,6 +199,11 @@ namespace backend.DTOs
         public string? YouTubeUrl { get; set; }
         public int Order { get; set; }
         public bool IsPreview { get; set; }
+        public int DurationSeconds { get; set; }
+        public double ProgressPercentage { get; set; }
+        public bool IsCompleted { get; set; }
+        public int TimeSpentMinutes { get; set; }
+        public DateTime? CompletedAt { get; set; }
     }
 
     // Course Stats
@@ -210,8 +215,6 @@ namespace backend.DTOs
         public decimal AverageProgress { get; set; }
         public decimal AverageGrade { get; set; }
         public decimal AverageRating { get; set; }
-        public int TotalQuizzes { get; set; }
-        public int TotalAssignments { get; set; }
         public int TotalSubmissions { get; set; }
         public Dictionary<string, int> RatingDistribution { get; set; }
         public Dictionary<string, int> DifficultyDistribution { get; set; }
@@ -279,5 +282,18 @@ namespace backend.DTOs
         public int TotalStudents { get; set; }
         public decimal AverageRating { get; set; }
         public bool IsVerified { get; set; }
+    }
+
+    // Debug DTO for diagnosing teacher/course/student counts
+    public class TeacherDebugDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public int TotalCoursesReported { get; set; } // value returned on normal TeacherDTO
+        public int TotalStudentsReported { get; set; } // value returned on normal TeacherDTO
+        public int DerivedCourseCount { get; set; } // courses where Course.TeacherId == teacherId && Course.UniversityId == universityId
+        public int DerivedDistinctStudentCount { get; set; } // distinct enrolled students across those courses
+        public List<int> DerivedCourseIds { get; set; } = new List<int>();
     }
 }

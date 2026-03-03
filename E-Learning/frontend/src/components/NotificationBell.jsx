@@ -48,7 +48,7 @@ const fetchUnreadCount = async () => {
   }
 };
 
-const NotificationItem = ({ notification, onRead }) => {
+const NotificationItem = ({ notification, onRead, onAction, actionLoading }) => {
   const navigate = useNavigate();
   const itemBg = useColorModeValue('gray.50', 'gray.700');
 
@@ -66,7 +66,16 @@ const NotificationItem = ({ notification, onRead }) => {
     RoleChanged: 'blue',
     NewPost: 'cyan',
     NewComment: 'orange',
+    ClanCompetitionChallenge: 'purple',
   };
+
+  const competitionIdFromActionUrl = (() => {
+    if (!notification.actionUrl) return null;
+    const match = notification.actionUrl.match(/\/clans(?:-competitions|\/competitions)\/(\d+)/i);
+    return match ? Number(match[1]) : null;
+  })();
+
+  const canRespondChallenge = notification.type === 'ClanCompetitionChallenge' && !!competitionIdFromActionUrl;
 
   return (
     <Box
@@ -115,6 +124,27 @@ const NotificationItem = ({ notification, onRead }) => {
           <Text fontSize="xs" color="gray.500" mt={1}>
             {new Date(notification.createdAt).toLocaleString()}
           </Text>
+          {canRespondChallenge && (
+            <HStack spacing={2} mt={2} onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="xs"
+                colorScheme="green"
+                onClick={() => onAction('accept', competitionIdFromActionUrl, notification.id)}
+                isLoading={actionLoading === `accept-${notification.id}`}
+              >
+                Accept
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                colorScheme="red"
+                onClick={() => onAction('reject', competitionIdFromActionUrl, notification.id)}
+                isLoading={actionLoading === `reject-${notification.id}`}
+              >
+                Reject
+              </Button>
+            </HStack>
+          )}
         </VStack>
         {!notification.isRead && (
           <Box w="8px" h="8px" borderRadius="full" bg="blue.500" />
@@ -126,8 +156,10 @@ const NotificationItem = ({ notification, onRead }) => {
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const [actionLoading, setActionLoading] = React.useState(null);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
@@ -171,6 +203,40 @@ const NotificationBell = () => {
 
   const handleMarkAllAsRead = () => {
     markAllAsReadMutation.mutate();
+  };
+
+  const handleChallengeAction = async (action, competitionId, notificationId) => {
+    try {
+      setActionLoading(`${action}-${notificationId}`);
+      const endpoint = `/clan-vs-clans-competitions/${competitionId}/${action}`;
+      const payload = action === 'reject'
+        ? { action: 'reject', rejectionReason: 'Rejected from notification' }
+        : undefined;
+
+      const response = action === 'reject'
+        ? await api.post(endpoint, payload)
+        : await api.post(endpoint);
+
+      await api.put(`/notifications/${notificationId}/read`);
+
+      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries(['notificationCount']);
+
+      if (response?.data?.redirectUrl) {
+        navigate(response.data.redirectUrl);
+      } else {
+        navigate(`/clans-competitions/${competitionId}`);
+      }
+    } catch (error) {
+      toast({
+        title: 'Action failed',
+        description: error.response?.data?.message || `Failed to ${action} challenge`,
+        status: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -222,6 +288,8 @@ const NotificationBell = () => {
                   key={notification.id}
                   notification={notification}
                   onRead={handleRead}
+                  onAction={handleChallengeAction}
+                  actionLoading={actionLoading}
                 />
               ))}
             </VStack>

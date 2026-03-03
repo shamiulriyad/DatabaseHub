@@ -56,8 +56,6 @@ namespace backend.Models
         // Learning Details
         public int TotalModules { get; set; } = 0;
         public int TotalLessons { get; set; } = 0;
-        public int TotalQuizzes { get; set; } = 0;
-        public int TotalAssignments { get; set; } = 0;
         public int DurationHours { get; set; } = 0; // Total course duration
         
         [Required]
@@ -81,8 +79,6 @@ namespace backend.Models
         public double AverageRating { get; set; } = 0;
         public int TotalReviews { get; set; } = 0;
         public int TotalCompleted { get; set; } = 0;
-        public int TotalQuizAttempts { get; set; } = 0;
-        public int TotalAssignmentSubmissions { get; set; } = 0;
 
         // Course Schedule
         public DateTime? StartDate { get; set; }
@@ -115,8 +111,6 @@ namespace backend.Models
         public virtual ICollection<CoursePart> CourseParts { get; set; } = new List<CoursePart>();
         public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
-        public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();
-        public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
         public virtual ICollection<Competition> Competitions { get; set; } = new List<Competition>();
     }

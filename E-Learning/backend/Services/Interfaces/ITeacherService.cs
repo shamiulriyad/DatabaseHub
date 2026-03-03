@@ -6,7 +6,7 @@ namespace backend.Services.Interfaces
     public interface ITeacherService
     {
         // User applies to become teacher
-        Task<ServiceResult<TeacherApplicationDTO>> ApplyToBeTeacher(int userId, ApplyTeacherDTO dto);
+        Task<ServiceResult<TeacherApplicationDTO>> ApplyToBeTeacher(int userId, ApplyTeacherDTO dto, string idFrontImagePath, string idBackImagePath);
 
         // Get user's current application status
         Task<ServiceResult<TeacherApplicationDTO>> GetMyApplicationStatus(int userId);

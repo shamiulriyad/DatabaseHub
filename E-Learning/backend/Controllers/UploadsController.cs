@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace backend.Controllers
 {
@@ -78,6 +79,43 @@ namespace backend.Controllers
             }
 
             var url = $"/Uploads/videos/{fileName}";
+            return Ok(new { success = true, url });
+        }
+
+        [Authorize]
+        [HttpPost("community-image")]
+        public async Task<IActionResult> UploadCommunityImage([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { success = false, message = "No file provided" });
+
+            const long maxFileBytes = 5L * 1024 * 1024; // 5 MB
+            if (file.Length > maxFileBytes)
+                return BadRequest(new { success = false, message = "Image file is too large (max 5 MB)" });
+
+            var allowedExtensions = new[] { ".png", ".jpg", ".jpeg", ".webp" };
+            var allowedMimeTypes = new[] { "image/png", "image/jpeg", "image/webp" };
+
+            var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? string.Empty;
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest(new { success = false, message = "Unsupported image format" });
+
+            var contentType = (file.ContentType ?? string.Empty).ToLowerInvariant();
+            if (!allowedMimeTypes.Contains(contentType))
+                return BadRequest(new { success = false, message = "Invalid image content type" });
+
+            var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "Uploads", "community");
+            if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
+
+            var fileName = System.Guid.NewGuid().ToString() + extension;
+            var filePath = Path.Combine(uploadsRoot, fileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var url = $"/Uploads/community/{fileName}";
             return Ok(new { success = true, url });
         }
     }

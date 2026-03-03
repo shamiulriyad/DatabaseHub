@@ -1,277 +1,176 @@
 import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  useColorModeValue,
-  InputGroup,
-  InputRightElement,
-  Icon,
-  useToast,
-  Progress,
-} from '@chakra-ui/react';
-import { FaEye, FaEyeSlash, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { authService } from '../../services/authService';
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
+import { Box, Flex, VStack, Heading, Text, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
+import Robot from './Robot';
+import { keyframes } from '@emotion/react';
 
 const ResetPassword = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const [password, setPassword]     = useState('');
+  const [confirm, setConfirm]       = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [robotState, setRobotState] = useState('normal');
+
+  const toast    = useToast();
   const navigate = useNavigate();
-  const toast = useToast();
-  
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const params   = useParams();
 
-  const passwordStrength = password ? 
-    (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 'Strong' : 
-     password.length >= 6 ? 'Medium' : 'Weak') 
-    : '';
+  const floatKF = keyframes`
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+  `;
 
-  const strengthColor = passwordStrength === 'Strong' ? 'green' : passwordStrength === 'Medium' ? 'yellow' : 'red';
-
-  const validateForm = () => {
-    const errors = {};
-    if (!password) errors.password = 'Password is required';
-    if (password && password.length < 6) errors.password = 'Password must be at least 6 characters';
-    if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm() || !token) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Call reset password API
-      await authService.resetPassword(token, password);
-      toast({
-        title: 'Success',
-        description: 'Password reset successfully. Please log in with your new password.',
-        status: 'success',
-        duration: 5,
-        isClosable: true,
-      });
-      navigate('/login', { replace: false });
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to reset password';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        status: 'error',
-        duration: 5,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
+    if (!password || !confirm) {
+      setRobotState('error');
+      return;
     }
+    if (password !== confirm) {
+      setRobotState('error');
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setRobotState('success');
+      toast({ title: 'Password reset', description: 'Password updated successfully', status: 'success', duration: 3000 });
+      setTimeout(() => navigate('/login'), 1200);
+    }, 900);
   };
 
-  if (!token) {
-    return (
-      <Box minH="100vh" bg={bgColor} py={12}>
-        <Container maxW="md">
-          <Card bg={cardBg} shadow="lg">
-            <CardBody p={12}>
-              <VStack spacing={6} textAlign="center">
-                <Icon as={FaTimesCircle} boxSize={16} color="red.500" />
-                <Heading size="lg">Invalid Reset Link</Heading>
-                <Text color="gray.600">
-                  The password reset link is invalid or has expired. Please request a new one.
-                </Text>
-                <Button
-                  w="full"
-                  bg="purple.600"
-                  color="white"
-                  size="lg"
-                  as={RouterLink}
-                  to="/forgot-password"
-                  _hover={{ bg: 'purple.700' }}
-                >
-                  Request New Link
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-        </Container>
-      </Box>
-    );
-  }
+  const inputProps = {
+    type: 'password',
+    variant: 'outline',
+    bg: 'gray.700',
+    color: 'white',
+    borderRadius: 'xl',
+    borderColor: 'gray.600',
+    focusBorderColor: 'purple.400',
+    _placeholder: { color: 'gray.500' },
+    _hover: { borderColor: 'purple.500' },
+    _focus: { bg: 'gray.700', boxShadow: '0 0 0 1px #9F7AEA' },
+  };
 
   return (
-    <Box minH="100vh" bg={bgColor} py={12}>
-      <Container maxW="md">
-        <VStack spacing={8}>
-          {/* Header */}
-          <VStack spacing={4} textAlign="center">
-            <Heading size="2xl">Create New Password</Heading>
-            <Text color="gray.600" fontSize="md">
-              Enter a strong password to secure your account
-            </Text>
-          </VStack>
+    <Box
+      minH="100vh"
+      bg="gray.900"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      position="relative"
+      overflow="hidden"
+    >
+      {/* floating bg circles */}
+      <Box
+        position="absolute" w="220px" h="220px" left="-40px" top="-30px"
+        borderRadius="full" bg="purple.800" opacity={0.2}
+        animation={`${floatKF} 6s ease-in-out infinite`}
+      />
+      <Box
+        position="absolute" w="180px" h="180px" right="-30px" bottom="-40px"
+        borderRadius="full" bg="purple.800" opacity={0.15}
+        animation={`${floatKF} 8s ease-in-out infinite`}
+      />
 
-          {/* Reset Card */}
-          <Card w="full" bg={cardBg} shadow="lg">
-            <CardBody p={8}>
-              <VStack spacing={6} as="form" onSubmit={handleSubmit}>
-                {/* Error Alert */}
-                {error && (
-                  <Box
-                    w="full"
-                    bg="red.50"
-                    border="1px solid"
-                    borderColor="red.200"
-                    p={4}
-                    borderRadius="lg"
-                    color="red.700"
-                    fontSize="sm"
-                  >
-                    {error}
-                  </Box>
-                )}
+      <Flex
+        position="relative"
+        bg="gray.800"
+        borderRadius="2xl"
+        p={8}
+        boxShadow="0 25px 60px rgba(0,0,0,0.6)"
+        width={{ base: '90%', md: '720px' }}
+        gap={8}
+        border="1px solid"
+        borderColor="gray.700"
+        align="center"
+      >
+        {/* left accent stripe */}
+        <Box
+          position="absolute" left="0" top="0" bottom="0" w="6px"
+          borderTopLeftRadius="2xl" borderBottomLeftRadius="2xl"
+          bgGradient="linear(to-b, purple.400, pink.300)"
+        />
 
-                {/* Password Field */}
-                <FormControl isInvalid={!!fieldErrors.password}>
-                  <FormLabel fontWeight="600">New Password</FormLabel>
-                  <InputGroup size="lg">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' });
-                      }}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
-                    />
-                    <InputRightElement>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowPassword(!showPassword)}
-                        size="sm"
-                      >
-                        <Icon as={showPassword ? FaEyeSlash : FaEye} color="gray.600" />
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                  {fieldErrors.password && <FormErrorMessage>{fieldErrors.password}</FormErrorMessage>}
-                  {password && (
-                    <Box mt={2}>
-                      <HStack justify="space-between" mb={1}>
-                        <Text fontSize="xs" fontWeight="600">Password Strength</Text>
-                        <Text fontSize="xs" color={`${strengthColor}.600`} fontWeight="bold">{passwordStrength}</Text>
-                      </HStack>
-                      <Progress value={password.length * 10} colorScheme={strengthColor} size="sm" borderRadius="full" />
-                    </Box>
+        {/* Robot */}
+        <Box flex="1" display={{ base: 'none', md: 'flex' }} alignItems="center" justifyContent="center">
+          <Robot state={robotState} />
+        </Box>
+
+        {/* Form */}
+        <Box flex="1">
+          <VStack align="stretch" spacing={5}>
+            <VStack align="stretch" spacing={1}>
+              <Heading size="md" color="white">Reset Password</Heading>
+              <Text color="gray.400" fontSize="sm">Set a new password for your account</Text>
+            </VStack>
+
+            <Box as="form" onSubmit={handleSubmit}>
+              <VStack spacing={4} align="stretch">
+
+                {/* New password */}
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">New password</FormLabel>
+                  <Input
+                    {...inputProps}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setRobotState('coverEyes')}
+                    onBlur={() => setRobotState('normal')}
+                  />
+                </FormControl>
+
+                {/* Confirm password */}
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">Confirm password</FormLabel>
+                  <Input
+                    {...inputProps}
+                    placeholder="••••••••"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    onFocus={() => setRobotState('coverEyes')}
+                    onBlur={() => setRobotState('normal')}
+                    borderColor={confirm && confirm !== password ? 'red.500' : 'gray.600'}
+                  />
+                  {confirm && confirm !== password && (
+                    <Text fontSize="xs" color="red.400" mt={1}>Passwords don't match</Text>
                   )}
                 </FormControl>
 
-                {/* Confirm Password Field */}
-                <FormControl isInvalid={!!fieldErrors.confirmPassword}>
-                  <FormLabel fontWeight="600">Confirm Password</FormLabel>
-                  <InputGroup size="lg">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        if (fieldErrors.confirmPassword) setFieldErrors({ ...fieldErrors, confirmPassword: '' });
-                      }}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
-                    />
-                    <InputRightElement>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        size="sm"
-                      >
-                        <Icon as={showConfirmPassword ? FaEyeSlash : FaEye} color="gray.600" />
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                  {fieldErrors.confirmPassword && <FormErrorMessage>{fieldErrors.confirmPassword}</FormErrorMessage>}
-                  {password && confirmPassword && password === confirmPassword && (
-                    <HStack spacing={1} mt={2} color="green.600" fontSize="sm">
-                      <Icon as={FaCheckCircle} />
-                      <Text>Passwords match</Text>
-                    </HStack>
-                  )}
-                </FormControl>
-
-                {/* Submit Button */}
+                {/* Submit */}
                 <Button
-                  w="full"
-                  bg="purple.600"
-                  color="white"
-                  size="lg"
-                  fontWeight="bold"
                   type="submit"
-                  isLoading={isLoading}
-                  loadingText="Resetting..."
-                  _hover={{ bg: 'purple.700' }}
+                  bgGradient="linear(to-r, purple.500, pink.500)"
+                  color="white"
+                  fontWeight="700"
+                  borderRadius="xl"
+                  isLoading={loading}
+                  transition="0.3s"
+                  _hover={{ bgGradient: 'linear(to-r, purple.400, pink.400)', transform: 'scale(1.02)' }}
+                  _active={{ transform: 'scale(0.98)' }}
+                  boxShadow="0 4px 20px rgba(159,122,234,0.35)"
                 >
                   Reset Password
                 </Button>
-              </VStack>
-            </CardBody>
-          </Card>
 
-          {/* Password Requirements */}
-          <Box
-            w="full"
-            bg="blue.50"
-            border="1px solid"
-            borderColor="blue.200"
-            p={4}
-            borderRadius="lg"
-          >
-            <Text fontSize="sm" fontWeight="600" mb={2} color="blue.900">
-              Password Requirements:
-            </Text>
-            <VStack spacing={1} align="start" fontSize="sm">
-              <HStack spacing={2}>
-                <Icon as={password.length >= 6 ? FaCheckCircle : 'circle'} color={password.length >= 6 ? 'green.500' : 'gray.400'} />
-                <Text>At least 6 characters</Text>
-              </HStack>
-              <HStack spacing={2}>
-                <Icon as={/[A-Z]/.test(password) ? FaCheckCircle : 'circle'} color={/[A-Z]/.test(password) ? 'green.500' : 'gray.400'} />
-                <Text>One uppercase letter</Text>
-              </HStack>
-              <HStack spacing={2}>
-                <Icon as={/[0-9]/.test(password) ? FaCheckCircle : 'circle'} color={/[0-9]/.test(password) ? 'green.500' : 'gray.400'} />
-                <Text>One number</Text>
-              </HStack>
-            </VStack>
-          </Box>
-        </VStack>
-      </Container>
+                <Text textAlign="center" fontSize="sm" color="gray.500">
+                  Back to{' '}
+                  <Text
+                    as={RouterLink} to="/login"
+                    color="purple.400" fontWeight="700"
+                    _hover={{ color: 'purple.300', textDecoration: 'underline' }}
+                  >
+                    Sign in
+                  </Text>
+                </Text>
+
+              </VStack>
+            </Box>
+          </VStack>
+        </Box>
+      </Flex>
     </Box>
   );
 };

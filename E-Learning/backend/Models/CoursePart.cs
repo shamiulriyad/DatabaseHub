@@ -29,6 +29,9 @@ namespace backend.Models
         // Whether this part is available as a preview for non-enrolled users
         public bool IsPreview { get; set; } = false;
 
+        // Duration of this part in seconds (optional)
+        public int DurationSeconds { get; set; } = 0;
+
         [ForeignKey("CourseId")]
         public virtual Course Course { get; set; } = null!;
     }

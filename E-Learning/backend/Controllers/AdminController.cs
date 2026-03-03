@@ -133,6 +133,20 @@ namespace backend.Controllers
         }
 
         /// <summary>
+        /// Get aggregated homepage/dashboard data
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("homepage")]
+        public async Task<IActionResult> GetHomepage()
+        {
+            var result = await _adminService.GetHomepageData();
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, data = result.Data });
+        }
+
+        /// <summary>
         /// Get recent activities for admin dashboard
         /// </summary>
         [HttpGet("activities")]

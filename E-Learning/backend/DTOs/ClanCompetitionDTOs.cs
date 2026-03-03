@@ -323,8 +323,7 @@ public class SubmitClanVsClansCompetitionAnswerDTO
 
 public class AcceptClanVsClansCompetitionDTO
 {
-    [Required]
-    public required string Action { get; set; } // "accept" or "reject"
+    public string? Action { get; set; } // "accept" or "reject"
 
     public string? RejectionReason { get; set; }
 }

@@ -153,6 +153,7 @@ namespace backend.DTOs
         public int MemberCount { get; set; }
         public int ActiveMembers { get; set; }
         public int TotalPoints { get; set; }
+        public long TotalExp { get; set; }
         public int WeeklyPoints { get; set; }
         public int MonthlyPoints { get; set; }
         public int Rank { get; set; }

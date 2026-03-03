@@ -1,7 +1,9 @@
 using backend.DTOs;
+using backend.Data;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace backend.Controllers
@@ -12,12 +14,16 @@ namespace backend.Controllers
     {
         private readonly ICompetitionService _competitionService;
         private readonly IClanService _clanService;
+        private readonly backend.Services.Interfaces.ICompetitionRegistrationService _registrationService;
+        private readonly ApplicationDbContext _context;
 
-        public CompetitionsController(ICompetitionService competitionService, IClanService clanService)
-        {
-            _competitionService = competitionService;
-            _clanService = clanService;
-        }
+            public CompetitionsController(ICompetitionService competitionService, IClanService clanService, backend.Services.Interfaces.ICompetitionRegistrationService registrationService, ApplicationDbContext context)
+            {
+                _competitionService = competitionService;
+                _clanService = clanService;
+                _registrationService = registrationService;
+                _context = context;
+            }
 
         /// <summary>
         /// Provides all necessary clan/role/permission data for competition creation (self-contained for frontend)
@@ -221,6 +227,109 @@ namespace backend.Controllers
             return Ok(new {
                 success = true,
                 message = "Joined competition successfully"
+            });
+        }
+
+        [Authorize]
+        [HttpPost("register-team")]
+        public async Task<IActionResult> RegisterTeam([FromBody] backend.DTOs.CompetitionRegisterTeamDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var result = await _registrationService.RegisterTeam(dto, userId);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Message });
+
+            return Ok(new { success = true, message = "Team registered successfully" });
+        }
+
+        [Authorize]
+        [HttpGet("{id}/my-team-status")]
+        public async Task<IActionResult> GetMyTeamStatus(int id)
+        {
+            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized(new { success = false, message = "Invalid token" });
+
+            var competition = await _context.Competitions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (competition == null)
+                return NotFound(new { success = false, message = "Competition not found" });
+
+            if (!competition.IsTeamBased)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        isTeamBased = false,
+                        isCompetitionParticipant = await _context.CompetitionParticipants.AnyAsync(p => p.CompetitionId == id && p.UserId == userId),
+                        hasApprovedTeamRegistration = false,
+                        hasPendingTeamRegistration = false,
+                        teamStatuses = new List<object>()
+                    }
+                });
+            }
+
+            var myTeamIds = await _context.TeamMembers
+                .Where(tm => tm.UserId == userId)
+                .Select(tm => tm.TeamId)
+                .Distinct()
+                .ToListAsync();
+
+            var teamRows = await _context.Teams
+                .Where(t => myTeamIds.Contains(t.Id))
+                .Select(t => new { t.Id, t.Name })
+                .ToListAsync();
+
+            var registrations = await _context.CompetitionRegistrations
+                .Where(r => r.CompetitionId == id && myTeamIds.Contains(r.TeamId))
+                .Select(r => new { r.TeamId, r.Status, r.RegisteredAt })
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+            var isOngoingNow = competition.IsApproved && now >= competition.StartDate && now <= competition.EndDate;
+
+            var teamStatuses = teamRows.Select(t =>
+            {
+                var reg = registrations.FirstOrDefault(r => r.TeamId == t.Id);
+                var effectiveStatus = reg?.Status ?? "NotRegistered";
+                if (isOngoingNow && effectiveStatus == "Pending")
+                    effectiveStatus = "Approved";
+
+                return new
+                {
+                    teamId = t.Id,
+                    teamName = t.Name,
+                    registrationStatus = effectiveStatus,
+                    registeredAt = reg?.RegisteredAt
+                };
+            }).ToList();
+
+            var hasApproved = teamStatuses.Any(t => t.registrationStatus == "Approved" || t.registrationStatus == "Participated");
+            var hasPending = teamStatuses.Any(t => t.registrationStatus == "Pending");
+            var isCompetitionParticipant = await _context.CompetitionParticipants
+                .AnyAsync(p => p.CompetitionId == id && p.UserId == userId);
+
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    isTeamBased = true,
+                    isCompetitionParticipant,
+                    hasApprovedTeamRegistration = hasApproved,
+                    hasPendingTeamRegistration = hasPending,
+                    teamStatuses
+                }
             });
         }
 

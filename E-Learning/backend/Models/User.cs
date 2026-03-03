@@ -47,6 +47,10 @@ namespace backend.Models
         public int CurrentRank { get; set; } = 0;
         public string? Badges { get; set; } // JSON array
 
+        // Competition EXP progression
+        public long Exp { get; set; } = 0;
+        public int Level { get; set; } = 0;
+
         // Academic Stats
         public int TotalCoursesEnrolled { get; set; } = 0;
         public int TotalCoursesCompleted { get; set; } = 0;
@@ -75,6 +79,7 @@ namespace backend.Models
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public virtual ICollection<ClanMember> ClanMemberships { get; set; } = new List<ClanMember>();
         public virtual ICollection<CompetitionParticipant> CompetitionParticipations { get; set; } = new List<CompetitionParticipant>();
+        public virtual ICollection<UserCompetitionHistory> CompetitionHistory { get; set; } = new List<UserCompetitionHistory>();
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }

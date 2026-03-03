@@ -241,7 +241,7 @@ export default function LessonPlayer() {
         <GridItem>
           {/* Lesson Header */}
           <Box 
-            bg="white" 
+            bg="card.bg" 
             borderRadius="xl" 
             p={{ base: 4, md: 6 }}
             mb={6}
@@ -325,7 +325,7 @@ export default function LessonPlayer() {
 
           {/* Video Player Section */}
           <Box 
-            bg="white" 
+            bg="card.bg" 
             borderRadius="xl" 
             overflow="hidden"
             boxShadow="md"
@@ -344,7 +344,7 @@ export default function LessonPlayer() {
 
           {/* Progress Tracker */}
           <Box 
-            bg="white" 
+            bg="card.bg" 
             borderRadius="xl" 
             p={{ base: 4, md: 6 }}
             boxShadow="sm"
@@ -361,7 +361,7 @@ export default function LessonPlayer() {
         {/* Sidebar - Navigation & Actions */}
         <GridItem>
           <Box 
-            bg="white" 
+            bg="card.bg" 
             borderRadius="xl" 
             p={{ base: 4, md: 6 }}
             boxShadow="sm"
@@ -426,7 +426,7 @@ export default function LessonPlayer() {
       {/* Bottom Navigation - Mobile */}
       <Box 
         display={{ base: 'block', lg: 'none' }}
-        bg="white"
+        bg="card.bg"
         position="sticky"
         bottom="0"
         p={4}

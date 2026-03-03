@@ -1,406 +1,330 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { authService } from '../../services/authService';
 import {
   Box,
-  Container,
+  Flex,
+  VStack,
   Heading,
   Text,
-  Button,
-  Input,
   FormControl,
   FormLabel,
-  FormErrorMessage,
-  FormHelperText,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  Divider,
-  Link,
-  useColorModeValue,
+  Input,
   InputGroup,
-  InputRightElement,
-  Icon,
-  Select,
-  Checkbox,
+  Button,
+  Progress,
   useToast,
+  HStack,
 } from '@chakra-ui/react';
-import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaCheckCircle } from 'react-icons/fa';
+import Robot from './Robot';
+import { keyframes } from '@emotion/react';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    username: '',
-    agreeToTerms: false,
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  
+  const [username, setUsername]   = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName]   = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [confirm, setConfirm]     = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [robotState, setRobotState] = useState('normal');
+  const [error, setError]         = useState('');
+
+  const toast    = useToast();
   const navigate = useNavigate();
-  const toast = useToast();
-  
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.firstName) errors.firstName = 'First name is required';
-    if (!formData.lastName) errors.lastName = 'Last name is required';
-    if (!formData.username) errors.username = 'Username is required';
-    if (formData.username && formData.username.length < 3) errors.username = 'Username must be at least 3 characters';
-    if (!formData.email) errors.email = 'Email is required';
-    if (formData.email && !formData.email.includes('@')) errors.email = 'Invalid email format';
-    if (!formData.password) errors.password = 'Password is required';
-    if (formData.password && formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-    if (!formData.agreeToTerms) errors.agreeToTerms = 'You must agree to the terms';
-    
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const floatKF = keyframes`
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+  `;
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-    if (fieldErrors[name]) {
-      setFieldErrors({ ...fieldErrors, [name]: '' });
-    }
-  };
+  const strength = useMemo(() => {
+    let score = 0;
+    if (password.length >= 8)          score += 40;
+    if (/[A-Z]/.test(password))        score += 20;
+    if (/[0-9]/.test(password))        score += 20;
+    if (/[^A-Za-z0-9]/.test(password)) score += 20;
+    return Math.min(100, score);
+  }, [password]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setLoading(true);
     setError('');
 
+    if (!username || !firstName || !lastName || !email || !password || !confirm) {
+      setError('Please fill all required fields');
+      setRobotState('error');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match');
+      setRobotState('error');
+      return;
+    }
+
+    setLoading(true);
+
+    const payload = {
+      Username: username,
+      Email: email,
+      Password: password,
+      FirstName: firstName,
+      LastName: lastName,
+      ProfileImageUrl: null,
+      CoverImageUrl: null,
+    };
+
     try {
-      await authService.register({
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
+      const res  = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      toast({
-        title: 'Registration Successful',
-        description: 'Please log in with your credentials',
-        status: 'success',
-        duration: 3,
-        isClosable: true,
-      });
-      navigate('/login', { replace: false });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data?.message || 'Registration failed');
+        setRobotState('error');
+        setLoading(false);
+        return;
+      }
+
+      setRobotState('success');
+      toast({ title: 'Registered', description: data?.message || 'Account created successfully', status: 'success', duration: 3000 });
+      setLoading(false);
+      navigate('/login');
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
-      setError(errorMessage);
-      toast({
-        title: 'Registration Failed',
-        description: errorMessage,
-        status: 'error',
-        duration: 5,
-        isClosable: true,
-      });
-    } finally {
+      setError('Network error');
+      setRobotState('error');
       setLoading(false);
     }
   };
 
-  const handleSocialSignup = (provider) => {
-    toast({
-      title: 'Coming Soon',
-      description: `${provider} sign up will be available soon`,
-      status: 'info',
-      duration: 3,
-      isClosable: true,
-    });
+  // shared input style — dark theme matching Login
+  const inputProps = {
+    variant: 'outline',
+    bg: 'gray.700',
+    color: 'white',
+    borderRadius: 'xl',
+    borderColor: 'gray.600',
+    focusBorderColor: 'purple.400',
+    _placeholder: { color: 'gray.500' },
+    _hover: { borderColor: 'purple.500' },
+    _focus: { bg: 'gray.700', boxShadow: '0 0 0 1px #9F7AEA' },
   };
 
-  const passwordStrength = formData.password ? 
-    (formData.password.length >= 8 ? 'Strong' : formData.password.length >= 6 ? 'Good' : 'Weak') 
-    : '';
-
   return (
-    <Box minH="100vh" bg={bgColor} py={12}>
-      <Container maxW="md">
-        <VStack spacing={8}>
-          {/* Header */}
-          <VStack spacing={4} textAlign="center">
-            <Heading
-              size="2xl"
-              bgGradient="linear(135deg, purple.600, blue.600)"
-              bgClip="text"
-            >
-              Create Account
-            </Heading>
-            <Text color="gray.600" fontSize="md">
-              Start your learning journey with NextUniVerse
-            </Text>
-          </VStack>
+    <Box
+      minH="100vh"
+      bg="gray.900"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      position="relative"
+      overflow="hidden"
+    >
+      {/* floating bg circles */}
+      <Box
+        position="absolute" w="220px" h="220px" left="-40px" top="-30px"
+        borderRadius="full" bg="purple.800" opacity={0.2}
+        animation={`${floatKF} 6s ease-in-out infinite`}
+      />
+      <Box
+        position="absolute" w="180px" h="180px" right="-30px" bottom="-40px"
+        borderRadius="full" bg="purple.800" opacity={0.15}
+        animation={`${floatKF} 8s ease-in-out infinite`}
+      />
 
-          {/* Register Card */}
-          <Card w="full" bg={cardBg} shadow="lg">
-            <CardBody p={8}>
-              <VStack spacing={6} as="form" onSubmit={handleSubmit}>
-                {/* Error Alert */}
-                {error && (
-                  <Box
-                    w="full"
-                    bg="red.50"
-                    border="1px solid"
-                    borderColor="red.200"
-                    p={4}
-                    borderRadius="lg"
-                    color="red.700"
-                    fontSize="sm"
-                  >
-                    {error}
-                  </Box>
-                )}
+      <Flex
+        position="relative"
+        bg="gray.800"
+        borderRadius="2xl"
+        p={8}
+        boxShadow="0 25px 60px rgba(0,0,0,0.6)"
+        width={{ base: '90%', md: '920px' }}
+        gap={8}
+        border="1px solid"
+        borderColor="gray.700"
+      >
+        {/* left accent stripe */}
+        <Box
+          position="absolute" left="0" top="0" bottom="0" w="6px"
+          borderTopLeftRadius="2xl" borderBottomLeftRadius="2xl"
+          bgGradient="linear(to-b, purple.400, pink.300)"
+        />
 
-                {/* Name Fields */}
-                <HStack w="full" spacing={4}>
-                  <FormControl isInvalid={!!fieldErrors.firstName}>
-                    <FormLabel fontWeight="600">First Name</FormLabel>
+        {/* Robot */}
+        <Box flex="1" display={{ base: 'none', md: 'flex' }} alignItems="center" justifyContent="center">
+          <Robot state={robotState} />
+        </Box>
+
+        {/* Form */}
+        <Box flex="1">
+          <VStack align="stretch" spacing={4}>
+            <Heading size="md" color="white">Create account</Heading>
+            <Text color="gray.400">Join us — build your learning journey</Text>
+
+            {error && (
+              <Box
+                bg="rgba(245,101,101,0.15)"
+                p={3} borderRadius="md"
+                border="1px solid" borderColor="red.500"
+              >
+                <Text color="red.300" fontSize="sm">{error}</Text>
+              </Box>
+            )}
+
+            <Box as="form" onSubmit={handleSubmit}>
+              <VStack spacing={4} align="stretch">
+
+                {/* Username */}
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">Username</FormLabel>
+                  <Input
+                    {...inputProps}
+                    placeholder="cool_username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onFocus={() => setRobotState('writing')}
+                    onBlur={() => setRobotState('normal')}
+                  />
+                </FormControl>
+
+                {/* First + Last name */}
+                <HStack>
+                  <FormControl>
+                    <FormLabel color="gray.300" fontWeight="600">First name</FormLabel>
                     <Input
-                      type="text"
+                      {...inputProps}
                       placeholder="John"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      onFocus={() => setRobotState('writing')}
+                      onBlur={() => setRobotState('normal')}
                     />
-                    {fieldErrors.firstName && <FormErrorMessage>{fieldErrors.firstName}</FormErrorMessage>}
                   </FormControl>
 
-                  <FormControl isInvalid={!!fieldErrors.lastName}>
-                    <FormLabel fontWeight="600">Last Name</FormLabel>
+                  <FormControl>
+                    <FormLabel color="gray.300" fontWeight="600">Last name</FormLabel>
                     <Input
-                      type="text"
+                      {...inputProps}
                       placeholder="Doe"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      onFocus={() => setRobotState('writing')}
+                      onBlur={() => setRobotState('normal')}
                     />
-                    {fieldErrors.lastName && <FormErrorMessage>{fieldErrors.lastName}</FormErrorMessage>}
                   </FormControl>
                 </HStack>
 
-                {/* Email Field */}
-                <FormControl isInvalid={!!fieldErrors.email}>
-                  <FormLabel fontWeight="600">Email Address</FormLabel>
+                {/* Email */}
+                <FormControl isRequired>
+                  <FormLabel color="gray.300" fontWeight="600">Email</FormLabel>
                   <Input
+                    {...inputProps}
                     type="email"
-                    placeholder="you@example.com"
                     name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    size="lg"
-                    borderColor={borderColor}
-                    _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setRobotState('writing')}
+                    onBlur={() => setRobotState('normal')}
                   />
-                  {fieldErrors.email && <FormErrorMessage>{fieldErrors.email}</FormErrorMessage>}
                 </FormControl>
 
-                {/* Username Field */}
-                <FormControl isInvalid={!!fieldErrors.username}>
-                  <FormLabel fontWeight="600">Username</FormLabel>
-                  <Input
-                    type="text"
-                    placeholder="Choose a unique username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    size="lg"
-                    borderColor={borderColor}
-                    _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
-                  />
-                  {fieldErrors.username && <FormErrorMessage>{fieldErrors.username}</FormErrorMessage>}
-                  <FormHelperText>At least 3 characters</FormHelperText>
-                </FormControl>
-
-                {/* Password Field */}
-                <FormControl isInvalid={!!fieldErrors.password}>
-                  <FormLabel fontWeight="600">Password</FormLabel>
-                  <InputGroup size="lg">
+                {/* Password */}
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">Password</FormLabel>
+                  <InputGroup>
                     <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                      {...inputProps}
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onFocus={() => setRobotState('coverEyes')}
+                      onBlur={() => setRobotState('normal')}
                     />
-                    <InputRightElement>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowPassword(!showPassword)}
-                        size="sm"
-                      >
-                        <Icon as={showPassword ? FaEyeSlash : FaEye} color="gray.600" />
-                      </Button>
-                    </InputRightElement>
                   </InputGroup>
-                  {fieldErrors.password && <FormErrorMessage>{fieldErrors.password}</FormErrorMessage>}
-                  {passwordStrength && (
-                    <FormHelperText color={passwordStrength === 'Strong' ? 'green.500' : 'orange.500'}>
-                      Password strength: {passwordStrength}
-                    </FormHelperText>
+                  {/* Strength bar */}
+                  <Box mt={2}>
+                    <Progress
+                      value={strength}
+                      size="xs"
+                      borderRadius="full"
+                      colorScheme={strength > 70 ? 'green' : strength > 40 ? 'yellow' : 'red'}
+                      bg="gray.600"
+                    />
+                    <Text
+                      fontSize="xs"
+                      mt={1}
+                      color={strength > 70 ? 'green.400' : strength > 40 ? 'yellow.400' : 'red.400'}
+                    >
+                      {password.length === 0
+                        ? ''
+                        : strength > 70
+                        ? 'Strong password'
+                        : strength > 40
+                        ? 'Medium — add symbols or numbers'
+                        : 'Weak — make it longer'}
+                    </Text>
+                  </Box>
+                </FormControl>
+
+                {/* Confirm password */}
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">Confirm password</FormLabel>
+                  <Input
+                    {...inputProps}
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    onFocus={() => setRobotState('coverEyes')}
+                    onBlur={() => setRobotState('normal')}
+                    borderColor={confirm && confirm !== password ? 'red.500' : 'gray.600'}
+                  />
+                  {confirm && confirm !== password && (
+                    <Text fontSize="xs" color="red.400" mt={1}>Passwords don't match</Text>
                   )}
                 </FormControl>
 
-                {/* Confirm Password Field */}
-                <FormControl isInvalid={!!fieldErrors.confirmPassword}>
-                  <FormLabel fontWeight="600">Confirm Password</FormLabel>
-                  <InputGroup size="lg">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Re-enter your password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      borderColor={borderColor}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
-                    />
-                    <InputRightElement>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        size="sm"
-                      >
-                        <Icon as={showConfirmPassword ? FaEyeSlash : FaEye} color="gray.600" />
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                  {fieldErrors.confirmPassword && <FormErrorMessage>{fieldErrors.confirmPassword}</FormErrorMessage>}
-                </FormControl>
-
-                {/* Terms Checkbox */}
-                <FormControl isInvalid={!!fieldErrors.agreeToTerms}>
-                  <Checkbox
-                    name="agreeToTerms"
-                    isChecked={formData.agreeToTerms}
-                    onChange={handleChange}
-                  >
-                    <Text fontSize="sm">
-                      I agree to the{' '}
-                      <Link as={RouterLink} to="/terms" color="purple.600" fontWeight="600">
-                        Terms of Service
-                      </Link>{' '}
-                      and{' '}
-                      <Link as={RouterLink} to="/privacy" color="purple.600" fontWeight="600">
-                        Privacy Policy
-                      </Link>
-                    </Text>
-                  </Checkbox>
-                  {fieldErrors.agreeToTerms && <FormErrorMessage>{fieldErrors.agreeToTerms}</FormErrorMessage>}
-                </FormControl>
-
-                {/* Sign Up Button */}
+                {/* Submit */}
                 <Button
-                  w="full"
-                  bg="purple.600"
-                  color="white"
-                  size="lg"
-                  fontWeight="bold"
                   type="submit"
+                  bgGradient="linear(to-r, purple.500, pink.500)"
+                  color="white"
+                  fontWeight="700"
+                  borderRadius="xl"
+                  py={6}
+                  transition="0.3s"
+                  _hover={{ bgGradient: 'linear(to-r, purple.400, pink.400)', transform: 'scale(1.02)' }}
+                  _active={{ transform: 'scale(0.98)' }}
                   isLoading={loading}
-                  loadingText="Creating account..."
-                  _hover={{ bg: 'purple.700' }}
+                  boxShadow="0 4px 20px rgba(159,122,234,0.35)"
                 >
-                  Create Account
+                  Create account
                 </Button>
 
-                {/* Divider */}
-                <HStack w="full">
-                  <Divider />
-                  <Text px={2} color="gray.500" fontSize="sm" fontWeight="600">
-                    OR
+                <HStack justify="center">
+                  <Text color="gray.500" fontSize="sm">Already have an account?</Text>
+                  <Text
+                    as={RouterLink} to="/login"
+                    color="purple.400" fontWeight="700" fontSize="sm"
+                    _hover={{ color: 'purple.300', textDecoration: 'underline' }}
+                  >
+                    Sign in
                   </Text>
-                  <Divider />
                 </HStack>
 
-                {/* Social Signup */}
-                <VStack w="full" spacing={3}>
-                  <Button
-                    w="full"
-                    variant="outline"
-                    leftIcon={<Icon as={FaGoogle} />}
-                    onClick={() => handleSocialSignup('Google')}
-                  >
-                    Sign up with Google
-                  </Button>
-                  <Button
-                    w="full"
-                    variant="outline"
-                    leftIcon={<Icon as={FaGithub} />}
-                    onClick={() => handleSocialSignup('GitHub')}
-                  >
-                    Sign up with GitHub
-                  </Button>
-                </VStack>
               </VStack>
-            </CardBody>
-          </Card>
-
-          {/* Sign In Link */}
-          <HStack spacing={2}>
-            <Text color="gray.600">Already have an account?</Text>
-            <Link
-              as={RouterLink}
-              to="/login"
-              color="purple.600"
-              fontWeight="bold"
-              _hover={{ textDecoration: 'underline' }}
-            >
-              Sign in here
-            </Link>
-          </HStack>
-
-          {/* Benefits */}
-          <Card w="full" bg="purple.50" variant="outline">
-            <CardBody p={6}>
-              <VStack spacing={3} align="start" fontSize="sm">
-                <HStack spacing={2}>
-                  <Icon as={FaCheckCircle} color="purple.600" />
-                  <Text>Access 1,200+ courses</Text>
-                </HStack>
-                <HStack spacing={2}>
-                  <Icon as={FaCheckCircle} color="purple.600" />
-                  <Text>Learn from expert instructors</Text>
-                </HStack>
-                <HStack spacing={2}>
-                  <Icon as={FaCheckCircle} color="purple.600" />
-                  <Text>Earn recognized certificates</Text>
-                </HStack>
-                <HStack spacing={2}>
-                  <Icon as={FaCheckCircle} color="purple.600" />
-                  <Text>Join 10,000+ learners worldwide</Text>
-                </HStack>
-              </VStack>
-            </CardBody>
-          </Card>
-        </VStack>
-      </Container>
+            </Box>
+          </VStack>
+        </Box>
+      </Flex>
     </Box>
   );
 };
 
 export default Register;
-             

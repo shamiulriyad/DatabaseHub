@@ -1,97 +1,123 @@
 import { extendTheme } from '@chakra-ui/react';
 
 const colors = {
+  // Accent / Brand
   brand: {
-    50: '#F7F5FF',
-    100: '#EDE5FF',
-    200: '#D5C6FF',
-    300: '#B99BFF',
-    400: '#8F68FF',
-    500: '#6F3BFF',   // Rich violet — primary
-    600: '#5B30E6',
-    700: '#4426B3',
-    800: '#311A80',
-    900: '#20124D',
+    400: '#7055ff', // primary purple (brand.400)
+    500: '#5533ee', // button bg (brand.500)
   },
 
-  navy: {
-    50: '#F2F5F8',
-    100: '#E6EEF6',
-    500: '#071028',   // Deep premium navy
+  // Gold accents
+  gold: {
+    300: '#fcd34d',
+    400: '#fbbf24',
   },
 
-  background: '#0B0E14', // Dark canvas for premium feel
-  card: '#0F1724',       // Slightly lighter than background
-  text: '#EAF0FF',       // Pale text for contrast
-  textSecondary: '#9AA4B2',
-  accent: '#D4AF37',     // Premium gold
-  border: '#1B2633',
+  // Cosmic palette (dark-only)
+  cosmos: {
+    bg: '#070B1A',
+    surface: '#0D1428',
+    card: '#111A35',
+    border: '#1E2D55',
+    muted: '#8896BB',
+  },
+
+  // Text tokens
+  text: {
+    primary: 'whiteAlpha.900',
+    muted: '#8896BB',
+  },
 };
 
 const config = {
-  initialColorMode: 'light',
+  initialColorMode: 'dark',
   useSystemColorMode: false,
 };
 
 const components = {
   Button: {
-    defaultProps: {
-      colorScheme: 'brand',
-    },
     baseStyle: {
-      borderRadius: 'md',
-      fontWeight: '600',
-      _hover: {
-        transform: 'translateY(-1px)',
+      borderRadius: 'full',
+      fontWeight: 600,
+      px: 6,
+      py: 3,
+    },
+    variants: {
+      solid: (props) => ({
+        bg: 'brand.500',
+        color: 'white',
+        _hover: { bg: 'brand.400' },
+      }),
+      primary: {
+        bg: 'brand.500',
+        color: 'white',
+        _hover: { bg: 'brand.400' },
       },
+      outline_gold: {
+        bg: 'transparent',
+        color: 'gold.400',
+        border: '1px solid',
+        borderColor: 'gold.400',
+        _hover: { bg: 'gold.300', color: 'gray.900' },
+      },
+    },
+    defaultProps: {
+      variant: 'solid',
     },
   },
 
   Badge: {
     baseStyle: {
-      bg: 'accent',
-      color: 'gray.900',
-      fontWeight: '600',
-      borderRadius: 'sm',
-      px: 2,
+      borderRadius: 'full',
+      fontWeight: 600,
     },
   },
 
   Card: {
-    baseStyle: (props) => ({
-      bg: props.colorMode === 'dark' ? 'card' : '#FFFFFF',
-      borderRadius: 'lg',
-      boxShadow: props.colorMode === 'dark' ? '0 8px 30px rgba(2,6,23,0.6)' : '0 6px 18px rgba(2,6,23,0.06)',
-    }),
+    baseStyle: {
+      borderRadius: '2xl',
+      bg: 'cosmos.card',
+      borderColor: 'cosmos.border',
+      boxShadow: 'sm',
+    },
   },
 };
 
 const styles = {
-  global: props => ({
+  global: {
     'html, body': {
-      bg: props.colorMode === 'dark' ? colors.background : '#FFFFFF',
-      color: props.colorMode === 'dark' ? colors.text : '#0F1724',
+      bg: 'cosmos.bg',
+      color: 'text.primary',
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
     },
-
     a: {
-      color: 'brand.300',
+      color: 'brand.400',
       fontWeight: 600,
-      _hover: {
-        textDecoration: 'underline',
-      },
+      _hover: { textDecoration: 'underline' },
     },
-
     '::placeholder': {
-      color: colors.textSecondary,
+      color: 'cosmos.muted',
     },
-  }),
+  },
 };
 
 const fonts = {
-  heading: `'Playfair Display', serif`,
-  body: `'Inter', 'Segoe UI', system-ui, sans-serif`,
+  heading: `"Playfair Display", serif`,
+  body: `"DM Sans", "Segoe UI", system-ui, sans-serif`,
+};
+
+// spacing scale (8px base)
+const space = {
+  px: '1px',
+  0: '0',
+  1: '8px',
+  2: '16px',
+  3: '24px',
+  4: '32px',
+  5: '48px',
+  6: '64px',
+  7: '80px',
 };
 
 const theme = extendTheme({
@@ -100,6 +126,29 @@ const theme = extendTheme({
   components,
   styles,
   fonts,
+  space,
+  radii: {
+    sm: '6px',
+    md: '12px',
+    lg: '16px',
+    xl: '24px',
+    '2xl': '32px',
+    full: '9999px',
+  },
+  semanticTokens: {
+    colors: {
+      'page.bg': { default: 'cosmos.bg' },
+      'surface.bg': { default: 'cosmos.surface' },
+      'card.bg': { default: 'cosmos.card' },
+      'card.border': { default: 'cosmos.border' },
+      'text.primary': { default: 'text.primary' },
+      'text.muted': { default: 'text.muted' },
+      'brand.400': { default: 'brand.400' },
+      'brand.500': { default: 'brand.500' },
+      'gold.400': { default: 'gold.400' },
+      'gold.300': { default: 'gold.300' },
+    },
+  },
 });
 
 export default theme;

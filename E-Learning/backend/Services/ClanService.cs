@@ -703,14 +703,36 @@ namespace backend.Services
                     })
                     .ToList();
 
+                var computedTotalPoints = members.Sum(m => m.ContributionPoints);
+                var computedTotalExp = members.Sum(m => m.User?.Exp ?? 0);
+                var computedWeeklyPoints = members.Sum(m => m.WeeklyPoints);
+                var computedMonthlyPoints = members.Sum(m => m.MonthlyPoints);
+
+                var resolvedTotalPoints = clan.TotalPoints > 0 ? clan.TotalPoints : computedTotalPoints;
+                var resolvedWeeklyPoints = clan.WeeklyPoints > 0 ? clan.WeeklyPoints : computedWeeklyPoints;
+                var resolvedMonthlyPoints = clan.MonthlyPoints > 0 ? clan.MonthlyPoints : computedMonthlyPoints;
+
+                if (clan.TotalPoints != resolvedTotalPoints ||
+                    clan.WeeklyPoints != resolvedWeeklyPoints ||
+                    clan.MonthlyPoints != resolvedMonthlyPoints ||
+                    clan.MemberCount != members.Count)
+                {
+                    clan.TotalPoints = resolvedTotalPoints;
+                    clan.WeeklyPoints = resolvedWeeklyPoints;
+                    clan.MonthlyPoints = resolvedMonthlyPoints;
+                    clan.MemberCount = members.Count;
+                    await _context.SaveChangesAsync();
+                }
+
                 var stats = new ClanStatsDTO
                 {
-                    MemberCount = clan.MemberCount,
+                    MemberCount = members.Count,    
                     ActiveMembers = members.Count(m => m.LastActive.HasValue && 
                         m.LastActive > DateTime.UtcNow.AddDays(-7)),
-                    TotalPoints = clan.TotalPoints,
-                    WeeklyPoints = clan.WeeklyPoints,
-                    MonthlyPoints = clan.MonthlyPoints,
+                    TotalPoints = resolvedTotalPoints,
+                    TotalExp = computedTotalExp,
+                    WeeklyPoints = resolvedWeeklyPoints,
+                    MonthlyPoints = resolvedMonthlyPoints,
                     Rank = clan.Rank,
                     TotalPosts = clan.TotalPosts,
                     TotalComments = members.Sum(m => m.TotalComments),
@@ -749,8 +771,18 @@ namespace backend.Services
                 if (clan == null)
                     return ServiceResult<List<CompetitionDTO>>.FailureResult("Clan not found");
 
+                var clanRegisteredCompetitionIds = _context.CompetitionRegistrations
+                    .Where(r => r.Status != "Rejected")
+                    .Join(
+                        _context.Teams.Where(t => t.ClanId == clanId),
+                        r => r.TeamId,
+                        t => t.Id,
+                        (r, t) => r.CompetitionId
+                    )
+                    .Distinct();
+
                 var query = _context.Competitions
-                    .Where(c => c.ClanId == clanId);
+                    .Where(c => c.ClanId == clanId || clanRegisteredCompetitionIds.Contains(c.Id));
 
                 // Filter by season if specified
                 if (season.HasValue)

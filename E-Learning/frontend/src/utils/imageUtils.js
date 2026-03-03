@@ -6,6 +6,9 @@ export function normalizeUrl(raw) {
   // If the value already looks like a full URL or data URI, return as-is
   if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw;
 
+  // If it's an object URL created from a File (blob:), return as-is
+  if (raw.startsWith('blob:')) return raw;
+
   // Normalize Uploads paths that may start with 'Uploads', '/Uploads' or contain '/Uploads/'
   const uploadsMatch = raw.match(/(^\/?Uploads\/.*)/i);
   if (uploadsMatch) {

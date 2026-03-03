@@ -14,6 +14,7 @@ namespace backend.Services.Interfaces
         Task<ServiceResult<bool>> DeleteUniversity(int universityId);
         Task<ServiceResult<List<CourseDTO>>> GetUniversityCourses(int universityId, int page, int pageSize);
         Task<ServiceResult<List<TeacherDTO>>> GetUniversityTeachers(int universityId, int page, int pageSize);
+        Task<ServiceResult<List<TeacherDebugDTO>>> GetUniversityTeachersDebug(int universityId);
         Task<ServiceResult<List<StudentDTO>>> GetUniversityStudents(int universityId, int page, int pageSize);
         Task<ServiceResult<UniversityDetailDTO>> GetUniversityDetails(int universityId, int? callerUserId = null);
         Task<ServiceResult<UniversityStatsDTO>> GetUniversityStats(int universityId);

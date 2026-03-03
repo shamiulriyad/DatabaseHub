@@ -223,6 +223,10 @@ namespace backend.Services
                     user.Address = dto.Address;
                 if (dto.DateOfBirth.HasValue)
                     user.DateOfBirth = dto.DateOfBirth;
+                if (dto.StreakDays.HasValue)
+                    user.StreakDays = Math.Max(0, dto.StreakDays.Value);
+                if (dto.LastActive.HasValue)
+                    user.LastActive = dto.LastActive.Value;
                     
                 user.UpdatedAt = DateTime.UtcNow;
                 
@@ -621,13 +625,17 @@ namespace backend.Services
                 IsTeacher = user.IsTeacher,
                 IsCompetitor = user.IsCompetitor,
                 IsAdmin = user.IsAdmin,
+                Exp = user.Exp,
+                Level = user.Level,
                 // TotalPoints removed
                 CurrentRank = user.CurrentRank,
+                StreakDays = user.StreakDays,
                 TotalCoursesEnrolled = user.TotalCoursesEnrolled,
                 TotalCoursesCompleted = user.TotalCoursesCompleted,
                 // AverageGrade removed
                 CreatedAt = user.CreatedAt,
-                LastLogin = user.LastLogin
+                LastLogin = user.LastLogin,
+                LastActive = user.LastActive
             };
         }
     }

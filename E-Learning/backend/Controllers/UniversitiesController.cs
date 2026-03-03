@@ -122,6 +122,20 @@ namespace backend.Controllers
             });
         }
 
+        [HttpGet("{id}/teachers/debug")]
+        public async Task<IActionResult> GetUniversityTeachersDebug(int id)
+        {
+            var result = await _universityService.GetUniversityTeachersDebug(id);
+
+            if (!result.Success)
+                return NotFound(new { success = false, message = result.Message });
+
+            return Ok(new {
+                success = true,
+                data = result.Data
+            });
+        }
+
         [HttpGet("{id}/students")]
         public async Task<IActionResult> GetUniversityStudents(int id,
             [FromQuery] int page = 1,

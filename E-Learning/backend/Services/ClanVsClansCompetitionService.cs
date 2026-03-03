@@ -110,7 +110,9 @@ namespace backend.Services
                     DurationMinutes = dto.DurationMinutes,
                     Status = "Pending",
                     CreatedByUserId = userId,
-                    ScheduledStartTime = dto.ScheduledStartTime,
+                    ScheduledStartTime = dto.ScheduledStartTime.HasValue
+                        ? DateTime.SpecifyKind(dto.ScheduledStartTime.Value, DateTimeKind.Utc)
+                        : null,
                     CreatedAt = DateTime.UtcNow,
                     ShowScoresToOpponent = true,
                     AllowWithdrawal = false
@@ -132,7 +134,7 @@ namespace backend.Services
                         "ClanCompetitionChallenge",
                         "New Challenge Received",
                         $"Clan '{challengerClan.Name}' has challenged your clan to a {dto.CompetitionType} competition!",
-                        $"/clans/competitions/{competition.Id}",
+                        $"/clans-competitions/{competition.Id}",
                         clanId: competition.OpponentClanId
                     );
                 }
@@ -144,6 +146,7 @@ namespace backend.Services
             }
             catch (Exception ex)
             {
+                System.Console.Error.WriteLine("Error in CreateCompetitionAsync:\n" + ex.ToString());
                 return ServiceResult<ClanVsClansCompetitionDetailDTO>.FailureResult($"Error creating competition: {ex.Message}");
             }
         }
@@ -243,9 +246,71 @@ namespace backend.Services
                 if (!await IsUserClanLeaderAsync(userId, competition.OpponentClanId))
                     return ServiceResult<ClanVsClansCompetitionDetailDTO>.FailureResult("Only opponent clan leader can accept this challenge");
 
-                competition.Status = "Scheduled";
+                var now = DateTime.UtcNow;
+                competition.Status = "Ongoing";
                 competition.OpponentResponse = "Accepted";
-                competition.UpdatedAt = DateTime.UtcNow;
+                competition.CompetitionStartTime = now;
+                competition.ChallengerReady = true;
+                competition.OpponentReady = true;
+                competition.UpdatedAt = now;
+
+                var existingParticipants = await _context.ClanVsClansCompetitionParticipants
+                    .Where(p => p.CompetitionId == competitionId)
+                    .ToListAsync();
+
+                if (existingParticipants.Count == 0)
+                {
+                    var challengerMembers = await _context.ClanMembers
+                        .Where(m => m.ClanId == competition.ChallengerClanId)
+                        .OrderBy(m => m.JoinedAt)
+                        .Take(competition.ParticipantsPerClan)
+                        .Select(m => m.UserId)
+                        .ToListAsync();
+
+                    var opponentMembers = await _context.ClanMembers
+                        .Where(m => m.ClanId == competition.OpponentClanId)
+                        .OrderBy(m => m.JoinedAt)
+                        .Take(competition.ParticipantsPerClan)
+                        .Select(m => m.UserId)
+                        .ToListAsync();
+
+                    if (challengerMembers.Count < competition.ParticipantsPerClan || opponentMembers.Count < competition.ParticipantsPerClan)
+                        return ServiceResult<ClanVsClansCompetitionDetailDTO>.FailureResult("Both clans must have enough members to start the competition");
+
+                    foreach (var memberId in challengerMembers)
+                    {
+                        _context.ClanVsClansCompetitionParticipants.Add(new ClanVsClansCompetitionParticipant
+                        {
+                            CompetitionId = competitionId,
+                            UserId = memberId,
+                            ClanId = competition.ChallengerClanId,
+                            Status = "Started",
+                            SelectedAt = now,
+                            StartedAt = now
+                        });
+                    }
+
+                    foreach (var memberId in opponentMembers)
+                    {
+                        _context.ClanVsClansCompetitionParticipants.Add(new ClanVsClansCompetitionParticipant
+                        {
+                            CompetitionId = competitionId,
+                            UserId = memberId,
+                            ClanId = competition.OpponentClanId,
+                            Status = "Started",
+                            SelectedAt = now,
+                            StartedAt = now
+                        });
+                    }
+                }
+                else
+                {
+                    foreach (var participant in existingParticipants)
+                    {
+                        participant.Status = "Started";
+                        participant.StartedAt ??= now;
+                    }
+                }
 
                 await _context.SaveChangesAsync();
 
@@ -301,7 +366,7 @@ namespace backend.Services
                         "ClanCompetitionRejected",
                         "Challenge Rejected",
                         $"Clan '{competition.OpponentClan?.Name}' has rejected your competition challenge.",
-                        $"/clans/competitions/{competition.Id}",
+                        $"/clans-competitions/{competition.Id}",
                         clanId: competition.ChallengerClanId
                     );
                 }
@@ -850,7 +915,189 @@ namespace backend.Services
                 competition.WinnerClanStatus = "Draw";
             }
 
+            await AwardCompetitionExpAsync(competitionId);
+
             await _context.SaveChangesAsync();
+        }
+
+        private async Task AwardCompetitionExpAsync(int competitionId)
+        {
+            await EnsureProgressionDefaultsAsync();
+
+            var participants = await _context.ClanVsClansCompetitionParticipants
+                .Where(p => p.CompetitionId == competitionId)
+                .OrderByDescending(p => p.Score)
+                .ThenBy(p => p.TimeTakenSeconds ?? int.MaxValue)
+                .ToListAsync();
+
+            if (participants.Count == 0)
+                return;
+
+            var rewardRules = await _context.ExpRewardRules
+                .AsNoTracking()
+                .OrderBy(r => r.Position)
+                .ToListAsync();
+
+            var levelThresholds = await _context.LevelThresholds
+                .AsNoTracking()
+                .OrderBy(t => t.RequiredExp)
+                .ToListAsync();
+
+            var participantUserIds = participants.Select(p => p.UserId).Distinct().ToList();
+            var users = await _context.Users
+                .Where(u => participantUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u);
+
+            var teamIdByUser = await _context.TeamMembers
+                .Where(tm => participantUserIds.Contains(tm.UserId))
+                .GroupBy(tm => tm.UserId)
+                .Select(g => new { UserId = g.Key, TeamId = g.Select(x => x.TeamId).FirstOrDefault() })
+                .ToDictionaryAsync(x => x.UserId, x => x.TeamId);
+
+            var teamIdByClan = await _context.Teams
+                .Where(t => participants.Select(p => p.ClanId).Contains(t.ClanId))
+                .GroupBy(t => t.ClanId)
+                .Select(g => new { ClanId = g.Key, TeamId = g.Select(x => x.Id).FirstOrDefault() })
+                .ToDictionaryAsync(x => x.ClanId, x => x.TeamId);
+
+            var participantClanIds = participants.Select(p => p.ClanId).Distinct().ToList();
+            var missingClanTeamIds = participantClanIds.Where(clanId => !teamIdByClan.ContainsKey(clanId) || teamIdByClan[clanId] <= 0).ToList();
+
+            if (missingClanTeamIds.Count > 0)
+            {
+                var clans = await _context.Clans
+                    .Where(c => missingClanTeamIds.Contains(c.Id))
+                    .ToListAsync();
+
+                foreach (var clan in clans)
+                {
+                    var autoTeam = new Team
+                    {
+                        Name = $"{clan.Name} Auto Team",
+                        ClanId = clan.Id,
+                        CreatedBy = clan.LeaderId,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Teams.Add(autoTeam);
+                    await _context.SaveChangesAsync();
+                    teamIdByClan[clan.Id] = autoTeam.Id;
+                }
+            }
+
+            var existingHistoryUserIds = await _context.UserCompetitionHistories
+                .Where(h => h.CompetitionId == competitionId)
+                .Select(h => h.UserId)
+                .ToListAsync();
+
+            var existingHistories = existingHistoryUserIds.ToHashSet();
+
+            for (var index = 0; index < participants.Count; index++)
+            {
+                var participant = participants[index];
+                if (existingHistories.Contains(participant.UserId))
+                    continue;
+
+                if (!users.TryGetValue(participant.UserId, out var user))
+                    continue;
+
+                var position = index + 1;
+                var earnedExp = GetExpForPosition(position, rewardRules);
+                var clanTeamId = 0;
+
+                if (teamIdByUser.TryGetValue(participant.UserId, out var userTeamId) && userTeamId > 0)
+                    clanTeamId = userTeamId;
+                else if (teamIdByClan.TryGetValue(participant.ClanId, out var clanTeamIdFallback) && clanTeamIdFallback > 0)
+                    clanTeamId = clanTeamIdFallback;
+
+                if (clanTeamId == 0)
+                {
+                    user.Exp += earnedExp;
+                    user.Level = CalculateLevelFromThreshold(user.Exp, levelThresholds);
+                    user.UpdatedAt = DateTime.UtcNow;
+                    continue;
+                }
+
+                _context.UserCompetitionHistories.Add(new UserCompetitionHistory
+                {
+                    UserId = participant.UserId,
+                    CompetitionId = competitionId,
+                    ClanTeamId = clanTeamId,
+                    Position = position,
+                    EarnedExp = earnedExp,
+                    Date = DateTime.UtcNow
+                });
+
+                user.Exp += earnedExp;
+                user.Level = CalculateLevelFromThreshold(user.Exp, levelThresholds);
+                user.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        private async Task EnsureProgressionDefaultsAsync()
+        {
+            if (!await _context.ExpRewardRules.AnyAsync())
+            {
+                var defaults = new List<ExpRewardRule>
+                {
+                    new() { Position = 1, ExpAmount = 3000 },
+                    new() { Position = 2, ExpAmount = 2500 },
+                    new() { Position = 3, ExpAmount = 2000 },
+                    new() { Position = 4, ExpAmount = 1500 },
+                    new() { Position = 5, ExpAmount = 1000 },
+                    new() { Position = 6, ExpAmount = 800 },
+                    new() { Position = 7, ExpAmount = 600 },
+                    new() { Position = 8, ExpAmount = 500 },
+                    new() { Position = 9, ExpAmount = 400 },
+                    new() { Position = 10, ExpAmount = 300 }
+                };
+                _context.ExpRewardRules.AddRange(defaults);
+            }
+
+            if (!await _context.LevelThresholds.AnyAsync())
+            {
+                var defaults = Enumerable.Range(1, 20)
+                    .Select(level => new LevelThreshold
+                    {
+                        Level = level,
+                        RequiredExp = level * 3000L
+                    })
+                    .ToList();
+                _context.LevelThresholds.AddRange(defaults);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private static int GetExpForPosition(int position, IReadOnlyList<ExpRewardRule> rewardRules)
+        {
+            if (rewardRules.Count == 0)
+                return Math.Max(100, 3000 - ((position - 1) * 500));
+
+            var exact = rewardRules.FirstOrDefault(r => r.Position == position);
+            if (exact != null)
+                return exact.ExpAmount;
+
+            var lastRule = rewardRules.OrderBy(r => r.Position).Last();
+            if (position > lastRule.Position)
+            {
+                var penaltyStep = Math.Max(50, lastRule.ExpAmount / 5);
+                var reduced = lastRule.ExpAmount - ((position - lastRule.Position) * penaltyStep);
+                return Math.Max(100, reduced);
+            }
+
+            return Math.Max(100, 3000 - ((position - 1) * 500));
+        }
+
+        private static int CalculateLevelFromThreshold(long exp, IReadOnlyList<LevelThreshold> thresholds)
+        {
+            if (thresholds.Count == 0)
+                return (int)(exp / 3000);
+
+            return thresholds
+                .Where(t => exp >= t.RequiredExp)
+                .Select(t => t.Level)
+                .DefaultIfEmpty(0)
+                .Max();
         }
 
         private async Task NotifyAboutAcceptance(ClanVsClansCompetition competition, bool accepted)
@@ -871,7 +1118,7 @@ namespace backend.Services
                     accepted ? "ClanCompetitionAccepted" : "ClanCompetitionRejected",
                     accepted ? "Challenge Accepted" : "Challenge Rejected",
                     message,
-                    $"/clans/competitions/{competition.Id}",
+                    $"/clans-competitions/{competition.Id}",
                     clanId: accepted ? competition.OpponentClanId : competition.ChallengerClanId
                 );
             }

@@ -10,7 +10,7 @@ export const communityService = {
       sortBy = params.sortBy || 'latest';
       search = params.search || '';
     }
-    let url = `/community/posts?page=${page}&pageSize=${pageSize}`;
+    let url = `/posts/public?page=${page}&pageSize=${pageSize}`;
     if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     const response = await api.get(url);
@@ -23,7 +23,7 @@ export const communityService = {
   },
 
   async createPost(postData) {
-    const response = await api.post('/community/posts', postData);
+    const response = await api.post('/posts/public', postData);
     return response.data.data;
   },
 
@@ -50,5 +50,15 @@ export const communityService = {
   async addComment(postId, commentData) {
     const response = await api.post(`/community/posts/${postId}/comments`, commentData);
     return response.data.data;
+  },
+
+  async uploadCommunityImage(formData) {
+    const response = await api.post('/uploads/community-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response?.data?.url || response?.data?.data?.url || null;
   }
 };

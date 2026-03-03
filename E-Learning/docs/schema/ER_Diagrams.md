@@ -19,7 +19,6 @@ This document summarizes the entities (models) used in the project and their rel
 - Community (Posts / Comments / Votes)
 - Clans
 - Competitions
-- Quizzes / Assignments
 - Notifications & Admin (TeacherApplications, Department/University requests)
 
 ---
@@ -36,8 +35,6 @@ This document summarizes the entities (models) used in the project and their rel
   - `User` 1 — * `TeacherApplication` (ApplicantId)
   - `User` * — * `Clan` via `ClanMember` (UserId, ClanId)
   - `User` * — * `Competition` via `CompetitionParticipant` (UserId, CompetitionId)
-  - `User` 1 — * `QuizSubmission` (UserId)
-  - `User` 1 — * `AssignmentSubmission` (UserId)
 
 **2. Courses & Content**
 - `Course` (PK: `Id`)
@@ -101,18 +98,7 @@ This document summarizes the entities (models) used in the project and their rel
   - `Competition` 1 — * `CompetitionParticipant`
   - `Competition` 1 — * `CompetitionQuestion`
 
-**8. Quizzes & Assignments**
-- `Quiz` (PK: `Id`) — belongs to `Course` or `Lesson`
-- `QuizQuestion` (PK: `Id`) — FK `QuizId`
-- `QuizSubmission` (PK: `Id`) — FK `QuizId`, `UserId`, `Score`, `Answers` (JSON)
-- `Assignment` (PK: `Id`) — FK `CourseId` or `LessonId`
-- `AssignmentSubmission` (PK: `Id`) — FK `AssignmentId`, `UserId`, `FileUrl`, `Grade`
-- Relationships
-  - `Quiz` 1 — * `QuizQuestion`
-  - `Quiz` 1 — * `QuizSubmission` (by Users)
-  - `Assignment` 1 — * `AssignmentSubmission`
-
-**9. Notifications & Admin**
+**8. Notifications & Admin**
 - `Notification` (PK: `Id`) — FK `RecipientId` (User), `SenderId` (nullable), `Type`, `Payload` (JSON), `IsRead`
 - `TeacherApplication` (PK: `Id`) — FK `ApplicantId` (User), `Status`, `Portfolio` (JSON)
 - `DepartmentRequest` / `UniversityRequest` entities link to `University` and `User` for administrative flows.

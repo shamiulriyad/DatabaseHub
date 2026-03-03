@@ -75,6 +75,13 @@ export const competitionService = {
 
   ,
 
+  async getMyTeamStatus(competitionId) {
+    const response = await api.get(`/competitions/${competitionId}/my-team-status`);
+    return response.data;
+  }
+
+  ,
+
   async submitAnswers(competitionId, dto) {
     const response = await api.post(`/competitions/${competitionId}/submit-answers`, dto);
     return response.data;

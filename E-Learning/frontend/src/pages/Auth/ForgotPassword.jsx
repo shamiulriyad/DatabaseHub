@@ -1,247 +1,157 @@
 import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  Link,
-  useColorModeValue,
-  Icon,
-  useToast,
-} from '@chakra-ui/react';
-import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
-import { authService } from '../../services/authService';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Box, Flex, VStack, Heading, Text, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
+import Robot from './Robot';
+import { keyframes } from '@emotion/react';
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
-  
+  const [email, setEmail]           = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [robotState, setRobotState] = useState('normal');
+
+  const toast    = useToast();
   const navigate = useNavigate();
-  const toast = useToast();
-  
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const validateForm = () => {
-    const errors = {};
-    if (!email) errors.email = 'Email is required';
-    if (email && !email.includes('@')) errors.email = 'Invalid email format';
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const floatKF = keyframes`
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+  `;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Call password reset API
-      await authService.forgotPassword(email);
-      setSuccess(true);
+    setLoading(true);
+    setRobotState('writing');
+    setTimeout(() => {
+      setLoading(false);
+      setRobotState('success');
       toast({
-        title: 'Email Sent',
-        description: 'Check your email for password reset instructions',
+        title: 'Email sent',
+        description: 'If this email exists, a reset link was sent',
         status: 'success',
-        duration: 5,
-        isClosable: true,
+        duration: 3000,
       });
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to send reset email';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        status: 'error',
-        duration: 5,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+      setTimeout(() => navigate('/login'), 1200);
+    }, 900);
   };
-
-  if (success) {
-    return (
-      <Box minH="100vh" bg={bgColor} py={12}>
-        <Container maxW="md">
-          <VStack spacing={8}>
-            <Card w="full" bg={cardBg} shadow="lg">
-              <CardBody p={12}>
-                <VStack spacing={6} textAlign="center">
-                  <Box
-                    w={20}
-                    h={20}
-                    bg="green.100"
-                    borderRadius="full"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Icon as={FaCheckCircle} boxSize={10} color="green.600" />
-                  </Box>
-                  
-                  <VStack spacing={2}>
-                    <Heading size="lg">Check Your Email</Heading>
-                    <Text color="gray.600" fontSize="md">
-                      We've sent a password reset link to <strong>{email}</strong>
-                    </Text>
-                  </VStack>
-
-                  <VStack spacing={2} w="full" pt={4}>
-                    <Text fontSize="sm" color="gray.600">
-                      Click the link in the email to reset your password. The link will expire in 24 hours.
-                    </Text>
-                    <Text fontSize="sm" color="gray.600">
-                      Didn't receive the email? Check your spam folder or{' '}
-                      <Button
-                        variant="link"
-                        size="sm"
-                        color="purple.600"
-                        fontWeight="bold"
-                        onClick={() => setSuccess(false)}
-                      >
-                        try again
-                      </Button>
-                    </Text>
-                  </VStack>
-
-                  <Button
-                    w="full"
-                    bg="purple.600"
-                    color="white"
-                    size="lg"
-                    as={RouterLink}
-                    to="/login"
-                    _hover={{ bg: 'purple.700' }}
-                  >
-                    Back to Login
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
 
   return (
-    <Box minH="100vh" bg={bgColor} py={12}>
-      <Container maxW="md">
-        <VStack spacing={8}>
-          {/* Back Button */}
-          <HStack w="full">
-            <Link
-              as={RouterLink}
-              to="/login"
-              display="flex"
-              alignItems="center"
-              gap={2}
-              color="purple.600"
-              fontWeight="600"
-              _hover={{ textDecoration: 'none' }}
-            >
-              <Icon as={FaArrowLeft} />
-              Back to Login
-            </Link>
-          </HStack>
+    <Box
+      minH="100vh"
+      bg="gray.900"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      position="relative"
+      overflow="hidden"
+    >
+      {/* floating bg circles */}
+      <Box
+        position="absolute" w="220px" h="220px" left="-40px" top="-30px"
+        borderRadius="full" bg="purple.800" opacity={0.2}
+        animation={`${floatKF} 6s ease-in-out infinite`}
+      />
+      <Box
+        position="absolute" w="180px" h="180px" right="-30px" bottom="-40px"
+        borderRadius="full" bg="purple.800" opacity={0.15}
+        animation={`${floatKF} 8s ease-in-out infinite`}
+      />
 
-          {/* Header */}
-          <VStack spacing={4} textAlign="center">
-            <Heading size="2xl">Reset Password</Heading>
-            <Text color="gray.600" fontSize="md">
-              Enter your email address and we'll send you a link to reset your password
-            </Text>
-          </VStack>
+      <Flex
+        position="relative"
+        bg="gray.800"
+        borderRadius="2xl"
+        p={8}
+        boxShadow="0 25px 60px rgba(0,0,0,0.6)"
+        width={{ base: '90%', md: '720px' }}
+        gap={8}
+        border="1px solid"
+        borderColor="gray.700"
+        align="center"
+      >
+        {/* left accent stripe */}
+        <Box
+          position="absolute" left="0" top="0" bottom="0" w="6px"
+          borderTopLeftRadius="2xl" borderBottomLeftRadius="2xl"
+          bgGradient="linear(to-b, purple.400, pink.300)"
+        />
 
-          {/* Reset Card */}
-          <Card w="full" bg={cardBg} shadow="lg">
-            <CardBody p={8}>
-              <VStack spacing={6} as="form" onSubmit={handleSubmit}>
-                {/* Error Alert */}
-                {error && (
-                  <Box
-                    w="full"
-                    bg="red.50"
-                    border="1px solid"
-                    borderColor="red.200"
-                    p={4}
-                    borderRadius="lg"
-                    color="red.700"
-                    fontSize="sm"
-                  >
-                    {error}
-                  </Box>
-                )}
+        {/* Robot */}
+        <Box flex="1" display={{ base: 'none', md: 'flex' }} alignItems="center" justifyContent="center">
+          <Robot state={robotState} />
+        </Box>
 
-                {/* Email Field */}
-                <FormControl isInvalid={!!fieldErrors.email}>
-                  <FormLabel fontWeight="600">Email Address</FormLabel>
+        {/* Form */}
+        <Box flex="1">
+          <VStack align="stretch" spacing={5}>
+            <VStack align="stretch" spacing={1}>
+              <Heading size="md" color="white">Forgot Password</Heading>
+              <Text color="gray.400" fontSize="sm">
+                Enter your email to receive password reset instructions
+              </Text>
+            </VStack>
+
+            <Box as="form" onSubmit={handleSubmit}>
+              <VStack spacing={5} align="stretch">
+
+                <FormControl>
+                  <FormLabel color="gray.300" fontWeight="600">Email</FormLabel>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="you@email.com"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
-                    }}
-                    size="lg"
-                    borderColor={borderColor}
-                    _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setRobotState('writing')}
+                    onBlur={() => setRobotState('normal')}
+                    variant="outline"
+                    bg="gray.700"
+                    color="white"
+                    borderRadius="xl"
+                    borderColor="gray.600"
+                    focusBorderColor="purple.400"
+                    _placeholder={{ color: 'gray.500' }}
+                    _hover={{ borderColor: 'purple.500' }}
+                    _focus={{ bg: 'gray.700', boxShadow: '0 0 0 1px #9F7AEA' }}
                   />
-                  {fieldErrors.email && <FormErrorMessage>{fieldErrors.email}</FormErrorMessage>}
                 </FormControl>
 
-                {/* Submit Button */}
                 <Button
-                  w="full"
-                  bg="purple.600"
-                  color="white"
-                  size="lg"
-                  fontWeight="bold"
                   type="submit"
-                  isLoading={isLoading}
-                  loadingText="Sending..."
-                  _hover={{ bg: 'purple.700' }}
+                  bgGradient="linear(to-r, purple.500, pink.500)"
+                  color="white"
+                  fontWeight="700"
+                  borderRadius="xl"
+                  isLoading={loading}
+                  transition="0.3s"
+                  _hover={{ bgGradient: 'linear(to-r, purple.400, pink.400)', transform: 'scale(1.02)' }}
+                  _active={{ transform: 'scale(0.98)' }}
+                  boxShadow="0 4px 20px rgba(159,122,234,0.35)"
                 >
                   Send Reset Link
                 </Button>
-              </VStack>
-            </CardBody>
-          </Card>
 
-          {/* Help Text */}
-          <Box
-            w="full"
-            bg="blue.50"
-            border="1px solid"
-            borderColor="blue.200"
-            p={4}
-            borderRadius="lg"
-          >
-            <Text fontSize="sm" color="blue.700">
-              <strong>Tip:</strong> Make sure to check your spam/junk folder if you don't see the email within a few minutes.
-            </Text>
-          </Box>
-        </VStack>
-      </Container>
+                <Text
+                  textAlign="center"
+                  fontSize="sm"
+                  color="gray.500"
+                >
+                  Remember your password?{' '}
+                  <Text
+                    as={RouterLink}
+                    to="/login"
+                    color="purple.400"
+                    fontWeight="700"
+                    _hover={{ color: 'purple.300', textDecoration: 'underline' }}
+                  >
+                    Sign in
+                  </Text>
+                </Text>
+
+              </VStack>
+            </Box>
+          </VStack>
+        </Box>
+      </Flex>
     </Box>
   );
 };

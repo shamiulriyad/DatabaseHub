@@ -9,13 +9,15 @@ namespace backend.Services
     public class TeacherService : ITeacherService
     {
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService? _notificationService;
 
-        public TeacherService(ApplicationDbContext context)
+        public TeacherService(ApplicationDbContext context, INotificationService? notificationService = null)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
-        public async Task<ServiceResult<TeacherApplicationDTO>> ApplyToBeTeacher(int userId, ApplyTeacherDTO dto)
+        public async Task<ServiceResult<TeacherApplicationDTO>> ApplyToBeTeacher(int userId, ApplyTeacherDTO dto, string idFrontImagePath, string idBackImagePath)
         {
             try
             {
@@ -39,6 +41,16 @@ namespace backend.Services
                 if (user.IsTeacher)
                     return ServiceResult<TeacherApplicationDTO>.FailureResult("You are already a teacher");
 
+                var normalizedIdNumber = NormalizeIdNumber(dto.IdNumber);
+                if (string.IsNullOrWhiteSpace(normalizedIdNumber))
+                    return ServiceResult<TeacherApplicationDTO>.FailureResult("Valid ID number is required");
+
+                var duplicateIdExists = await _context.TeacherApplications
+                    .AnyAsync(a => a.IdNumber == normalizedIdNumber && a.UserId != userId);
+
+                if (duplicateIdExists)
+                    return ServiceResult<TeacherApplicationDTO>.FailureResult("This ID number has already been used for another teacher application");
+
                 // Create application
                 var application = new TeacherApplication
                 {
@@ -46,6 +58,10 @@ namespace backend.Services
                     ReasonForApplying = dto.ReasonForApplying,
                     QualificationDetails = dto.QualificationDetails,
                     ExperienceArea = dto.ExperienceArea,
+                    IdType = dto.IdType.Trim(),
+                    IdNumber = normalizedIdNumber,
+                    IdFrontImagePath = idFrontImagePath,
+                    IdBackImagePath = idBackImagePath,
                     Status = "Pending",
                     ApplicationDate = DateTime.UtcNow
                 };
@@ -64,6 +80,14 @@ namespace backend.Services
                     "Teacher application submitted successfully. Please wait for admin approval."
                 );
             }
+            catch (DbUpdateException dbEx)
+            {
+                var message = dbEx.InnerException?.Message?.ToLowerInvariant() ?? dbEx.Message.ToLowerInvariant();
+                if (message.Contains("idnumber") || message.Contains("teacherapplications_idnumber_key") || message.Contains("duplicate"))
+                    return ServiceResult<TeacherApplicationDTO>.FailureResult("This ID number has already been used for another teacher application");
+
+                return ServiceResult<TeacherApplicationDTO>.FailureResult($"Failed to submit application: {dbEx.Message}");
+            }
             catch (Exception ex)
             {
                 return ServiceResult<TeacherApplicationDTO>.FailureResult($"Failed to submit application: {ex.Message}");
@@ -77,7 +101,9 @@ namespace backend.Services
                 var application = await _context.TeacherApplications
                     .Include(a => a.User)
                     .Include(a => a.ReviewedByAdmin)
-                    .FirstOrDefaultAsync(a => a.UserId == userId);
+                    .Where(a => a.UserId == userId)
+                    .OrderByDescending(a => a.ApplicationDate)
+                    .FirstOrDefaultAsync();
 
                 if (application == null)
                     return ServiceResult<TeacherApplicationDTO>.FailureResult("No application found");
@@ -120,7 +146,11 @@ namespace backend.Services
                     ApplicationDate = a.ApplicationDate,
                     ReasonForApplying = a.ReasonForApplying,
                     ExperienceArea = a.ExperienceArea,
-                    QualificationDetails = a.QualificationDetails
+                    QualificationDetails = a.QualificationDetails,
+                    IdType = a.IdType,
+                    IdNumber = a.IdNumber,
+                    IdFrontImagePath = a.IdFrontImagePath,
+                    IdBackImagePath = a.IdBackImagePath
                 }).ToList();
 
                 return ServiceResult<List<TeacherApplicationListDTO>>.SuccessResult(dtos);
@@ -191,6 +221,30 @@ namespace backend.Services
                 _context.Users.Update(application.User!);
                 await _context.SaveChangesAsync();
 
+                if (_notificationService != null)
+                {
+                    if (reviewDto.Decision == "Approved")
+                    {
+                        await _notificationService.CreateNotification(
+                            application.UserId,
+                            "teacher_application",
+                            "Teacher Application Approved",
+                            "Congratulations! Your teacher application has been approved.",
+                            "/profile"
+                        );
+                    }
+                    else if (reviewDto.Decision == "Rejected")
+                    {
+                        await _notificationService.CreateNotification(
+                            application.UserId,
+                            "teacher_application",
+                            "Teacher Application Rejected",
+                            "Your teacher application is not eligible at this time.",
+                            "/profile"
+                        );
+                    }
+                }
+
                 var responseDto = MapToDTO(application, application.User!);
                 return ServiceResult<TeacherApplicationDTO>.SuccessResult(
                     responseDto,
@@ -232,6 +286,10 @@ namespace backend.Services
                 ReasonForApplying = application.ReasonForApplying,
                 QualificationDetails = application.QualificationDetails,
                 ExperienceArea = application.ExperienceArea,
+                IdType = application.IdType,
+                IdNumber = application.IdNumber,
+                IdFrontImagePath = application.IdFrontImagePath,
+                IdBackImagePath = application.IdBackImagePath,
                 Status = application.Status,
                 ApplicationDate = application.ApplicationDate,
                 ReviewedDate = application.ReviewedDate,
@@ -239,6 +297,19 @@ namespace backend.Services
                 AdminRemarks = application.AdminRemarks,
                 ApprovedDate = application.ApprovedDate
             };
+        }
+
+        private static string NormalizeIdNumber(string? rawIdNumber)
+        {
+            if (string.IsNullOrWhiteSpace(rawIdNumber))
+                return string.Empty;
+
+            var normalizedChars = rawIdNumber
+                .Where(char.IsLetterOrDigit)
+                .Select(char.ToUpperInvariant)
+                .ToArray();
+
+            return new string(normalizedChars);
         }
 
         public async Task<User?> GetUserById(int userId)

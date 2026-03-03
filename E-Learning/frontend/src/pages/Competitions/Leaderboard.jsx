@@ -23,6 +23,19 @@ import {
 import { FaTrophy, FaMedal } from 'react-icons/fa';
 import competitionApi from '../../services/api';
 
+const getLeaderboardDisplayName = (participant) => {
+  const participantType = String(participant?.participantType ?? participant?.ParticipantType ?? '').toLowerCase();
+  const teamOrClanName = participant?.teamName
+    ?? participant?.TeamName
+    ?? participant?.team?.name
+    ?? participant?.Team?.Name
+    ?? participant?.clanName
+    ?? participant?.ClanName;
+
+  if (participantType === 'team' && teamOrClanName) return teamOrClanName;
+  return teamOrClanName || participant?.participantName || participant?.ParticipantName || 'Unknown';
+};
+
 const Leaderboard = () => {
   const [competitionId, setCompetitionId] = useState(null);
   const [competitions, setCompetitions] = useState([]);
@@ -114,7 +127,7 @@ const Leaderboard = () => {
           </Heading>
 
           {/* Competition Selector */}
-          <Card bg="white" w="full" shadow="md">
+          <Card bg="card.bg" w="full" shadow="md">
             <CardBody>
               <HStack spacing={4}>
                 <Text fontWeight="bold" minW="200px">
@@ -143,7 +156,7 @@ const Leaderboard = () => {
             <Spinner size="xl" color="purple.500" />
           </Box>
         ) : leaderboard?.participants && leaderboard.participants.length > 0 ? (
-          <Card bg="white" shadow="lg">
+          <Card bg="card.bg" shadow="lg">
             <CardBody>
               <Box overflowX="auto">
                 <Table variant="striped" colorScheme="gray">
@@ -170,7 +183,7 @@ const Leaderboard = () => {
                             </Text>
                           </HStack>
                         </Td>
-                        <Td fontWeight="500">{participant.participantName}</Td>
+                        <Td fontWeight="500">{getLeaderboardDisplayName(participant)}</Td>
                         <Td>
                           <Badge colorScheme="blue">
                             {participant.participantType}
@@ -205,7 +218,7 @@ const Leaderboard = () => {
             </CardBody>
           </Card>
         ) : (
-          <Card bg="white" shadow="md">
+          <Card bg="card.bg" shadow="md">
             <CardBody>
               <Text color="gray.500" textAlign="center" py={10}>
                 No leaderboard data available for this competition

@@ -240,6 +240,144 @@ namespace backend.Services
         }
 
         /// <summary>
+        /// Get aggregated data for the admin homepage/dashboard
+        /// </summary>
+        public async Task<ServiceResult<AdminHomepageDTO>> GetHomepageData()
+        {
+            try
+            {
+                // Totals
+                var totalUsers = await _context.Users.CountAsync();
+                var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+                var activeUsers = await _context.Users.Where(u => u.LastLogin != null && u.LastLogin > sevenDaysAgo).CountAsync();
+                var totalUniversities = await _context.Universities.CountAsync();
+                var totalDepartments = await _context.Departments.CountAsync();
+                var totalCourses = await _context.Courses.CountAsync();
+
+                // Active clans - best-effort (no Status field exists) -> count clans with members or recent activity
+                var activeClans = await _context.Clans.Where(c => c.MemberCount > 0 || (c.LastActivity != null && c.LastActivity > DateTime.UtcNow.AddDays(-30))).CountAsync();
+
+                var ongoingCompetitions = await _context.Competitions.Where(c => c.Status == "Ongoing").CountAsync();
+
+                // Revenue
+                var revenue = await _context.Payments.Where(p => p.Status == "Completed").SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                // Total enrollments
+                var totalEnrollments = await _context.Enrollments.CountAsync();
+
+                // Prepare last 12 months labels (use UTC DateTimes to avoid Npgsql DateTimeKind issues)
+                var months = new List<DateTime>();
+                var now = DateTime.UtcNow;
+                for (int i = 11; i >= 0; i--)
+                {
+                    var m = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-i);
+                    months.Add(m);
+                }
+
+                var startDate = DateTime.SpecifyKind(months.First(), DateTimeKind.Utc);
+
+                // Users grouped by month
+                var userGroups = await _context.Users
+                    .Where(u => u.CreatedAt >= startDate)
+                    .GroupBy(u => new { Year = u.CreatedAt.Year, Month = u.CreatedAt.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                    .ToListAsync();
+
+                // Enrollments grouped by month
+                var enrollmentGroups = await _context.Enrollments
+                    .Where(e => e.EnrolledAt >= startDate)
+                    .GroupBy(e => new { Year = e.EnrolledAt.Year, Month = e.EnrolledAt.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                    .ToListAsync();
+
+                // Competition participants grouped by month
+                var participantGroups = await _context.CompetitionParticipants
+                    .Where(p => p.JoinedAt >= startDate)
+                    .GroupBy(p => new { Year = p.JoinedAt.Year, Month = p.JoinedAt.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                    .ToListAsync();
+
+                // Top competitions by participation
+                var topCompetitionsRaw = await _context.CompetitionParticipants
+                    .GroupBy(p => p.CompetitionId)
+                    .Select(g => new { CompetitionId = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count)
+                    .Take(8)
+                    .ToListAsync();
+
+                var topCompetitions = new List<CompetitionParticipationDTO>();
+                if (topCompetitionsRaw.Any())
+                {
+                    var compIds = topCompetitionsRaw.Select(x => x.CompetitionId).ToList();
+                    var comps = await _context.Competitions.Where(c => compIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Title);
+                    foreach (var t in topCompetitionsRaw)
+                    {
+                        comps.TryGetValue(t.CompetitionId, out var title);
+                        topCompetitions.Add(new CompetitionParticipationDTO { CompetitionId = t.CompetitionId, Title = title ?? "", ParticipantCount = t.Count });
+                    }
+                }
+
+                // Build MonthCount lists and ChartData
+                var monthlyUsers = new List<MonthCountDTO>();
+                var monthlyEnrolls = new List<MonthCountDTO>();
+                var monthlyParticipants = new List<MonthCountDTO>();
+
+                var userChart = new ChartDataDTO();
+                var enrollChart = new ChartDataDTO();
+                var participantChart = new ChartDataDTO();
+
+                foreach (var m in months)
+                {
+                    var keyY = m.Year; var keyM = m.Month;
+                    var u = userGroups.FirstOrDefault(g => g.Year == keyY && g.Month == keyM)?.Count ?? 0;
+                    var e = enrollmentGroups.FirstOrDefault(g => g.Year == keyY && g.Month == keyM)?.Count ?? 0;
+                    var p = participantGroups.FirstOrDefault(g => g.Year == keyY && g.Month == keyM)?.Count ?? 0;
+
+                    var label = m.ToString("MMM yyyy");
+                    monthlyUsers.Add(new MonthCountDTO { Period = label, Count = u });
+                    monthlyEnrolls.Add(new MonthCountDTO { Period = label, Count = e });
+                    monthlyParticipants.Add(new MonthCountDTO { Period = label, Count = p });
+
+                    userChart.Labels.Add(label); userChart.Data.Add(u);
+                    enrollChart.Labels.Add(label); enrollChart.Data.Add(e);
+                    participantChart.Labels.Add(label); participantChart.Data.Add(p);
+                }
+
+                var charts = new Dictionary<string, ChartDataDTO>
+                {
+                    ["userGrowth"] = userChart,
+                    ["enrollment"] = enrollChart,
+                    ["competition"] = participantChart,
+                    ["revenue"] = new ChartDataDTO { Labels = userChart.Labels, Data = userChart.Data } // placeholder: revenue chart can be added later
+                };
+
+                var dto = new AdminHomepageDTO
+                {
+                    TotalUsers = totalUsers,
+                    ActiveUsers = activeUsers,
+                    TotalUniversities = totalUniversities,
+                    TotalDepartments = totalDepartments,
+                    TotalCourses = totalCourses,
+                    ActiveClans = activeClans,
+                    OngoingCompetitions = ongoingCompetitions,
+                    Revenue = revenue,
+                    MonthlyUserRegistrations = monthlyUsers,
+                    MonthlyCourseEnrollments = monthlyEnrolls,
+                    MonthlyCompetitionParticipants = monthlyParticipants,
+                    Charts = charts,
+                    TopCompetitions = topCompetitions,
+                    TotalEnrollments = totalEnrollments
+                };
+
+                return ServiceResult<AdminHomepageDTO>.SuccessResult(dto, "Homepage data retrieved");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<AdminHomepageDTO>.FailureResult($"Failed to get homepage data: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Get recent activities across users, courses and payments for admin dashboard
         /// </summary>
         public async Task<ServiceResult<List<RecentActivityDTO>>> GetRecentActivities(int page = 1, int pageSize = 10)

@@ -102,7 +102,9 @@ namespace backend.Controllers
                     isStudent = result.Data.User.IsStudent,
                     isTeacher = result.Data.User.IsTeacher,
                     isCompetitor = result.Data.User.IsCompetitor,
-                    isAdmin = result.Data.User.IsAdmin
+                    isAdmin = result.Data.User.IsAdmin,
+                    exp = result.Data.User.Exp,
+                    level = result.Data.User.Level
                 }
             });
         }
@@ -137,6 +139,8 @@ namespace backend.Controllers
                     isTeacher = result.Data.User.IsTeacher,
                     isCompetitor = result.Data.User.IsCompetitor,
                     isAdmin = result.Data.User.IsAdmin,
+                    exp = result.Data.User.Exp,
+                    level = result.Data.User.Level,
                     currentRank = result.Data.User.CurrentRank
                 }
             });

@@ -9,6 +9,7 @@ import {
   HStack,
   VStack,
   Link,
+  Image,
   Button,
   Text,
   Avatar,
@@ -18,7 +19,6 @@ import {
   MenuItem,
   MenuDivider,
   Icon,
-  useColorModeValue,
   useDisclosure,
   Drawer,
   DrawerBody,
@@ -27,9 +27,9 @@ import {
   DrawerCloseButton,
   IconButton,
 } from '@chakra-ui/react';
-import ThemeToggle from './ThemeToggle';
-import { FaBars, FaTimes, FaUserCircle, FaBook } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCircle } from 'react-icons/fa';
 import { normalizeAvatar } from '../utils/imageUtils';
+import FinalLogo from '../assets/final.png';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -80,24 +80,46 @@ const Navbar = () => {
     </Link>
   );
 
+  // MenuList colors — prefer a dark theme that matches the site background
+  const menuListBg = '#0b1220';
+  const menuListColor = 'whiteAlpha.900';
+  const menuListBorderColor = 'rgba(124,58,237,0.12)';
+
   return (
-    <Box bgGradient={navGradient} shadow={navShadow} position="sticky" top={0} zIndex={100} borderBottom="0" borderColor={borderColor}>
+    <Box
+      bgGradient={navGradient}
+      shadow={navShadow}
+      position="relative"
+      zIndex={100}
+      borderBottom="0"
+      borderColor={borderColor}
+    >
       <Container maxW="7xl" py={0}>
         <Flex h={16} alignItems="center" justifyContent="space-between">
           {/* Logo */}
           <Link
             as={RouterLink}
             to="/"
-            display="flex"
-            alignItems="center"
-            gap={2}
             _hover={{ textDecor: 'none' }}
-            fontWeight="bold"
-            fontSize="xl"
-            color="white"
           >
-            <Icon as={FaBook} color="white" boxSize={6} />
-            NextUniVerse
+            <Flex alignItems="center" gap={3}>
+              {/* Use provided final.png as the logo for both mobile and desktop */}
+              <Image src={FinalLogo} alt="NextUniVerse" h={8} display={{ base: 'block', md: 'block' }} />
+
+              {/* Show textual brand next to logo on md+ screens */}
+              <Text
+                display={{ base: 'none', md: 'block' }}
+                fontFamily={`'Playfair Display', Georgia, serif`}
+                fontSize="lg"
+                fontWeight="700"
+                bgGradient="linear(135deg,#c4b5fd,#7c3aed,#f59e0b)"
+                bgClip="text"
+                letterSpacing="-0.02em"
+                ml={1}
+              >
+                NextUniVerse
+              </Text>
+            </Flex>
           </Link>
 
           {/* Desktop Navigation */}
@@ -114,57 +136,69 @@ const Navbar = () => {
             {user ? (
               <>
                 <NotificationBell />
-                <ThemeToggle />
-                {user.isAdmin ? (
-                  <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>
-                ) : user.isTeacher ? (
-                  <NavLink to="/teacher">Teacher Dashboard</NavLink>
-                ) : (
-                  <NavLink to="/dashboard">Dashboard</NavLink>
-                )}
+                
+               
                 <Menu>
                   <MenuButton
                     as={Button}
                     variant="ghost"
                     size="sm"
+                    color="white"
                     leftIcon={
                       avatarSrc ? (
-                        <Avatar src={avatarSrc} name={user?.firstName || user?.FirstName || user?.username || user?.Username} size="sm" />
+                        <Avatar src={avatarSrc} name={user?.firstName || user?.FirstName || user?.username || user?.Username} size="sm" borderWidth="2px" borderColor="rgba(255,255,255,0.22)" />
                       ) : (
-                        <Icon as={FaUserCircle} boxSize={5} />
+                        <Icon as={FaUserCircle} boxSize={5} color="white" />
                       )
                     }
+                    bg="rgba(255,255,255,0.08)"
+                    _hover={{ bg: 'rgba(255,255,255,0.12)' }}
+                    borderRadius="999px"
+                    px={4}
+                    py={1}
+                    minW="auto"
+                    fontWeight={600}
                   >
                     {user.firstName || user.FirstName || user.username || user.Username || 'Profile'}
                   </MenuButton>
-                  <MenuList>
-                    <MenuItem as={RouterLink} to="/profile">
+                  <MenuList
+                    bg={menuListBg}
+                    color={menuListColor}
+                    borderColor={menuListBorderColor}
+                    borderRadius="12px"
+                    boxShadow="0 8px 30px rgba(3,3,10,0.6)"
+                    py={2}
+                  >
+                    <MenuItem as={RouterLink} to="/profile" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                       My Profile
                     </MenuItem>
-                    <MenuItem as={RouterLink} to="/profile/edit">
+                    <MenuItem as={RouterLink} to="/profile/edit" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                       Edit Profile
                     </MenuItem>
                     {user.isTeacher && !user.isAdmin && (
-                      <MenuItem as={RouterLink} to="/teacher">
+                      <MenuItem as={RouterLink} to="/teacher" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                         Teacher Dashboard
                       </MenuItem>
                     )}
                     {user.isAdmin && (
                       <>
-                        <MenuDivider />
-                        <MenuItem as={RouterLink} to="/admin/dashboard">
+                        <MenuDivider borderColor="rgba(255,255,255,0.04)" />
+                        <MenuItem as={RouterLink} to="/admin/home" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
+                          Admin Home
+                        </MenuItem>
+                        <MenuItem as={RouterLink} to="/admin/dashboard" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                           Admin Dashboard
                         </MenuItem>
-                        <MenuItem as={RouterLink} to="/admin/manage-teachers">
+                        <MenuItem as={RouterLink} to="/admin/manage-teachers" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                           Pending Teachers
                         </MenuItem>
-                        <MenuItem as={RouterLink} to="/admin/manage-teachers">
+                        <MenuItem as={RouterLink} to="/admin/manage-teachers" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                           All Applications
                         </MenuItem>
                       </>
                     )}
-                    <MenuDivider />
-                    <MenuItem onClick={handleLogout} color="red.500">
+                    <MenuDivider borderColor="rgba(255,255,255,0.04)" />
+                    <MenuItem onClick={handleLogout} color="red.400" bg="transparent" _hover={{ bg: 'rgba(255,255,255,0.04)' }}>
                       Logout
                     </MenuItem>
                   </MenuList>
@@ -200,7 +234,7 @@ const Navbar = () => {
           <IconButton
             display={{ base: 'flex', md: 'none' }}
             aria-label="Open menu"
-            icon={<Icon as={isOpen ? FaTimes : FaBars} />}
+            icon={<Icon as={isOpen ? FaTimes : FaBars} color="white" />}
             onClick={isOpen ? onClose : onOpen}
             variant="ghost"
           />
@@ -224,8 +258,8 @@ const Navbar = () => {
                 <>
                   <NavLink to="/dashboard" onClick={onClose}>Dashboard</NavLink>
                   <NavLink to="/profile" onClick={onClose}>Profile</NavLink>
-                  {user.role === 'Admin' && (
-                    <NavLink to="/admin" onClick={onClose}>Admin</NavLink>
+                  {user.isAdmin && (
+                    <NavLink to="/admin/home" onClick={onClose}>Admin Home</NavLink>
                   )}
                   <Button
                     w="full"

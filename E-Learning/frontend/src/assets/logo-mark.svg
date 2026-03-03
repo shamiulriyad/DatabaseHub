@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="NextUniVerse mark">
+  <defs>
+    <linearGradient id="mgrad" x1="0" x2="1">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b" />
+      <feBlend in="SourceGraphic" in2="b" mode="normal" />
+    </filter>
+  </defs>
+
+  <!-- Rounded square base -->
+  <rect x="4" y="4" width="120" height="120" rx="20" ry="20" fill="#36123a" />
+
+  <!-- Glow gradient circle behind -->
+  <circle cx="64" cy="48" r="34" fill="url(#mgrad)" opacity="0.18" />
+
+  <!-- Central diamond/star shape -->
+  <g transform="translate(64,64)">
+    <path d="M0 -20 L8 -4 L24 0 L8 4 L0 20 L-8 4 L-24 0 L-8 -4 Z" fill="#FFFFFF" opacity="0.95" />
+  </g>
+</svg>

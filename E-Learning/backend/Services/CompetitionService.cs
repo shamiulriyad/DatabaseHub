@@ -3,6 +3,7 @@ using backend.DTOs;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using System.Text.Json;
 
 namespace backend.Services
 {
@@ -396,11 +397,9 @@ namespace backend.Services
                     return ServiceResult<List<CompetitionQuestionDTO>>.FailureResult(message);
                 }
 
-                // Check if user is a registered participant
-                var isParticipant = await _context.CompetitionParticipants
-                    .AnyAsync(p => p.CompetitionId == competitionId && p.UserId == userId);
-
-                if (!isParticipant)
+                // Check if user is a registered participant (or approved team member for team-based contests)
+                var participant = await EnsureParticipantAccessAsync(competition, userId);
+                if (participant == null)
                     return ServiceResult<List<CompetitionQuestionDTO>>.FailureResult("You must be a registered participant to view questions");
 
                 var questions = competition.Questions
@@ -450,8 +449,7 @@ namespace backend.Services
                     return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("Competition is not accepting answers at this time");
 
                 // Participant must be registered
-                var participant = await _context.CompetitionParticipants
-                    .FirstOrDefaultAsync(p => p.CompetitionId == competitionId && p.UserId == userId);
+                var participant = await EnsureParticipantAccessAsync(competition, userId);
 
                 if (participant == null)
                     return ServiceResult<CompetitionResultWithFeedbackDTO>.FailureResult("You are not a registered participant");
@@ -669,6 +667,9 @@ namespace backend.Services
                 if (competition == null)
                     return ServiceResult<bool>.FailureResult("Competition not found");
 
+                if (competition.IsTeamBased)
+                    return ServiceResult<bool>.FailureResult("This is a clan team-based competition. Register your team instead of joining individually.");
+
                 if (competition.IsApproved)
                     return ServiceResult<bool>.FailureResult("Cannot reject an already-approved competition");
 
@@ -834,7 +835,7 @@ namespace backend.Services
                     return ServiceResult<bool>.FailureResult("Competition not found");
 
                 // CODEFORCES RULE: Creator and Admin cannot participate
-                if (competition.CreatorId == userId || competition.CreatorRole == "Admin")
+                if (competition.CreatorId == userId)
                     return ServiceResult<bool>.FailureResult("Creators and admins cannot participate in their own competitions");
 
                 // Check if user is admin (from User table)
@@ -958,7 +959,11 @@ namespace backend.Services
                     .Select(p => new CompetitionParticipantDTO
                     {
                         ParticipantId = p.UserId,
-                        ParticipantName = $"{p.User.FirstName} {p.User.LastName}",
+                        ParticipantName = !string.IsNullOrWhiteSpace(p.TeamName)
+                            ? p.TeamName
+                            : ((($"{p.User.FirstName} {p.User.LastName}").Trim().Length > 0)
+                                ? ($"{p.User.FirstName} {p.User.LastName}").Trim()
+                                : (p.User.Username ?? "Unknown")),
                         ParticipantType = string.IsNullOrEmpty(p.TeamName) ? "Individual" : "Team",
                         Score = (int)(p.Score ?? 0),
                         Rank = p.Rank ?? 0,
@@ -1092,6 +1097,7 @@ namespace backend.Services
         private CompetitionDTO MapToCompetitionDTO(Models.Competition competition)
         {
             var currentStatus = CalculateStatus(competition.StartDate, competition.EndDate, competition.IsApproved);
+            var competitionPeriod = ResolveCompetitionPeriod(competition.CompetitionRules, competition.StartDate, competition.EndDate);
 
             // CODEFORCES RULE: Don't include questions in main DTO
             // Participants must call specific endpoints to view questions (only when Ongoing)
@@ -1125,6 +1131,7 @@ namespace backend.Services
                 Title = competition.Title,
                 Description = competition.Description,
                 CompetitionType = competition.CompetitionType,
+                CompetitionPeriod = competitionPeriod,
                 StartDate = competition.StartDate,
                 EndDate = competition.EndDate,
                 Status = currentStatus.ToLower(),
@@ -1146,6 +1153,105 @@ namespace backend.Services
                 CreatedAt = competition.CreatedAt,
                 Questions = new List<CompetitionQuestionDTO>() // Empty - use dedicated endpoints
             };
+        }
+
+        private async Task<Models.CompetitionParticipant?> EnsureParticipantAccessAsync(Models.Competition competition, int userId)
+        {
+            var participant = await _context.CompetitionParticipants
+                .FirstOrDefaultAsync(p => p.CompetitionId == competition.Id && p.UserId == userId);
+
+            if (participant != null)
+                return participant;
+
+            if (!competition.IsTeamBased)
+                return null;
+
+            var approvedTeam = await _context.CompetitionRegistrations
+                .Where(r => r.CompetitionId == competition.Id && (r.Status == "Approved" || r.Status == "Participated"))
+                .Join(
+                    _context.TeamMembers.Where(tm => tm.UserId == userId),
+                    r => r.TeamId,
+                    tm => tm.TeamId,
+                    (r, tm) => new { r.TeamId, Registration = r }
+                )
+                .FirstOrDefaultAsync();
+
+            if (approvedTeam == null)
+            {
+                var currentStatus = CalculateStatus(competition.StartDate, competition.EndDate, competition.IsApproved);
+                if (currentStatus == "Ongoing")
+                {
+                    var pendingTeam = await _context.CompetitionRegistrations
+                        .Where(r => r.CompetitionId == competition.Id && r.Status == "Pending")
+                        .Join(
+                            _context.TeamMembers.Where(tm => tm.UserId == userId),
+                            r => r.TeamId,
+                            tm => tm.TeamId,
+                            (r, tm) => new { r.TeamId, Registration = r }
+                        )
+                        .FirstOrDefaultAsync();
+
+                    if (pendingTeam != null)
+                    {
+                        pendingTeam.Registration.Status = "Approved";
+                        approvedTeam = pendingTeam;
+                    }
+                }
+            }
+
+            if (approvedTeam == null)
+                return null;
+
+            var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == approvedTeam.TeamId);
+
+            participant = new Models.CompetitionParticipant
+            {
+                CompetitionId = competition.Id,
+                UserId = userId,
+                TeamId = approvedTeam.TeamId,
+                TeamName = team?.Name,
+                Status = "Registered",
+                JoinedAt = DateTime.UtcNow
+            };
+
+            _context.CompetitionParticipants.Add(participant);
+
+            var currentCount = await _context.CompetitionParticipants
+                .Where(p => p.CompetitionId == competition.Id)
+                .Select(p => p.UserId)
+                .Distinct()
+                .CountAsync();
+
+            competition.ParticipantCount = currentCount + 1;
+            competition.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return participant;
+        }
+
+        private static string ResolveCompetitionPeriod(string? competitionRules, DateTime startDate, DateTime endDate)
+        {
+            if (!string.IsNullOrWhiteSpace(competitionRules))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(competitionRules);
+                    if (doc.RootElement.TryGetProperty("competitionPeriod", out var periodEl))
+                    {
+                        var period = periodEl.GetString();
+                        if (!string.IsNullOrWhiteSpace(period))
+                            return period;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            var durationDays = (endDate - startDate).TotalDays;
+            if (durationDays <= 8) return "Weekly";
+            if (durationDays <= 35) return "Monthly";
+            return "Seasonal";
         }
     }
 }

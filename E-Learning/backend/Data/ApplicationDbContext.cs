@@ -51,6 +51,12 @@ namespace backend.Data
         public DbSet<ClanAnnouncement> ClanAnnouncements => Set<ClanAnnouncement>();
         public DbSet<ClanAnnouncementReaction> ClanAnnouncementReactions => Set<ClanAnnouncementReaction>();
         public DbSet<PostReaction> PostReactions => Set<PostReaction>();
+        // Team System
+        public DbSet<Team> Teams => Set<Team>();
+        public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+
+        // Competition Registrations (team-based)
+        public DbSet<CompetitionRegistration> CompetitionRegistrations => Set<CompetitionRegistration>();
 
         // Notification System
         public DbSet<Notification> Notifications => Set<Notification>();
@@ -80,6 +86,11 @@ namespace backend.Data
         // Teacher Application System
         public DbSet<TeacherApplication> TeacherApplications => Set<TeacherApplication>();
 
+        // Competition Progression System
+        public DbSet<UserCompetitionHistory> UserCompetitionHistories => Set<UserCompetitionHistory>();
+        public DbSet<ExpRewardRule> ExpRewardRules => Set<ExpRewardRule>();
+        public DbSet<LevelThreshold> LevelThresholds => Set<LevelThreshold>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -92,6 +103,42 @@ namespace backend.Data
                 entity.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
                 entity.Property(u => u.TotalPoints).HasDefaultValue(0);
                 entity.Property(u => u.IsStudent).HasDefaultValue(true);
+                entity.Property(u => u.Exp).HasDefaultValue(0L);
+                entity.Property(u => u.Level).HasDefaultValue(0);
+            });
+
+            modelBuilder.Entity<UserCompetitionHistory>(entity =>
+            {
+                entity.HasIndex(h => new { h.UserId, h.CompetitionId }).IsUnique();
+                entity.HasIndex(h => h.CompetitionId);
+                entity.HasIndex(h => h.ClanTeamId);
+                entity.HasIndex(h => h.Date);
+                entity.Property(h => h.Date).HasDefaultValueSql("NOW()");
+
+                entity.HasOne(h => h.User)
+                    .WithMany(u => u.CompetitionHistory)
+                    .HasForeignKey(h => h.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(h => h.Competition)
+                    .WithMany()
+                    .HasForeignKey(h => h.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(h => h.ClanTeam)
+                    .WithMany()
+                    .HasForeignKey(h => h.ClanTeamId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ExpRewardRule>(entity =>
+            {
+                entity.HasKey(e => e.Position);
+            });
+
+            modelBuilder.Entity<LevelThreshold>(entity =>
+            {
+                entity.HasKey(l => l.Level);
             });
 
             // University Configuration
@@ -420,6 +467,65 @@ namespace backend.Data
                 entity.Property(cm => cm.JoinedAt).HasDefaultValueSql("NOW()");
                 entity.Property(cm => cm.ContributionPoints).HasDefaultValue(0);
                 entity.Property(cm => cm.ReceiveNotifications).HasDefaultValue(true);
+            });
+
+            // Team Configuration
+            modelBuilder.Entity<Team>(entity =>
+            {
+                entity.HasIndex(t => t.ClanId);
+                entity.HasIndex(t => t.CreatedBy);
+                entity.HasIndex(t => new { t.ClanId, t.Name }).IsUnique();
+
+                entity.Property(t => t.CreatedAt).HasDefaultValueSql("NOW()");
+
+                entity.HasOne(t => t.Clan)
+                    .WithMany()
+                    .HasForeignKey(t => t.ClanId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(t => t.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(t => t.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // TeamMember Configuration
+            modelBuilder.Entity<TeamMember>(entity =>
+            {
+                entity.HasIndex(tm => new { tm.TeamId, tm.UserId }).IsUnique();
+                entity.HasIndex(tm => tm.UserId);
+
+                entity.Property(tm => tm.JoinedAt).HasDefaultValueSql("NOW()");
+
+                entity.HasOne(tm => tm.Team)
+                      .WithMany(t => t.Members)
+                      .HasForeignKey(tm => tm.TeamId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(tm => tm.User)
+                      .WithMany()
+                      .HasForeignKey(tm => tm.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // CompetitionRegistration Configuration
+            modelBuilder.Entity<CompetitionRegistration>(entity =>
+            {
+                entity.HasIndex(cr => new { cr.CompetitionId, cr.TeamId }).IsUnique();
+                entity.HasIndex(cr => cr.Status);
+
+                entity.Property(cr => cr.Status).HasDefaultValue("Pending");
+                entity.Property(cr => cr.RegisteredAt).HasDefaultValueSql("NOW()");
+
+                entity.HasOne(cr => cr.Competition)
+                      .WithMany()
+                      .HasForeignKey(cr => cr.CompetitionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(cr => cr.Team)
+                      .WithMany()
+                      .HasForeignKey(cr => cr.TeamId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Competition Configuration

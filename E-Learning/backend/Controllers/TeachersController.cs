@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using backend.DTOs;
 using backend.Services.Interfaces;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Hosting;
 
 namespace backend.Controllers
 {
@@ -11,10 +12,12 @@ namespace backend.Controllers
     public class TeachersController : ControllerBase
     {
         private readonly ITeacherService _teacherService;
+        private readonly IWebHostEnvironment _environment;
 
-        public TeachersController(ITeacherService teacherService)
+        public TeachersController(ITeacherService teacherService, IWebHostEnvironment environment)
         {
             _teacherService = teacherService;
+            _environment = environment;
         }
 
         /// <summary>
@@ -22,10 +25,33 @@ namespace backend.Controllers
         /// </summary>
         [Authorize]
         [HttpPost("apply")]
-        public async Task<IActionResult> ApplyToBeTeacher([FromBody] ApplyTeacherDTO applyDto)
+        public async Task<IActionResult> ApplyToBeTeacher([FromForm] ApplyTeacherDTO applyDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (applyDto.IdFrontImage == null || applyDto.IdBackImage == null)
+                return BadRequest(new { success = false, message = "Both front and back ID images are required" });
+
+            if (applyDto.IdFrontImage.Length == 0 || applyDto.IdBackImage.Length == 0)
+                return BadRequest(new { success = false, message = "Both ID images must be valid files" });
+
+            if (applyDto.IdFrontImage.Length > 5L * 1024 * 1024 || applyDto.IdBackImage.Length > 5L * 1024 * 1024)
+                return BadRequest(new { success = false, message = "Each ID image must be 5 MB or smaller" });
+
+            var allowedExtensions = new[] { ".png", ".jpg", ".jpeg", ".webp" };
+            var allowedMimeTypes = new[] { "image/png", "image/jpeg", "image/webp" };
+
+            var frontExt = Path.GetExtension(applyDto.IdFrontImage.FileName)?.ToLowerInvariant() ?? string.Empty;
+            var backExt = Path.GetExtension(applyDto.IdBackImage.FileName)?.ToLowerInvariant() ?? string.Empty;
+
+            if (!allowedExtensions.Contains(frontExt) || !allowedExtensions.Contains(backExt))
+                return BadRequest(new { success = false, message = "Only PNG, JPG, JPEG, and WEBP images are allowed" });
+
+            var frontType = (applyDto.IdFrontImage.ContentType ?? string.Empty).ToLowerInvariant();
+            var backType = (applyDto.IdBackImage.ContentType ?? string.Empty).ToLowerInvariant();
+            if (!allowedMimeTypes.Contains(frontType) || !allowedMimeTypes.Contains(backType))
+                return BadRequest(new { success = false, message = "Invalid ID image content type" });
 
             var userIdClaim = User.FindFirst("userId");
             if (userIdClaim == null)
@@ -34,10 +60,40 @@ namespace backend.Controllers
             if (!int.TryParse(userIdClaim.Value, out int userId))
                 return Unauthorized(new { success = false, message = "Invalid user ID" });
 
-            var result = await _teacherService.ApplyToBeTeacher(userId, applyDto);
+            var uploadRoot = Path.Combine(_environment.WebRootPath ?? "wwwroot", "Uploads", "teacher-ids", userId.ToString());
+            if (!Directory.Exists(uploadRoot))
+                Directory.CreateDirectory(uploadRoot);
+
+            var frontFileName = $"front_{Guid.NewGuid()}{frontExt}";
+            var backFileName = $"back_{Guid.NewGuid()}{backExt}";
+
+            var frontPath = Path.Combine(uploadRoot, frontFileName);
+            var backPath = Path.Combine(uploadRoot, backFileName);
+
+            await using (var frontStream = new FileStream(frontPath, FileMode.Create))
+            {
+                await applyDto.IdFrontImage.CopyToAsync(frontStream);
+            }
+
+            await using (var backStream = new FileStream(backPath, FileMode.Create))
+            {
+                await applyDto.IdBackImage.CopyToAsync(backStream);
+            }
+
+            var idFrontImagePath = $"/Uploads/teacher-ids/{userId}/{frontFileName}";
+            var idBackImagePath = $"/Uploads/teacher-ids/{userId}/{backFileName}";
+
+            var result = await _teacherService.ApplyToBeTeacher(userId, applyDto, idFrontImagePath, idBackImagePath);
 
             if (!result.Success)
+            {
+                if (System.IO.File.Exists(frontPath))
+                    System.IO.File.Delete(frontPath);
+                if (System.IO.File.Exists(backPath))
+                    System.IO.File.Delete(backPath);
+
                 return BadRequest(new { success = false, message = result.Message });
+            }
 
             return Ok(new
             {

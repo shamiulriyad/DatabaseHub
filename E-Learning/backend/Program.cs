@@ -97,16 +97,22 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ILearningService, LearningService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IClanService, ClanService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<ICompetitionService, CompetitionService>();
+builder.Services.AddScoped<ICompetitionRegistrationService, CompetitionRegistrationService>();
 builder.Services.AddScoped<IClanVsClansCompetitionService, ClanVsClansCompetitionService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IRankingService, RankingService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IClanCompetitionOrchestrationService, ClanCompetitionOrchestrationService>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IDepartmentRequestService, DepartmentRequestService>();
 builder.Services.AddScoped<IUniversityRequestService, UniversityRequestService>();
+builder.Services.AddScoped<IClanCompetitionOrchestrationService, ClanCompetitionOrchestrationService>();
+builder.Services.AddScoped<IClanCompetitionScoringService, ClanCompetitionScoringService>();
+builder.Services.AddHostedService<CompetitionLifecycleScheduler>();
 
 
 // AutoMapper

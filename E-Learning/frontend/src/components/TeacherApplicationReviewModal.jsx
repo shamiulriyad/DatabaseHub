@@ -20,6 +20,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import axios from 'axios';
+import { normalizeUrl } from '../utils/imageUtils';
 
 const TeacherApplicationReviewModal = ({
   isOpen,
@@ -31,9 +32,10 @@ const TeacherApplicationReviewModal = ({
   const [remarks, setRemarks] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const boxBgColor = useColorModeValue('gray.50', 'gray.700');
+  // Force dark-modal colors to match admin dark UI
+  const bgColor = 'gray.900';
+  const borderColor = 'gray.700';
+  const boxBgColor = 'gray.800';
 
   const handleApprove = async () => {
     await submitReview('Approved');
@@ -110,16 +112,16 @@ const TeacherApplicationReviewModal = ({
             {/* Applicant Info */}
             <Box borderBottom="1px solid" borderColor={borderColor} pb={4}>
               <HStack justify="space-between" mb={2}>
-                <Text fontWeight="bold" fontSize="lg">
+                <Text fontWeight="bold" fontSize="lg" color="whiteAlpha.900">
                   {application.applicantName}
                 </Text>
-                <Badge colorScheme="yellow">Pending</Badge>
+                <Badge colorScheme="yellow">{application.status ?? 'Pending'}</Badge>
               </HStack>
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="gray.300">
                 {application.applicantEmail}
               </Text>
-              <Text fontSize="xs" color="gray.500" mt={1}>
-                Applied: {new Date(application.applicationDate).toLocaleString()}
+              <Text fontSize="xs" color="gray.400" mt={1}>
+                Applied: {application.applicationDate ? new Date(application.applicationDate).toLocaleString() : 'N/A'}
               </Text>
             </Box>
 
@@ -133,6 +135,7 @@ const TeacherApplicationReviewModal = ({
                 p={3}
                 borderRadius="md"
                 fontSize="sm"
+                color="gray.100"
               >
                 {application.reasonForApplying}
               </Box>
@@ -148,6 +151,7 @@ const TeacherApplicationReviewModal = ({
                   p={3}
                   borderRadius="md"
                   fontSize="sm"
+                  color="gray.100"
                 >
                   {application.qualificationDetails}
                 </Box>
@@ -164,9 +168,64 @@ const TeacherApplicationReviewModal = ({
                   p={3}
                   borderRadius="md"
                   fontSize="sm"
+                  color="gray.100"
                 >
                   {application.experienceArea}
                 </Box>
+              </Box>
+            )}
+
+            {(application.idType || application.idNumber) && (
+              <Box>
+                <Text fontWeight="bold" mb={2}>
+                  ID Verification:
+                </Text>
+                <Box
+                  bg={boxBgColor}
+                  p={3}
+                  borderRadius="md"
+                  fontSize="sm"
+                  color="gray.100"
+                >
+                  <Text>Type: {application.idType || 'N/A'}</Text>
+                  <Text>Number: {application.idNumber || 'N/A'}</Text>
+                </Box>
+              </Box>
+            )}
+
+            {(application.idFrontImagePath || application.idBackImagePath) && (
+              <Box>
+                <Text fontWeight="bold" mb={2}>ID Images:</Text>
+                <HStack spacing={4} align="start" flexWrap="wrap">
+                  {application.idFrontImagePath && (
+                    <Box>
+                      <Text fontSize="xs" color="gray.400" mb={1}>Front</Text>
+                      <Box
+                        as="img"
+                        src={normalizeUrl(application.idFrontImagePath)}
+                        alt="ID Front"
+                        maxH="160px"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor={borderColor}
+                      />
+                    </Box>
+                  )}
+                  {application.idBackImagePath && (
+                    <Box>
+                      <Text fontSize="xs" color="gray.400" mb={1}>Back</Text>
+                      <Box
+                        as="img"
+                        src={normalizeUrl(application.idBackImagePath)}
+                        alt="ID Back"
+                        maxH="160px"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor={borderColor}
+                      />
+                    </Box>
+                  )}
+                </HStack>
               </Box>
             )}
 
@@ -174,7 +233,7 @@ const TeacherApplicationReviewModal = ({
             {application.status === 'Pending' && (
               <>
                 <FormControl>
-                  <FormLabel fontWeight="bold">Admin Remarks</FormLabel>
+                  <FormLabel fontWeight="bold" color="gray.100">Admin Remarks</FormLabel>
                   <Textarea
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}
@@ -185,10 +244,12 @@ const TeacherApplicationReviewModal = ({
                       borderColor: 'purple.500',
                       boxShadow: '0 0 0 1px #805AD5',
                     }}
+                    bg={boxBgColor}
+                    color="gray.100"
                   />
                 </FormControl>
 
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="gray.400">
                   Your remarks will be shared with the applicant
                 </Text>
               </>
@@ -197,7 +258,7 @@ const TeacherApplicationReviewModal = ({
             {/* Already Reviewed */}
             {application.status !== 'Pending' && (
               <Box borderTop="1px solid" borderColor={borderColor} pt={4}>
-                <Text fontWeight="bold" mb={2}>
+                <Text fontWeight="bold" mb={2} color="whiteAlpha.900">
                   Review Decision:
                 </Text>
                 <HStack spacing={2} mb={3}>
@@ -209,7 +270,7 @@ const TeacherApplicationReviewModal = ({
                   >
                     {application.status}
                   </Badge>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="gray.400">
                     {application.reviewedDate &&
                       new Date(application.reviewedDate).toLocaleDateString()}
                   </Text>
@@ -220,6 +281,7 @@ const TeacherApplicationReviewModal = ({
                     p={3}
                     borderRadius="md"
                     fontSize="sm"
+                    color="gray.100"
                   >
                     <Text fontWeight="bold" mb={1}>
                       Remarks:
